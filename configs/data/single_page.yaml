@@ -1,0 +1,11 @@
+task: single_page_pdf
+input:
+  page_mode: pdf_page
+  render_dpi: 256
+  allow_arbitrary_rotation: true
+  keep_source_coordinates: true
+target:
+  format: markdown_with_latex
+  normalize_whitespace: true
+  normalize_math: true
+
