@@ -11,12 +11,13 @@ OCR and document parsing are currently evaluated through incompatible benchmark 
 - latency claims measured on different hardware and page mixes
 
 Leopardi needs one internal evaluation language that can compare all of them without pretending they are identical.
+Document-level evaluation must sit above this layer, because many public benchmarks are page-based while deployed systems parse full documents.
 
 ## Canonical Metric Groups
 
 ### 1. Page Parsing Accuracy
 
-Primary question: how correct is the final page-level Markdown output?
+Primary question: how correct is the final Markdown output at the benchmark unit level, which is often a page?
 
 - `page_overall`: benchmark-native overall page parsing score
 - `text_edit`: normalized text edit distance or similarity
@@ -116,7 +117,7 @@ Notes:
 
 ### OmniDocBench v1.5
 
-Best public page-level benchmark for structured document parsing.
+Best current public benchmark family for structured document parsing at page granularity.
 
 - good for: text, formulas, tables, reading order
 - weak for: real-world photographed distortions unless paired with newer Real5 extensions
@@ -157,4 +158,3 @@ Use at least four benchmark families in every serious model review:
 2. Real5-OmniDocBench or equivalent wild benchmark for robustness
 3. olmOCR-Bench for English PDF-to-Markdown stress
 4. IDP OCR and formula/table subsets for handwriting, rotation, and component specialists
-

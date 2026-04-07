@@ -173,7 +173,7 @@ Repos mostly exposing model usage or demos:
   - explicit GRPO/GRPO-like RL and synthetic benchmark generation in docs
 - What Leopardi learns:
   - benchmark-driven OCR development is a major advantage
-  - single-page PDF to markdown supervision format is operationally clean
+  - page-granular PDF to markdown supervision format is operationally clean even when the product target is full-document parsing
   - reward engineering based on unit tests and synthetic benchmarks is a strong frontier direction
 - Limitation:
   - 7B base is less favorable for compact-latency deployment than 0.9B to 1.2B specialists
@@ -281,4 +281,3 @@ That leaves a major opportunity for Leopardi:
 - broader multimodal OCR systems that absorb charts, graphics, screens, and code-like outputs
 
 Leopardi should not choose only one. It should unify them through routing and verification.
-

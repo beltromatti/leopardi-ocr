@@ -2,7 +2,7 @@
 
 Date locked: 2026-04-07
 
-This snapshot is intentionally focused on ideas that matter for a top-tier single-page OCR system with Markdown + LaTeX output.
+This snapshot is intentionally focused on ideas that matter for a top-tier document parsing system with Markdown + LaTeX output.
 
 ## Signals That Matter Right Now
 
@@ -40,4 +40,3 @@ This snapshot is intentionally focused on ideas that matter for a top-tier singl
 - OmniDocBench: https://github.com/opendatalab/OmniDocBench
 - olmOCR: https://github.com/allenai/olmocr
 - UniMERNet: https://arxiv.org/abs/2404.15215
-

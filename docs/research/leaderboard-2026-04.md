@@ -6,7 +6,7 @@ This file is a research synthesis, not an official leaderboard submission. It co
 
 ## Executive Takeaways
 
-- `PaddleOCR-VL-1.5` is the strongest publicly documented all-around single-page document parsing competitor right now.
+- `PaddleOCR-VL-1.5` is the strongest publicly documented all-around document parsing competitor right now.
 - `HunyuanOCR` may be stronger still on multilingual and wild parsing, but most of the strongest numbers are vendor-authored rather than benchmark-maintainer reported.
 - `dots.mocr` is the most strategically important competitor for Leopardi because it is strong on both document parsing and structured graphics parsing.
 - `FireRed-OCR` is the clearest example of syntax-constrained RL explicitly targeting structural validity.
@@ -64,7 +64,7 @@ Best current OCR-only snapshot for handwriting and rotation:
 
 This is a weighted research ranking for Leopardi's target product:
 
-- one PDF page
+- full documents
 - arbitrary rotation
 - mixed print and handwriting
 - tables, charts, headings, formulas

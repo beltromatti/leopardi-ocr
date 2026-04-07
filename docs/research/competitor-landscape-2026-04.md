@@ -6,7 +6,7 @@ Date locked: 2026-04-07
 
 This landscape only includes competitors relevant to Leopardi's target:
 
-- single-page PDF or page image input
+- full-document parsing, typically with page- or region-level internal processing
 - structured output, ideally Markdown or equivalent
 - formulas rendered as LaTeX or high-fidelity structured text
 - support for tables, mixed layouts, and difficult documents

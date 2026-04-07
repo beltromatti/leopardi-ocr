@@ -110,7 +110,7 @@ Date locked: 2026-04-07
 - Size: 3B
 - Architecture: lightweight multimodal toolkit for Markdown conversion and cross-page merging
 - Training signal: vendor-authored benchmark suite plus task-specific merge tasks
-- Public strengths: high single-page self-benchmark EDS and cross-page merging support
+- Public strengths: high page-granular self-benchmark EDS and cross-page merging support
 - Main threat to Leopardi: practical pipeline engineering around Markdown conversion
 - Main risk: benchmark evidence is mostly self-authored
 
@@ -168,4 +168,3 @@ Date locked: 2026-04-07
 
 - Strength: useful base models and strong general VLM baselines
 - Weakness: they are increasingly outperformed by compact OCR specialists on structured parsing tasks
-

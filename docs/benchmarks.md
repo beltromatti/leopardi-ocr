@@ -3,10 +3,11 @@
 ## North-Star Metrics
 
 - page-level exactness on normalized Markdown
+- document-level exactness on normalized Markdown
 - math exactness on normalized LaTeX
 - structural fidelity for tables and reading order
-- latency per page at fixed hardware budget
-- throughput under batch and single-page serving
+- latency per page and per document at fixed hardware budget
+- throughput under batch and document-serving workloads
 
 ## Required Benchmark Families
 
@@ -20,7 +21,7 @@
 ## Evaluation Rules
 
 - Report both accuracy and latency on the same hardware.
-- Keep single-page inference as the primary metric because that is the product constraint.
+- Track both page-level and document-level metrics because public benchmarks are often page-based while products are document-based.
 - Separate clean born-digital PDFs from degraded scans.
 - Track easy, medium, and hard routing buckets.
 
@@ -30,4 +31,3 @@
 - OCR-free VLM parser
 - hybrid parser with expert routing
 - commercial API comparison when licensing allows
-

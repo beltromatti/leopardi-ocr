@@ -2,7 +2,9 @@
 
 ## Goal
 
-Beat current OCR and document parsing systems on a single-page setting where the page may contain arbitrary rotation, mixed printed and handwritten text, tables, charts, and mathematics. Output must be Markdown with LaTeX.
+Beat current OCR and document parsing systems on full-document parsing while retaining strong page-level and region-level accuracy on arbitrary rotation, mixed printed and handwritten text, tables, charts, and mathematics. Output must be Markdown with LaTeX.
+
+Documents are the product object. Pages and regions are internal processing units used for rendering, routing, supervision, benchmarking, and systems optimization.
 
 ## Top-1 System Hypothesis
 
@@ -59,4 +61,3 @@ Beat current OCR and document parsing systems on a single-page setting where the
 - Expert-routed path for hard pages with formulas, handwriting, or dense tables.
 
 The repo is scaffolded so these strategies can evolve independently without collapsing into a single hard-coded pipeline.
-

@@ -227,7 +227,7 @@ Leopardi should have:
 
 ### Phase B
 
-- train a compact 0.9B to 1.5B page parser baseline
+- train a compact 0.9B to 1.5B document parser baseline with page-aware routing
 - add a formula specialist
 - add table structure verification
 
@@ -236,4 +236,3 @@ Leopardi should have:
 - introduce reward-based structural finetuning
 - add hard-page routing
 - add chart/diagram parsing extensions
-

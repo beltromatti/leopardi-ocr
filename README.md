@@ -1,12 +1,14 @@
 # Leopardi OCR
 
-Leopardi is a research-first OCR and document parsing project aimed at top-tier accuracy and parsing speed on single-page PDFs, with native Markdown output and LaTeX for mathematics.
+Leopardi is a research-first OCR and document parsing project aimed at top-tier accuracy and parsing speed on full documents, with native Markdown output and LaTeX for mathematics.
 
 ## Product Target
 
-- Input: one PDF page, arbitrary size, arbitrary rotation, mixed print + handwriting, tables, charts, titles, paragraphs, and formulas.
+- Input: full documents and document images with arbitrary size, arbitrary rotation, mixed print + handwriting, tables, charts, titles, paragraphs, and formulas.
 - Output: structurally correct Markdown with LaTeX for inline and display math.
 - Optimization target: accuracy and latency at the same time, not accuracy alone.
+
+In practice, many frontier systems still process documents through page-level or region-level units internally. Leopardi follows that reality: document parsing is the product target, while page and region parsing remain core internal abstractions for training, routing, and evaluation.
 
 ## Working Hypothesis
 
@@ -58,7 +60,7 @@ python -m leopardi.cli doctor
 
 ## First Milestones
 
-- Build a fast single-page parser baseline with constrained Markdown decoding.
+- Build a fast document parser baseline with constrained Markdown decoding.
 - Add specialist evaluation for math, tables, and reading order.
 - Scale synthetic pretraining from PDF-source pairs and rendered perturbations.
 - Introduce a latency-aware draft-then-verify decoding path.

@@ -8,7 +8,7 @@
 
 ## Phase 1
 
-- build a strong OCR-free single-page parser baseline
+- build a strong OCR-free document parser baseline
 - add formula and table specialist evaluation
 - stand up synthetic data generation
 
@@ -23,4 +23,3 @@
 - optimize runtime, batching, and kernel efficiency
 - compress the serving stack without degrading hard-page accuracy
 - prepare public leaderboard runs and reproducible reports
-
