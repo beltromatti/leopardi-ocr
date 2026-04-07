@@ -40,10 +40,16 @@ Finetuning is where Leopardi wins:
 ## Code And Config Entry Points
 
 - `src/leopardi/finetune/`
-  - finetune config, loss, reward, and runtime scaffolding
+  - finetune config, loss, reward, and runtime implementation
 - `configs/finetune/`
   - stage configs `F0` to `F3`
 - `configs/runtime/finetune_rtx5090.yaml`
   - baseline runtime for single-GPU finetuning
 - `ops/`
   - shared run, logging, control, and persistence contract
+
+## Current State
+
+The control plane, recipes, losses, and rewards are ready.
+
+The missing execution layer is the actual finetune loop, checkpoint loading, and bundle-connected dataloader path.

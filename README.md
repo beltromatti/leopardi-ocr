@@ -56,6 +56,7 @@ Leopardi is set up for many disciplined experiments rather than a few ad hoc run
 Start here:
 
 - [docs/experimentation.md](./docs/experimentation.md)
+- [docs/run-on-rtx5090.md](./docs/run-on-rtx5090.md)
 - [experiments/README.md](./experiments/README.md)
 - [configs/README.md](./configs/README.md)
 
@@ -71,10 +72,27 @@ The intended workflow is:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
-pytest
+pip install -e ".[dev,train]"
+pytest -q
+ruff check src tests ops docs configs experiments evaluation data_pipeline pretraining finetune
 python -m leopardi.cli doctor
 ```
+
+## Current Readiness
+
+Leopardi is currently ready as a research and run-control workspace.
+
+That means:
+
+- the model, config, runtime, logging, and persistence scaffolds are in place
+- the experiment system and benchmark protocol surface are defined
+- the rented-machine workflow is documented
+
+What is still missing before the first full training campaign:
+
+- real data builders
+- real end-to-end train and finetune loops
+- real evaluation runners
 
 ## First Milestones
 

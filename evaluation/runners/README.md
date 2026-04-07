@@ -7,6 +7,8 @@ This directory defines the execution contract for future evaluation implementati
 No code lives here yet.
 The goal is to make future runner code structurally obvious and protocol-safe.
 
+That means evaluation is specification-ready, not execution-ready.
+
 ## Runner Responsibilities
 
 Runners must support:

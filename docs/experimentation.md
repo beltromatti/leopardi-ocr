@@ -68,6 +68,17 @@ This covers:
 - external artifact persistence
 - git-visible summary surfaces
 
+## Current Readiness
+
+The shared experiment control plane is ready.
+
+The remaining implementation work is in the execution layers:
+
+- data builders
+- training loops
+- finetune loops
+- evaluation runners
+
 ## Promotion Philosophy
 
 Promotion should happen only when:

@@ -159,7 +159,7 @@ That is how fast models become slow products.
 
 The next engineering step after this blueprint is:
 
-1. finalize dataset ingestion contracts
-2. finalize tokenizer and canonical target schema
-3. implement `Leopardi-S0` training scaffold end to end
-4. launch the first `~100M` baseline on `RTX 5090`
+1. implement `arXiv` and `PMC OA` data builders and publish the first canonical bundles
+2. implement the first end-to-end pretraining loop against those bundles
+3. implement the first evaluation runners for `public_frontier_v1` and `internal_holdout_v1`
+4. launch the first real `Leopardi-S0` baseline on `RTX 5090`

@@ -32,7 +32,7 @@ console = Console()
 
 @app.command()
 def doctor() -> None:
-    console.print("[bold green]Leopardi scaffold is healthy.[/bold green]")
+    console.print("[bold green]Leopardi control plane is healthy.[/bold green]")
     console.print(f"Repository root: {Path.cwd()}")
 
 
@@ -44,7 +44,7 @@ def schema_example() -> None:
 
 @app.command()
 def benchmark(checkpoint: str = typer.Argument("draft")) -> None:
-    console.print(f"Benchmark runner scaffold for checkpoint: [bold]{checkpoint}[/bold]")
+    console.print(f"Evaluation runners are not implemented yet for checkpoint: [bold]{checkpoint}[/bold]")
     console.print(
         "Implement dataset adapters in evaluation/datasets and runners in evaluation/runners."
     )

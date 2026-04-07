@@ -34,9 +34,9 @@ For Leopardi it must maximize:
 ## Code And Config Entry Points
 
 - `src/leopardi/model/`
-  - model architecture scaffold
+  - model architecture implementation
 - `src/leopardi/pretraining/`
-  - stage config and loss-report scaffold
+  - stage config and loss-report implementation
 - `configs/model/leopardi_s0.yaml`
   - concrete model config
 - `configs/pretraining/`
@@ -45,3 +45,9 @@ For Leopardi it must maximize:
   - runtime defaults for the first training vehicle
 - `ops/`
   - shared run, logging, control, and persistence contract
+
+## Current State
+
+The control plane and loss-level scaffolding are ready.
+
+The missing execution layer is the actual training loop and dataloader integration against published bundles.
