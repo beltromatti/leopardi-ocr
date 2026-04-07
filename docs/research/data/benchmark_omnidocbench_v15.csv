@@ -1,0 +1,28 @@
+model,model_type,size_b,overall,text_edit_down,formula_cdm,table_teds,table_teds_s,read_order_edit_down,source,evidence_grade
+PaddleOCR-VL,specialized_vlm,0.9,92.86,0.035,91.22,90.89,94.76,0.043,OmniDocBench_v1.5,A
+MinerU2.5,specialized_vlm,1.2,90.67,0.047,88.46,88.22,92.38,0.044,OmniDocBench_v1.5,A
+OpenDoc-0.1B,specialized_pipeline,0.1,90.4851,0.043,87.7036,88.048,91.9716,0.0494,OpenOCR_repo,B
+MonkeyOCR-pro-3B,specialized_vlm,3.0,88.85,0.075,87.25,86.78,90.63,0.128,OmniDocBench_v1.5,A
+OCRVerse,specialized_vlm,4.0,88.56,0.058,86.91,84.55,88.45,0.071,OmniDocBench_v1.5,A
+dots.ocr,specialized_vlm,3.0,88.41,0.048,83.22,86.78,90.62,0.053,OmniDocBench_v1.5,A
+MonkeyOCR-3B,specialized_vlm,3.0,87.13,0.075,87.45,81.39,85.92,0.129,OmniDocBench_v1.5,A
+DeepSeek-OCR,specialized_vlm,3.0,87.01,0.073,83.37,84.97,88.8,0.086,OmniDocBench_v1.5,A
+MonkeyOCR-pro-1.2B,specialized_vlm,1.2,86.96,0.084,85.02,84.24,89.02,0.13,OmniDocBench_v1.5,A
+Nanonets-OCR-s,specialized_vlm,3.0,85.59,0.093,85.9,80.14,85.57,0.108,OmniDocBench_v1.5,A
+MinerU2-VLM,specialized_vlm,0.9,85.56,0.078,80.95,83.54,87.66,0.086,OmniDocBench_v1.5,A
+olmOCR,specialized_vlm,7.0,81.79,0.096,86.04,68.92,74.77,0.121,OmniDocBench_v1.5,A
+Dolphin-1.5,specialized_vlm,0.3,83.21,0.092,80.78,78.06,84.1,0.08,OmniDocBench_v1.5,A
+POINTS-Reader,specialized_vlm,3.0,80.98,0.134,79.2,77.13,81.66,0.145,OmniDocBench_v1.5,A
+Mistral OCR,specialized_vlm,,78.83,0.164,82.84,70.03,78.04,0.144,OmniDocBench_v1.5,A
+OCRFlux,specialized_vlm,3.0,74.82,0.193,68.03,75.75,80.23,0.202,OmniDocBench_v1.5,A
+Qwen3-VL-235B-A22B-Instruct,general_vlm,235.0,89.15,0.069,88.14,86.21,90.55,0.068,OmniDocBench_v1.5,A
+Gemini-2.5 Pro,general_vlm,,88.03,0.075,85.82,85.71,90.29,0.097,OmniDocBench_v1.5,A
+Qwen2.5-VL-72B,general_vlm,72.0,87.02,0.094,88.27,82.15,86.22,0.102,OmniDocBench_v1.5,A
+InternVL3.5,general_vlm,241.0,82.67,0.142,87.23,75.0,81.28,0.125,OmniDocBench_v1.5,A
+GPT-4o,general_vlm,,75.02,0.217,79.7,67.07,76.09,0.148,OmniDocBench_v1.5,A
+PP-StructureV3,pipeline_tool,,86.73,0.073,85.79,81.68,89.48,0.073,OmniDocBench_v1.5,A
+Marker-1.8.2,pipeline_tool,,71.3,0.206,76.66,57.88,71.17,0.25,OmniDocBench_v1.5,A
+FireRed-OCR,specialized_vlm,,92.94,,,,,,,FireRed_OCR_paper,B
+PaddleOCR-VL-1.5,specialized_vlm,0.9,94.5,,,,,,PaddleOCR_VL_1_5_paper,B
+HunyuanOCR,specialized_vlm,1.0,94.1,0.042,94.73,91.81,,0.081,HunyuanOCR_repo,C
+GLM-OCR,specialized_vlm,0.9,,,,,,,,GLM_OCR_paper,B

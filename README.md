@@ -20,6 +20,17 @@ The most credible path to state-of-the-art is not a monolithic OCR stack. Leopar
 
 That architecture is described in [docs/architecture.md](./docs/architecture.md), benchmarked in [docs/benchmarks.md](./docs/benchmarks.md), and grounded in recent literature in [docs/research/landscape-2026-04.md](./docs/research/landscape-2026-04.md).
 
+## Research Hub
+
+The first competitive intelligence phase is now tracked in:
+
+- [docs/research/README.md](./docs/research/README.md)
+- [docs/research/competitor-landscape-2026-04.md](./docs/research/competitor-landscape-2026-04.md)
+- [docs/research/leaderboard-2026-04.md](./docs/research/leaderboard-2026-04.md)
+- [docs/research/unified-metrics.md](./docs/research/unified-metrics.md)
+- [docs/research/model-dossiers.md](./docs/research/model-dossiers.md)
+- [docs/research/sources.md](./docs/research/sources.md)
+
 ## Repository Layout
 
 - `data_pipeline/`: ingestion, synthesis, curation, and manifests for large-scale pretraining and finetuning data.
@@ -47,4 +58,3 @@ python -m leopardi.cli doctor
 - Add specialist evaluation for math, tables, and reading order.
 - Scale synthetic pretraining from PDF-source pairs and rendered perturbations.
 - Introduce a latency-aware draft-then-verify decoding path.
-

@@ -1,0 +1,21 @@
+model,category,release_date,total_params_b,active_params_b,route_style,structured_output,math_output,language_claim,training_notes,primary_strength,primary_risk,main_source,evidence_grade
+PaddleOCR-VL,specialized_vlm,2025-10-16,0.9,0.9,end_to_end,markdown,latex,109_languages,NaViT_style_encoder_plus_ERNIE,page_parsing_accuracy,latency_not_standardized,arXiv_2510.14528,B
+PaddleOCR-VL-1.5,specialized_vlm,2026-01-29,0.9,0.9,end_to_end,markdown,latex,109_languages,adds_Real5_and_more_tasks,overall_frontier_accuracy,public_speed_table_not_found,arXiv_2601.21957,B
+HunyuanOCR,specialized_vlm,2025-11-24,1.0,1.0,end_to_end,markdown,latex,100_plus_languages,data_driven_plus_RL,multilingual_and_wild_docs,vendor_authored_evidence,arXiv_2511.19575,C
+GLM-OCR,specialized_vlm,2026-03-11,0.9,0.9,two_stage,structured_text,latex,unknown,CogViT_plus_GLM_plus_MTP,throughput_focus,external_reproduction_thin,arXiv_2603.10910,B
+FireRed-OCR,specialized_vlm,2026-03-02,,,end_to_end,markdown,latex,unknown,data_factory_plus_SFT_plus_GRPO,structural_validity,params_not_clear,arXiv_2603.01840,B
+MonkeyOCR-pro-1.2B,specialized_vlm,2025-07-10,1.2,1.2,modular,markdown,latex,en_zh,SRR_plus_MonkeyDoc,speed_accuracy_tradeoff,more_modules_to_manage,MonkeyOCR_repo,B
+MonkeyOCR-pro-3B,specialized_vlm,2025-07-10,3.0,3.0,modular,markdown,latex,en_zh,SRR_plus_MonkeyDoc,strong_public_runtime_disclosure,modular_error_propagation,MonkeyOCR_repo,B
+MonkeyOCR_v1.5,specialized_vlm,2025-11-13,,,two_stage,markdown,latex,unknown,visual_consistency_RL_for_tables,complex_table_robustness,fewer_neutral_public_scores,arXiv_2511.10390,B
+dots.mocr,specialized_vlm,2026-03-13,3.0,3.0,end_to_end,structured_text,latex,multilingual,PDF_webpage_SVG_pretraining,graphics_plus_documents,fewer_neutral_benchmarks,arXiv_2603.13032,B
+OCRVerse,specialized_vlm,2026-01-29,4.0,4.0,end_to_end,structured_text,task_dependent,unknown,text_and_vision_centric_OCR,holistic_ocr,less_direct_markdown_positioning,arXiv_2601.21639,B
+DeepSeek-OCR,specialized_vlm,2025-10-21,3.0,0.57,end_to_end,structured_text,latex,unknown,DeepEncoder_plus_MoE_decoder,compression_efficiency,language_prior_dependence,arXiv_2510.18234,B
+MinerU2.5,specialized_vlm,2025-11-01,1.2,1.2,decoupled,structured_text,latex,unknown,high_resolution_decoupled_parsing,strong_public_accuracy,less_explicit_runtime_reporting,MinerU2.5_paper,B
+olmOCR_2,specialized_vlm,2025-10-22,7.0,7.0,end_to_end,plain_text_structured,plain_or_markup,english_focus,RLVR_with_unit_tests,english_pdf_markdown_stress,larger_model_size,arXiv_2510.19817,A
+OpenDoc-0.1B,specialized_pipeline,2025-12-25,0.1,0.1,two_stage,markdown,latex,en_zh,PP_DocLayoutV2_plus_UniRec,extreme_efficiency,narrower_task_scope,OpenOCR_repo,B
+OCRFlux,specialized_vlm,2025-06-17,3.0,3.0,pipeline_with_merge,markdown,markdown_or_latex,english_and_chinese,task_specific_cross_page_merge,practical_markdown_pipeline,self_benchmark_bias,OCRFlux_repo,C
+Infinity-Parser,specialized_vlm,2025-10-01,7.0,7.0,end_to_end,structured_text,latex,english_and_chinese,layout_aware_RL,strong_scanned_doc_results,public_details_fragmented,arXiv_2510.15349,B
+Chandra OCR,specialized_vlm,2025-12-01,,,end_to_end,markdown_html_json,latex,40_plus_languages,public_training_details_thin,strong_olmocr_bench_score,transparency_gap,Chandra_repo,C
+Mistral OCR,commercial_api,2025-03-06,,,api,markdown,markdown_and_html,unknown,undisclosed,low_friction_api,weaker_public_frontier_benchmarks,Mistral_docs,A
+Mathpix,commercial_api,ongoing,,,api,mathpix_markdown,latex,unknown,undisclosed,math_and_stem_reference,architecture_undisclosed,Mathpix_docs,A
+
