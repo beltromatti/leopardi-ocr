@@ -210,7 +210,7 @@ The exact numbers will be discovered experimentally, but the direction is fixed.
 
 Must target:
 
-- meaningful single-page latency leadership in the `<150M` class
+- meaningful page-level latency leadership in the `<150M` class
 - practical throughput on one `RTX 5090`
 
 ### `Leopardi-S1`

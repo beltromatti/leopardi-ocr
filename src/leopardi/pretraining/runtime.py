@@ -15,7 +15,7 @@ def effective_batch_size(stage_config: PretrainStageConfig) -> int:
 def build_optimizer(model: nn.Module, stage_config: PretrainStageConfig) -> torch.optim.Optimizer:
     optimizer_cfg = stage_config.optimizer
     if optimizer_cfg.name.lower() != "adamw":
-        raise ValueError(f"Unsupported optimizer for scaffold: {optimizer_cfg.name}")
+        raise ValueError(f"Unsupported optimizer: {optimizer_cfg.name}")
     return torch.optim.AdamW(
         model.parameters(),
         lr=optimizer_cfg.lr,

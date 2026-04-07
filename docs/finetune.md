@@ -4,7 +4,7 @@ Date locked: 2026-04-07
 
 This document defines the post-pretraining path for turning a good compact parser into a frontier parser.
 
-The operational scaffold that implements this plan now lives in:
+The current implementation surface for this plan now lives in:
 
 - `finetune/`
 - `src/leopardi/finetune/`

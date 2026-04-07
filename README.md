@@ -12,7 +12,7 @@ In practice, many frontier systems still process documents through page-level or
 
 ## Working Hypothesis
 
-The most credible path to state-of-the-art is not a monolithic OCR stack. Leopardi is scaffolded around:
+The most credible path to state-of-the-art is not a monolithic OCR stack. Leopardi is organized around:
 
 1. geometry normalization for arbitrary page rotation and skew
 2. high-resolution document parsing with a fast draft pass
@@ -84,7 +84,7 @@ Leopardi is currently ready as a research and run-control workspace.
 
 That means:
 
-- the model, config, runtime, logging, and persistence scaffolds are in place
+- the model, config, runtime, logging, and persistence layers are in place
 - the experiment system and benchmark protocol surface are defined
 - the rented-machine workflow is documented
 
@@ -93,6 +93,11 @@ What is still missing before the first full training campaign:
 - real data builders
 - real end-to-end train and finetune loops
 - real evaluation runners
+
+Helpful local scripts:
+
+- `scripts/bootstrap_env.sh`
+- `scripts/smoke_cpu.sh`
 
 ## First Milestones
 

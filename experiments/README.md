@@ -29,6 +29,7 @@ Every experiment belongs to exactly one lifecycle state:
 ## Main Subdirectories
 
 - `registry/`: master experiment index and promotion history
+- `drafts/`: lightweight draft specs created before registration
 - `templates/`: templates for experiment specs, ablations, reports, and release cards
 - `tracks/`: track definitions for `Leopardi-S0`, `Leopardi-S1`, and specialist branches
 - `promotions/`: rules and checklists for moving checkpoints between states

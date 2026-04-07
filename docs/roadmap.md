@@ -23,7 +23,7 @@ Deliverables:
 Must produce:
 
 - reproducible normalization scripts
-- benchmark harness scaffold
+- benchmark harness specification and runners
 - model-card template
 
 ## Phase 1. Data Engine v1

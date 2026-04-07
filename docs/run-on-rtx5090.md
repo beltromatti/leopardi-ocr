@@ -9,7 +9,7 @@ This file is the single operator entry point for moving Leopardi onto a rented e
 The repo is ready as a research and operations control plane:
 
 - architecture, data, pretraining, finetuning, evaluation, and runtime strategy are locked in docs
-- model, pretraining, finetune, and shared ops scaffolds are importable and tested
+- model, pretraining, finetune, and shared ops layers are importable and tested
 - run layout, heartbeat, event logging, control files, and persistence targets are defined
 - phase-specific runtime presets exist for data build, pretraining, finetuning, evaluation, and serving
 
@@ -29,11 +29,9 @@ This means the repo is ready for active engineering work on the rented machine, 
 ## First Commands On A Fresh Machine
 
 ```bash
-python3 -m venv .venv
+./scripts/bootstrap_env.sh
 source .venv/bin/activate
-pip install -e ".[dev,train]"
-python3 -m pytest -q
-ruff check src tests ops docs configs experiments evaluation data_pipeline pretraining finetune
+./scripts/smoke_cpu.sh
 python3 -m leopardi.cli --help
 python3 -m leopardi.cli doctor
 python3 -m leopardi.cli model-summary configs/model/leopardi_s0.yaml

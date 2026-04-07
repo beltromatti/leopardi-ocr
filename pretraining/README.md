@@ -48,6 +48,6 @@ For Leopardi it must maximize:
 
 ## Current State
 
-The control plane and loss-level scaffolding are ready.
+The control plane and loss-level implementation layers are ready.
 
 The missing execution layer is the actual training loop and dataloader integration against published bundles.

@@ -4,7 +4,7 @@ Date locked: 2026-04-07
 
 This document defines the final research blueprint for Leopardi.
 
-The current code scaffold for this blueprint lives in:
+The current implementation surface for this blueprint lives in:
 
 - `src/leopardi/model/`
 - `configs/model/leopardi_s0.yaml`
@@ -160,7 +160,7 @@ Target allocation:
 
 Target total:
 
-- `~100M`, with the first concrete scaffold preset currently in the low-`90M` range
+- `~100M`, with the first concrete preset currently in the low-`90M` range
 
 ### 1. Page Canonicalizer
 

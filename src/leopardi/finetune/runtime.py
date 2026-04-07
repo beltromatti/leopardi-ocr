@@ -18,7 +18,7 @@ def build_finetune_optimizer(
 ) -> torch.optim.Optimizer:
     optimizer_cfg = stage_config.optimizer
     if optimizer_cfg.name.lower() != "adamw":
-        raise ValueError(f"Unsupported finetune optimizer for scaffold: {optimizer_cfg.name}")
+        raise ValueError(f"Unsupported finetune optimizer: {optimizer_cfg.name}")
     return torch.optim.AdamW(
         model.parameters(),
         lr=optimizer_cfg.lr,
