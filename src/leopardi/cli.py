@@ -10,6 +10,7 @@ from leopardi.finetune.config import FinetuneStageConfig
 from leopardi.finetune.losses import compute_finetune_losses
 from leopardi.finetune.rewards import compute_reward_breakdown
 from leopardi.model import LeopardiS0
+from leopardi.ops import RunHeartbeat, RunManifest, RunSummary, build_run_layout
 from leopardi.pretraining.batch import PretrainBatch
 from leopardi.pretraining.config import PretrainStageConfig
 from leopardi.pretraining.losses import compute_pretraining_losses
@@ -133,6 +134,60 @@ def smoke_finetune_step(
             "total_loss": float(loss_report.total_loss.detach()),
             "reward_report": reward_report.reward_terms,
             "total_reward": float(reward_report.total_reward.detach()),
+        }
+    )
+
+
+@app.command()
+def run_layout(experiment_id: str = typer.Argument("leo-s0-p2-dense-20260408-001")) -> None:
+    console.print(build_run_layout(experiment_id).as_dict())
+
+
+@app.command()
+def ops_examples() -> None:
+    manifest = RunManifest(
+        experiment_id="leo-s0-p2-dense-20260408-001",
+        phase="pretraining",
+        stage="p2_multimodal_core",
+        track="s0-core",
+        hardware_tag="rtx5090",
+        config_paths=[
+            "configs/model/leopardi_s0.yaml",
+            "configs/pretraining/s0_p2_multimodal_core.yaml",
+            "configs/runtime/train_rtx5090.yaml",
+        ],
+        data_bundle_ids=["p2_exact_core_v1", "p2_structural_aux_v1"],
+        protocol_version="internal_holdout_v1",
+        local_run_root="runs/leo-s0-p2-dense-20260408-001",
+        persistent_targets={
+            "checkpoints": "hf://leopardi-ocr-checkpoints",
+            "reports": "hf://leopardi-ocr-reports",
+        },
+    )
+    heartbeat = RunHeartbeat(
+        experiment_id=manifest.experiment_id,
+        phase=manifest.phase,
+        stage=manifest.stage,
+        state="running",
+        current_step=1280,
+        latest_metrics={"loss": 1.23, "eval_markdown_validity": 0.91},
+        last_save_step=1000,
+        last_save_at="2026-04-08T12:34:56Z",
+        last_sync_at="2026-04-08T12:35:10Z",
+        last_sync_status="ok",
+    )
+    summary = RunSummary(
+        experiment_id=manifest.experiment_id,
+        phase=manifest.phase,
+        stage=manifest.stage,
+        outcome="completed",
+        key_metrics={"loss": 0.98, "eval_markdown_validity": 0.93},
+    )
+    console.print(
+        {
+            "manifest": manifest.model_dump(),
+            "heartbeat": heartbeat.model_dump(),
+            "summary": summary.model_dump(),
         }
     )
 

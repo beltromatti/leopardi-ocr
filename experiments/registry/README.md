@@ -9,6 +9,7 @@ Files here should stay lightweight, human-readable, and append-only when practic
 - `experiment-index.csv`: one row per experiment
 - `promotion-log.md`: promotion and demotion history
 - `frozen-references.md`: locked reference checkpoints and benchmark snapshots
+- `artifact-ledger.csv`: compact git-visible ledger of persisted artifacts
 
 ## Registry Rules
 

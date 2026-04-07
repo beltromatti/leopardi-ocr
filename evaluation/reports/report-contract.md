@@ -14,6 +14,8 @@ Every report package should be keyed by:
 ## Minimum Contents
 
 - run metadata
+- run manifest pointer
+- artifact pointers
 - dataset bundle summary
 - scorecards
 - latency card

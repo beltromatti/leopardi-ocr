@@ -83,6 +83,12 @@ That means evaluation must normalize format variation without forgiving structur
 - `reports/`
   - immutable report contract and templates
 
+## Shared Operations
+
+`evaluation/` follows the common run and persistence contract defined in:
+
+- `ops/`
+
 ## Relation To The Rest Of The Repo
 
 - `docs/benchmarks.md` defines the high-level benchmark blueprint

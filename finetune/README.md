@@ -45,3 +45,5 @@ Finetuning is where Leopardi wins:
   - stage configs `F0` to `F3`
 - `configs/runtime/finetune_rtx5090.yaml`
   - baseline runtime for single-GPU finetuning
+- `ops/`
+  - shared run, logging, control, and persistence contract

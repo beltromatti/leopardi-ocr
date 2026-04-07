@@ -19,4 +19,20 @@ runtime:
     - full finetune is acceptable for S0 at this scale
     - keep long responses under control to avoid unnecessary memory and latency blowups
     - publish checkpoints and reports often because rental interruptions are real
-
+  logging:
+    console_log: console.log
+    structured_events: events.ndjson
+    heartbeat: heartbeat.json
+    heartbeat_seconds: 30
+    low_level_logs_local_only: true
+  control:
+    stop_file: control/STOP
+    reload_file: control/RELOAD
+    note_file: control/NOTE.txt
+  persistence:
+    local_run_root: runs
+    checkpoint_target: hf://leopardi-ocr-checkpoints
+    report_target: hf://leopardi-ocr-reports
+    metadata_target: hf://leopardi-ocr-metadata
+    checkpoint_sync_policy: every_save
+    summary_sync_policy: final_and_milestone

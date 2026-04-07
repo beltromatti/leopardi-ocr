@@ -54,6 +54,20 @@ To compare experiments honestly, these axes should stay explicit:
 - hardware tag
 - decode mode
 
+## Shared Run Contract
+
+All major phases now follow the common operational contract in:
+
+- `ops/`
+
+This covers:
+
+- local run layout
+- heartbeat and control files
+- logging policy
+- external artifact persistence
+- git-visible summary surfaces
+
 ## Promotion Philosophy
 
 Promotion should happen only when:

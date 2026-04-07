@@ -43,3 +43,5 @@ For Leopardi it must maximize:
   - stage configs
 - `configs/runtime/train_rtx5090.yaml`
   - runtime defaults for the first training vehicle
+- `ops/`
+  - shared run, logging, control, and persistence contract

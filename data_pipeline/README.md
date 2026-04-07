@@ -186,5 +186,7 @@ This class is allowed for mining and triage, but it is not allowed to silently c
   - defines post-pretraining supervised data requirements
 - `evaluation/`
   - defines benchmark leakage boundaries and release-facing holdouts
+- `ops/`
+  - defines common run layout, logging, control, and persistence policy
 
 `data_pipeline/` turns those decisions into reproducible build policy.

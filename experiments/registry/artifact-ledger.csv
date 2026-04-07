@@ -1,0 +1,5 @@
+experiment_id,phase,stage,artifact_kind,persistence_target,persistence_status,git_summary_path,notes
+template,data_pipeline,build,bundle,hf://leopardi-ocr-data-bundles,template,experiments/registry/artifact-ledger.csv,fill one row per persisted bundle artifact
+template,pretraining,p2_multimodal_core,checkpoint,hf://leopardi-ocr-checkpoints,template,experiments/registry/artifact-ledger.csv,fill one row per published checkpoint
+template,finetune,f0_general_sft,checkpoint,hf://leopardi-ocr-checkpoints,template,experiments/registry/artifact-ledger.csv,fill one row per finetune checkpoint
+template,evaluation,public_frontier_v1,report,hf://leopardi-ocr-reports,template,experiments/registry/artifact-ledger.csv,fill one row per published evaluation report

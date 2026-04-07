@@ -12,6 +12,8 @@ It is where measurement becomes archival evidence.
   - required artifact layout and immutability rules
 - `templates.md`
   - report section template and naming rules
+- `report-index.csv`
+  - compact git-visible index of persisted report packages
 
 ## Rule
 

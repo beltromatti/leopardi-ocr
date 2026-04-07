@@ -74,3 +74,4 @@ No experiment result is considered real unless it can be located from:
 - the config stack
 - the benchmark protocol version
 - the dataset split version
+- the run manifest and artifact ledger

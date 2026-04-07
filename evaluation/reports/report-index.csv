@@ -1,0 +1,2 @@
+report_id,experiment_id,protocol_version,phase,hardware_tag,persistence_target,status,notes
+template,leo-s0-eval-dense-20260408-001,public_frontier_v1,evaluation,rtx5090,hf://leopardi-ocr-reports,template,fill one row per persisted report package
