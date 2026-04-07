@@ -1,0 +1,14 @@
+stage: finetune_sft
+objective:
+  target_format: markdown_with_latex
+  enable_structure_loss: true
+  enable_math_loss: true
+  enable_reading_order_loss: true
+data:
+  mix:
+    born_digital: 0.45
+    scanned: 0.20
+    handwriting: 0.15
+    math_dense: 0.10
+    table_dense: 0.10
+

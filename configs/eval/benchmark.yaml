@@ -1,0 +1,11 @@
+benchmark:
+  primary_metric: markdown_page_score
+  secondary_metrics:
+    - latex_exact_match
+    - table_structure_score
+    - reading_order_score
+    - p50_latency_ms
+    - p95_latency_ms
+  hardware_tag: single_gpu_reference
+  batch_size: 1
+

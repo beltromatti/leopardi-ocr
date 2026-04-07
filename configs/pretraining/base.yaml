@@ -1,0 +1,12 @@
+stage: pretraining
+objective:
+  page_to_markdown: true
+  math_recovery: true
+  table_serialization: true
+  reading_order: true
+curriculum:
+  - clean_pdf
+  - layout_heavy
+  - synthetic_hard
+  - handwriting_hard
+
