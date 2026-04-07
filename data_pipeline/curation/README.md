@@ -1,11 +1,37 @@
 # Curation
 
-Quality gates before data enters training:
+Date locked: 2026-04-08
 
-- Markdown validity
-- LaTeX parseability
-- page-level deduplication
-- OCR disagreement mining for active curation
-- length and block-structure sanity checks
+Curation decides what is allowed to influence Leopardi.
 
-Curated outputs should promote into explicit split versions, never directly into anonymous training pools.
+For a `~100M` parser, this is a first-order system, not a cleanup afterthought.
+
+## Curation Goals
+
+- maximize target correctness
+- remove duplicate or near-duplicate supervision
+- preserve hard cases instead of accidentally filtering them out
+- track difficulty explicitly
+- block benchmark leakage before bundle publication
+
+## Output Classes
+
+Every curated sample must end in exactly one class:
+
+- `gold_exact`
+- `silver_exact`
+- `synthetic_exact`
+- `trusted_aux`
+- `weak_aux`
+- `reject`
+
+## Files
+
+- `quality-gates.md`
+  - required checks before a sample enters a bundle
+- `dedup-and-leakage.md`
+  - deduplication and public-benchmark contamination policy
+- `difficulty-taxonomy.md`
+  - difficulty labels and hard-case slices
+- `acceptance-scorecards.md`
+  - how samples and bundles are accepted, demoted, or rejected

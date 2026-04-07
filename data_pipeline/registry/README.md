@@ -1,11 +1,19 @@
 # Data Registry
 
-Use this directory for lightweight, versioned registries describing:
+Date locked: 2026-04-08
 
-- dataset names
-- official source links
-- license or access notes
-- ingestion status
-- canonical target availability
+This directory holds lightweight operational ledgers.
 
-This registry should mirror `docs/dataset.md`, not replace it.
+These files are intentionally compact and git-friendly.
+They are not substitutes for full persistent manifests.
+
+## Files
+
+- `source-status.csv`
+  - tracks which sources are approved, conditional, or research-only
+- `bundle-registry.csv`
+  - tracks named bundle families and their intended role
+- `mixture-targets.csv`
+  - target source-class mix for early Leopardi stages
+- `publish-registry.csv`
+  - tracks published persistent artifacts and verification status

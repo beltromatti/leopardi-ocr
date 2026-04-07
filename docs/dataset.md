@@ -4,6 +4,10 @@ Date locked: 2026-04-07
 
 This document defines the exact data plan for Leopardi.
 
+The operational build policy that implements this plan now lives in:
+
+- `data_pipeline/`
+
 The data plan is built around one rule:
 
 - no invented datasets

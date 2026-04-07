@@ -1,15 +1,61 @@
 # Ingestion
 
-Focus areas:
+Date locked: 2026-04-08
 
-- born-digital PDF plus source-target pairs
-- scanned and degraded documents, including page-level crops and document-native PDFs
-- handwriting-heavy pages
-- math- and table-dense pages
+Ingestion is the front door of the Leopardi data system.
 
-Every page should be versioned by manifest entry with source URI, license, split, and target format.
+Its job is to:
 
-All ingestion outputs should register into:
+- identify valid public sources
+- acquire only the needed assets
+- pair source documents with trustworthy targets
+- emit candidate manifests for curation
 
-- `data_pipeline/manifests/`
-- `data_pipeline/registry/`
+It is not allowed to guess labels or silently rewrite targets.
+
+## Ingestion Priorities
+
+Priority order is strict for `Leopardi-S0`.
+
+### Priority A: exact pair foundations
+
+- arXiv source plus PDF
+- PMC Open Access XML plus PDF
+
+### Priority B: specialist public supervision
+
+- PubLayNet
+- DocLayNet
+- PubTables-1M
+- SciTSR
+- CROHME
+- MathWriting
+- Im2LaTeX-100K
+- IAM
+- Bentham
+- READ 2016
+- FUNSD
+- CORD
+- SROIE
+- ChartQA
+- PlotQA
+
+### Priority C: optional extensions after verification
+
+- FinTabNet family
+- MonkeyDoc and other newly released public corpora
+- CHURRO-DS and related historical-text extensions
+- layout-rich corpora referenced by competitors but requiring license or schema review
+
+## Files
+
+- `source-registry.csv`
+  - the authoritative source inventory and role map
+- `source-priority.md`
+  - why each core source matters and when to ingest it
+- `acquisition-policy.md`
+  - download, cache, and purge rules for real machines
+- `pairing-and-targets.md`
+  - how sources become canonical targets
+- `research-watchlist.md`
+  - high-interest sources that remain conditional until verified

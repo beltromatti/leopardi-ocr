@@ -1,0 +1,9 @@
+artifact_group,persistent_namespace,artifact_kind,required_for_release,git_companion_required,verification_rule,retention_policy
+metadata,leopardi-ocr-data-metadata,parquet_manifests,yes,yes,checksum_and_count_match,retain
+exact_samples,leopardi-ocr-data-exact,training_shards,yes,yes,checksum_and_count_match,retain
+synthetic_samples,leopardi-ocr-data-synthetic,training_shards,yes,yes,checksum_and_count_match,retain
+aux_samples,leopardi-ocr-data-aux,training_shards,no,yes,checksum_and_count_match,retain
+bundle_exports,leopardi-ocr-data-bundles,training_bundle_shards,yes,yes,checksum_and_count_match,retain
+holdouts,leopardi-ocr-data-holdouts,holdout_shards,yes,yes,checksum_and_count_match,retain
+transient_raw,local_only,raw_downloads,no,no,purge_after_publish_verification,delete_after_verification
+transient_work,local_only,render_and_transform_cache,no,no,purge_after_publish_verification,delete_after_verification

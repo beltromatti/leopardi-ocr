@@ -1,16 +1,36 @@
 # Synthesis
 
-Generate hard training cases that current OCR systems fail on:
+Date locked: 2026-04-08
 
-- arbitrary page rotation and mixed local orientations
-- blur, JPEG artifacts, low contrast, and copier noise
-- handwritten overlays and annotation clutter
-- dense equations, tables, figures, and two-column layouts
+Synthesis is where Leopardi creates hard cases without destroying truth.
 
-Targets must stay Markdown-native with LaTeX spans preserved.
+The goal is not to fabricate unrealistic benchmark tricks.
+The goal is to reproduce the failure modes that matter in real documents:
 
-Every synthetic output family should record:
+- arbitrary rotation
+- hard tables
+- formula density
+- handwriting mixed with layout
+- scanned and photographed distortions
+- charts and diagrams embedded in text-heavy pages
 
-- parent source pools
-- transform recipe version
-- split destination
+## Two Synthesis Modes
+
+### 1. Label-preserving transformation
+
+Start from exact data and apply deterministic transforms that keep the canonical target unchanged.
+
+### 2. Exact compositional synthesis
+
+Compose new pages from known public assets whose truth is already available.
+
+This is allowed only when the final target remains fully attributable to known source components.
+
+## Files
+
+- `hardcase-engine.md`
+  - the target hard-case families Leopardi should manufacture
+- `transform-families.md`
+  - approved transform sets and what they are allowed to change
+- `teacher-and-label-policy.md`
+  - what tools and teacher models may and may not do
