@@ -28,6 +28,16 @@ Use for:
 - artifact publication events
 - sync failures
 
+Recommended event types:
+
+- `run_initialized`
+- `phase_started`
+- `checkpoint_saved`
+- `artifact_published`
+- `artifact_verified`
+- `eval_completed`
+- `sync_failed`
+
 ### 3. `heartbeat.json`
 
 Small mutable file for quick status inspection.
@@ -57,6 +67,7 @@ Recommended rule:
 
 - flush on milestone events immediately
 - flush heartbeats on a short interval
+- keep the event schema stable enough that a reconnecting agent can grep it directly over SSH
 
 ## Logging Goal
 

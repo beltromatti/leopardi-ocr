@@ -78,6 +78,21 @@ Why used:
 - practical large-artifact publication and downstream distribution
 - streaming-friendly dataset workflows
 
+Primary references:
+
+- https://huggingface.co/docs/huggingface_hub/guides/upload#upload-a-large-folder
+- https://huggingface.co/docs/datasets/stream
+
+### TorchData
+
+Why used:
+
+- stateful dataloader support is relevant when streamed Leopardi bundles must resume cleanly after rental interruption
+
+Primary references:
+
+- https://docs.pytorch.org/data/beta/torchdata.stateful_dataloader.html
+
 ### WebDataset
 
 Why used:

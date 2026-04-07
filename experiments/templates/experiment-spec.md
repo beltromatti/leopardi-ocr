@@ -35,12 +35,23 @@
 - dataset version:
 - split version:
 - exclusions:
+- bundle ids:
+- protocol version:
 
 ## Hardware
 
 - gpu:
 - precision:
 - batch strategy:
+- runtime primary:
+- structured output mode:
+
+## Persistence
+
+- run manifest path:
+- summary path:
+- persistence targets:
+- resume source:
 
 ## Expected Risks
 
@@ -51,3 +62,4 @@
 
 - result:
 - next action:
+- promoted artifact pointers:

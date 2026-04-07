@@ -1,0 +1,31 @@
+runtime:
+  purpose: single_gpu_evaluation
+  hardware_tag: rtx5090
+  primary_runtime: vllm
+  alternate_runtime: sglang
+  structured_output_backend: auto
+  max_concurrent_requests: 1
+  warmup_pages: 8
+  priority:
+    - defensible_measurement
+    - stable_latency
+    - reproducibility
+  implementation_notes:
+    - keep one primary runtime per report package
+    - log decode mode and structured output policy on every reportable run
+    - treat runtime switches as new measurement conditions, not as hidden knobs
+  logging:
+    console_log: console.log
+    structured_events: events.ndjson
+    heartbeat: heartbeat.json
+    heartbeat_seconds: 30
+    low_level_logs_local_only: true
+  control:
+    stop_file: control/STOP
+    reload_file: control/RELOAD
+    note_file: control/NOTE.txt
+  persistence:
+    local_run_root: runs
+    report_target: hf://leopardi-ocr-reports
+    metadata_target: hf://leopardi-ocr-metadata
+    summary_sync_policy: milestone_and_final

@@ -38,6 +38,16 @@ Why:
 - consistent with frontier training practice
 - easy to mirror into larger future training stacks
 
+### Training consumption layer
+
+- streaming dataset reads
+- stateful dataloader checkpoints for resumable epochs
+
+Why:
+
+- rented machines should resume from the latest durable training state instead of rescanning a full bundle from scratch
+- large published bundles should stay remote-first by default
+
 ### Manifest and analysis format
 
 - Parquet as the bulk metadata layer
@@ -70,6 +80,7 @@ The local stack must support:
 - metadata-first acquisition
 - partial rebuilds
 - persist-then-purge
+- resumable uploads and resumable downstream consumption
 
 ## Why This Stack Fits Leopardi
 

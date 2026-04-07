@@ -48,6 +48,13 @@ No transient purge is allowed before all are true:
 - publish ledger updated
 - bundle registry updated
 
+Preferred publication path for large bundle pushes:
+
+- shard locally into stable bundle directories
+- publish with a large-folder upload workflow
+- verify counts and checksums from the published destination
+- only then purge raw and transient local assets
+
 ## Reason For This Policy
 
 The rented-machine constraint is real.

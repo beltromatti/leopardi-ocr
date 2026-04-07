@@ -19,6 +19,8 @@ For `F0` to `F2`:
 - micro-batch conservative
 - accumulate gradients to reach useful effective batch sizes
 - save and validate often
+- stream published bundles when possible
+- persist dataloader state when the loader supports it
 
 ## RLVR Policy
 
@@ -40,3 +42,13 @@ For `F3`:
 - `vLLM` is the safest rollout baseline
 - `SGLang` is the high-performance path once the reward loop is stable
 - keep one runtime primary per experiment so comparisons remain honest
+
+## Compression And QAT Policy
+
+Do not introduce QAT or quantized-base finetuning into early recipe search unless memory is the blocker.
+
+Use TorchAO-backed `QLoRA` or late-stage QAT only when:
+
+- the high-quality recipe is already stable
+- deployment parity needs to be measured honestly
+- the added complexity is part of the experiment contract

@@ -88,6 +88,7 @@ That means evaluation must normalize format variation without forgiving structur
 `evaluation/` follows the common run and persistence contract defined in:
 
 - `ops/`
+- `configs/runtime/eval_rtx5090.yaml`
 
 ## Relation To The Rest Of The Repo
 
@@ -110,3 +111,4 @@ No result counts as a Leopardi result unless all are known:
 5. decode mode
 6. output normalization rules
 7. report location
+8. runtime preset

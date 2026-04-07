@@ -44,6 +44,7 @@ Open-source competitor repos are vendored as submodules under [external/competit
 - `evaluation/`: unified evaluation system including datasets, protocols, runners, metrics, baselines, and reports.
 - `pretraining/`: curriculum and objectives for large-scale synthetic + paired document pretraining.
 - `finetune/`: supervised and preference-based alignment stages.
+- `ops/`: shared run, logging, recovery, and persistence contract for all phases.
 - `configs/`: shared experiment configuration.
 - `src/leopardi/`: Python package, CLI, and output schema.
 - `docs/`: architecture, roadmap, benchmarks, and paper references.

@@ -6,6 +6,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.cache/
+.hf/
 build/
 dist/
 *.egg-info/
@@ -16,4 +18,9 @@ runs/
 wandb/
 outputs/
 /data/
+/cache/
+/hf_home/
+/mlruns/
+/ray_results/
+/tensorboard/
 tmp/

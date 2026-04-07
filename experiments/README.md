@@ -64,6 +64,8 @@ Every experiment must declare:
 - benchmark protocol version
 - hardware tag
 - checkpoint lineage
+- run manifest location
+- persistence targets
 - decision outcome
 
 ## Golden Rule

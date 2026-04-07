@@ -17,6 +17,8 @@ This file defines the practical first-run assumptions for `Leopardi-S0`.
 - micro-batch size conservative by default
 - gradient accumulation used to reach effective batch size
 - save often enough that eviction or rental interruption is survivable
+- prefer streaming consumption of published bundles over rebuilding local monoliths
+- persist dataloader progress together with checkpoint state when the loader is stateful
 
 ## Resolution Policy
 
@@ -47,3 +49,12 @@ For rented hardware, checkpoint often enough that:
 - every stage can be resumed or branched
 
 Checkpoints should be mirrored to persistent storage quickly after validation.
+
+## Quantization Policy
+
+Do not complicate early pretraining with aggressive quantized training.
+
+For `Leopardi-S0`, the default should remain:
+
+- `bf16` reference training first
+- TorchAO-assisted export and late-stage compression work only after the core recipe is stable

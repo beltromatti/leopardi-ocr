@@ -27,6 +27,7 @@ Why:
 
 - safest general open serving baseline
 - strong quantization and multimodal support
+- structured outputs are now a first-class server feature, not an afterthought
 
 ### High-performance target
 
@@ -36,6 +37,7 @@ Why:
 
 - strong structured-output posture
 - strong rollout and high-throughput serving path
+- proven relevance for RL and post-training loops
 
 ### Kernel layer
 
@@ -121,6 +123,7 @@ Use:
 - block planner
 - writer decoder
 - light grammar constraints where cheap
+- runtime-native structured output features when they do not distort latency comparisons
 
 Do not:
 
@@ -134,7 +137,7 @@ Use:
 - block-local context
 - specialist hints
 
-This is where `xgrammar` and `llguidance` become most attractive.
+This is where `xgrammar`, `llguidance`, and runtime-native grammar backends become most attractive.
 
 ## Structured Decoding Policy
 
@@ -148,6 +151,7 @@ Use constrained decoding only where overhead is low and reliability is high:
 - fenced block closure
 - simple table forms
 - formula delimiter closure
+- regex or grammar-constrained line families supported by the serving backend
 
 ### Local repair
 
@@ -162,6 +166,18 @@ Why this is the right compromise:
 
 - full-document grammar constraints can become expensive
 - local repair gives most of the exactness benefit at lower latency
+
+### Runtime-specific rule
+
+For `vLLM`:
+
+- use the structured-outputs interface with backend selection left on `auto` unless a benchmark explicitly pins a backend
+- treat grammar-vs-regex-vs-choice changes as decode-policy changes that must be logged
+
+For `SGLang`:
+
+- use native structured outputs for regex, JSON-like validation, and grammar-constrained repair where the backend shows a real latency advantage
+- benchmark it as a separate runtime condition, not as an invisible optimization
 
 ## Quantization Roadmap
 

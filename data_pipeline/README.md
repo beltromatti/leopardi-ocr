@@ -78,7 +78,8 @@ Use HF for:
 Why:
 
 - strong ecosystem support
-- resumable large-folder upload workflows
+- `upload_large_folder` support for shard-heavy pushes
+- Xet-backed transfer acceleration where available
 - straightforward distribution to training and evaluation machines
 
 ### Optional secondary mirror
@@ -112,6 +113,8 @@ It is a training-ready sample package that already contains:
 - split and bundle assignment
 
 Once a source item has been converted into a verified canonical sample and published to persistent storage, the local raw copy should be eligible for deletion unless retained for an active build window.
+
+Published bundles should be consumable by streaming loaders so that later pretraining and finetuning runs can avoid full local materialization on rented machines.
 
 ## Data Classes
 

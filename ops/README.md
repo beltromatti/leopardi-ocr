@@ -25,3 +25,8 @@ Its job is to make Leopardi operable on ephemeral rented machines without losing
   - what belongs in git and what must stay out
 - `references.md`
   - primary operational references
+
+The corresponding reusable helpers live in:
+
+- `src/leopardi/ops/`
+  - run layout, manifest and heartbeat schemas, file-writing helpers, and control-file probes

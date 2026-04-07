@@ -45,6 +45,7 @@ Runs should be resumable from:
 - last durable checkpoint
 - published bundle state
 - latest stage config snapshot
+- dataloader or iterator state when the phase streams large published bundles
 
 ## Intervention Philosophy
 

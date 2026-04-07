@@ -24,6 +24,11 @@ Why used:
 
 - practical QAT and quantization path for preserving quality under low-bit deployment targets
 
+Primary references:
+
+- https://docs.pytorch.org/ao/0.16/eager_tutorials/finetuning.html
+- https://github.com/pytorch/ao
+
 ### `vLLM`
 
 Why used:
