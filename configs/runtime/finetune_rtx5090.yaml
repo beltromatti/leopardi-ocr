@@ -1,0 +1,22 @@
+runtime:
+  purpose: single_gpu_finetuning
+  hardware_tag: rtx5090
+  precision: bf16
+  compile_model: false
+  gradient_checkpointing: true
+  micro_batch_size: 1
+  gradient_accumulation_steps: 16
+  dataloader_workers: 4
+  max_steps: 12000
+  log_every: 10
+  eval_every: 250
+  save_every: 250
+  priority:
+    - exactness
+    - fast_iteration
+    - memory_efficiency
+  implementation_notes:
+    - full finetune is acceptable for S0 at this scale
+    - keep long responses under control to avoid unnecessary memory and latency blowups
+    - publish checkpoints and reports often because rental interruptions are real
+

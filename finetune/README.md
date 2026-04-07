@@ -1,8 +1,47 @@
 # Finetuning
 
-Finetuning is split into:
+Date locked: 2026-04-08
 
-- `sft/`: supervised finetuning for Markdown + LaTeX fidelity
-- `rl/`: preference or reward-based optimization for structural validity, formula exactness, and latency-aware tradeoffs
+This directory is the operational finetuning stack for `Leopardi-S0`.
 
-Operationally, finetuning should follow `docs/finetune.md` and use staged configs from `configs/finetune/`.
+It turns a competent pretrained parser into a high-exactness production candidate.
+
+## Finetuning Goal
+
+Finetuning is where Leopardi wins:
+
+- exact canonical Markdown
+- exact LaTeX on formulas
+- strong specialist behavior on tables, handwriting, rotation, receipts, and charts
+- cheaper and more reliable local repair
+- RL improvements that do not destroy format stability
+
+## Files
+
+- `recipe.md`
+  - end-to-end `F0` to `F3` path
+- `data.md`
+  - finetuning bundle plan and source policy
+- `adapter-policy.md`
+  - when to use full finetune versus LoRA-style adaptation
+- `reward-design.md`
+  - RLVR reward blueprint grounded in objective checks
+- `references.md`
+  - primary sources behind the current finetune design
+- `rtx5090-runbook.md`
+  - practical run policy for rented single-GPU execution
+- `artifacts.md`
+  - mandatory saved outputs and publish policy
+- `sft/README.md`
+  - SFT-specific operating rules
+- `rl/README.md`
+  - RLVR-specific operating rules
+
+## Code And Config Entry Points
+
+- `src/leopardi/finetune/`
+  - finetune config, loss, reward, and runtime scaffolding
+- `configs/finetune/`
+  - stage configs `F0` to `F3`
+- `configs/runtime/finetune_rtx5090.yaml`
+  - baseline runtime for single-GPU finetuning

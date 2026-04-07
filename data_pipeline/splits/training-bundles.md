@@ -82,6 +82,33 @@ Why:
 
 - maximize precision of final Markdown plus LaTeX behavior
 
+## Bundle: `f0_general_sft_v1`
+
+Composition:
+
+- same source family as `sft_core_v1`
+- only samples that pass the strictest canonical-target gates
+
+Why:
+
+- create a clean exact-output tuning pool for `F0`
+
+## Bundle: `f1_specialist_sft_v1`
+
+Composition:
+
+- merged-cell tables
+- dense formula pages
+- handwriting pages
+- rotated pages
+- forms and receipts
+- chart-heavy pages
+- synthetic exact hard cases
+
+Why:
+
+- move the product-visible long tail that public parsers still mishandle
+
 ## Bundle: `sft_repair_v1`
 
 Composition:
@@ -92,3 +119,27 @@ Composition:
 Why:
 
 - tighten the final behavior on the slices users notice most
+
+## Bundle: `f2_repair_sft_v1`
+
+Composition:
+
+- local block failures from previous checkpoints
+- gold block corrections
+- canonical malformed-output repairs
+
+Why:
+
+- make repair mode cheaper than full page regeneration
+
+## Bundle: `f3_rlvr_v1`
+
+Composition:
+
+- prompt packs from `f0_general_sft_v1`
+- specialist prompt packs from `f1_specialist_sft_v1`
+- repair prompt packs from `f2_repair_sft_v1`
+
+Why:
+
+- support objective-reward RL without rebuilding the entire supervised corpus

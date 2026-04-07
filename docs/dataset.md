@@ -61,6 +61,7 @@ Role:
 - core pretraining corpus
 - core SFT corpus
 - core internal holdout source
+- primary source family for `f0_general_sft_v1`
 
 ### 2. PubMed Central Open Access PDFs plus JATS XML
 
@@ -86,6 +87,7 @@ Role:
 - core pretraining corpus
 - core SFT corpus
 - document-level assembly supervision
+- primary source family for `f0_general_sft_v1`
 
 ## Layout Supervision
 

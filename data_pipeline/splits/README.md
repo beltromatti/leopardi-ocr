@@ -21,3 +21,5 @@ The split layer is where source pools become training reality.
   - named bundles aligned to pretraining and finetuning stages
 - `holdout-governance.md`
   - internal holdout discipline and exclusion flow
+- `selective-builds.md`
+  - how split and bundle preparation should work under named build profiles

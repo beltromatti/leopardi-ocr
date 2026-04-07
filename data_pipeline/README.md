@@ -173,6 +173,8 @@ This class is allowed for mining and triage, but it is not allowed to silently c
   - split governance and named training bundles
 - `registry/`
   - lightweight operational ledgers for source status, bundle status, and published assets
+- `profiles/`
+  - selective source and bundle build profiles for rented machines
 
 ## Alignment With The Rest Of The Repo
 

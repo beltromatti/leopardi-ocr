@@ -4,6 +4,13 @@ Date locked: 2026-04-07
 
 This document defines the post-pretraining path for turning a good compact parser into a frontier parser.
 
+The operational scaffold that implements this plan now lives in:
+
+- `finetune/`
+- `src/leopardi/finetune/`
+- `configs/finetune/`
+- `configs/runtime/finetune_rtx5090.yaml`
+
 For Leopardi, finetuning is where exactness is won.
 
 ## Finetuning Stages
@@ -17,6 +24,10 @@ Data:
 - filtered arXiv pairs
 - filtered PMC pairs
 - high-quality table and formula examples converted into full parse targets
+
+Primary bundle:
+
+- `f0_general_sft_v1`
 
 Goal:
 
@@ -37,6 +48,10 @@ Goal:
 
 - strengthen the long tail without destroying the main distribution
 
+Primary bundle:
+
+- `f1_specialist_sft_v1`
+
 ### F2. Local Repair SFT
 
 Train a repair mode using block-local corrupted predictions and gold corrections.
@@ -55,6 +70,10 @@ Goal:
 
 - make local repair cheaper and more reliable than full re-decode
 
+Primary bundle:
+
+- `f2_repair_sft_v1`
+
 ### F3. RLVR
 
 Use reinforcement learning with verifiable rewards after SFT is stable.
@@ -67,6 +86,10 @@ Rollout backends:
 
 - `SGLang`
 - `vLLM`
+
+Primary bundle:
+
+- `f3_rlvr_v1`
 
 ## Reward Design
 

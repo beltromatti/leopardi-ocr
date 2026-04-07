@@ -5,6 +5,10 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from leopardi.finetune.batch import FinetuneBatch
+from leopardi.finetune.config import FinetuneStageConfig
+from leopardi.finetune.losses import compute_finetune_losses
+from leopardi.finetune.rewards import compute_reward_breakdown
 from leopardi.model import LeopardiS0
 from leopardi.pretraining.batch import PretrainBatch
 from leopardi.pretraining.config import PretrainStageConfig
@@ -82,6 +86,53 @@ def smoke_train_step(
             "model": model.summary(),
             "loss_report": report.loss_terms,
             "total": float(report.total_loss.detach()),
+        }
+    )
+
+
+@app.command()
+def finetune_summary(
+    stage_config: Path = typer.Argument(Path("configs/finetune/s0_f0_sft.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/finetune_rtx5090.yaml")),
+) -> None:
+    stage = FinetuneStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(stage)
+
+
+@app.command()
+def smoke_finetune_step(
+    model_config: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
+    stage_config: Path = typer.Argument(Path("configs/finetune/s0_f0_sft.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/finetune_rtx5090.yaml")),
+) -> None:
+    model = LeopardiS0.from_yaml(str(model_config))
+    stage = FinetuneStageConfig.from_yaml(stage_config, runtime_config)
+    visual_tokens = sum(
+        grid[0] * grid[1] for grid in model.config.visual_tokenizer.pool_layouts[stage.visual_mode]
+    )
+    batch = FinetuneBatch.synthetic(
+        batch_size=1,
+        image_size=(256, 256),
+        seq_len=64,
+        vocab_size=model.config.writer_decoder.vocab_size,
+        planner_blocks=model.config.planner.num_blocks,
+        visual_tokens=visual_tokens,
+        num_block_types=len(model.config.planner.block_types),
+        num_length_buckets=model.config.planner.num_length_buckets,
+        num_hints=len(model.config.planner.specialist_hints),
+        rotation_classes=model.config.auxiliary_heads.rotation_classes,
+        handwriting_classes=model.config.auxiliary_heads.handwriting_classes,
+    )
+    outputs = model(batch.image, batch.decoder_input_ids, visual_mode=stage.visual_mode)
+    loss_report = compute_finetune_losses(outputs, batch, stage)
+    reward_report = compute_reward_breakdown(batch.reward_signals or {}, stage)
+    console.print(
+        {
+            "model": model.summary(),
+            "loss_report": loss_report.loss_terms,
+            "total_loss": float(loss_report.total_loss.detach()),
+            "reward_report": reward_report.reward_terms,
+            "total_reward": float(reward_report.total_reward.detach()),
         }
     )
 

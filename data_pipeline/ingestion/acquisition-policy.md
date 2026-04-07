@@ -12,6 +12,10 @@ This file defines how Leopardi should acquire data on real rented hardware.
 4. Publish processed artifacts before starting the next large acquisition wave.
 5. Purge transient raw assets after publication verification unless they are still part of the active build window.
 
+Builds should default to a named profile from:
+
+- `data_pipeline/profiles/`
+
 ## Local Disk Policy
 
 The first full builds should assume constrained local NVMe and no guarantee of multi-terabyte free space.
@@ -28,11 +32,12 @@ Default policy:
 For each source:
 
 1. fetch metadata and license notes
-2. score candidate documents or pages
-3. materialize only selected items
-4. transform to canonical samples
-5. publish and checksum
-6. purge transient raw data
+2. choose the active build profile
+3. score candidate documents or pages
+4. materialize only selected items
+5. transform to canonical samples
+6. publish and checksum
+7. purge transient raw data
 
 ## Cache Boundaries
 
