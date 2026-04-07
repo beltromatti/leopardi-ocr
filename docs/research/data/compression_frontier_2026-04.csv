@@ -1,0 +1,13 @@
+item,type,focus,main_signal,relevance_to_leopardi,primary_source,evidence_grade
+TorchAO,library,quantization_qat_sparsity,"PyTorch-native PTQ QAT sparsity and low-bit optimizers",very_high,https://github.com/pytorch/ao,A
+LLM Compressor,library,quantization_for_vllm,"deployment-oriented GPTQ AWQ FP8 AutoRound KV quantization",very_high,https://github.com/vllm-project/llm-compressor,A
+compressed-tensors,library,serialization,"unified storage format for compressed tensors",high,https://github.com/neuralmagic/compressed-tensors,A
+bitsandbytes,library,low_bit_training,"practical k-bit quantization and optimizer-state compression",high,https://github.com/bitsandbytes-foundation/bitsandbytes,A
+HQQ,library,low_bit_quantization,"flexible half-quadratic quantization with modern runtime compatibility",high,https://github.com/mobiusml/hqq,A
+GPTQModel,library,quantization_tooling,"cross-hardware GPTQ/AWQ-style quantization toolkit",medium,https://github.com/ModelCloud/GPTQModel,A
+QQQ,paper,quantization_algorithm,"quality-preserving 4-bit quantization with strong speedups",medium,https://arxiv.org/abs/2406.09904,A
+OpenELM,paper,compact_architecture,"better parameter allocation rather than only more parameters",medium,https://arxiv.org/abs/2404.14619,A
+Minitron,paper,pruning_and_distillation,"compact language models via structured pruning and distillation",medium,https://arxiv.org/abs/2407.14679,A
+SmolVLM,paper,compact_vlm_systems,"compact open VLM family designed for low-memory inference",high,https://arxiv.org/abs/2504.05299,A
+Efficient Compact VLM Recipes,paper,compact_vlm_systems,"small VLMs need systems-aware latency recipes",high,https://arxiv.org/abs/2603.16987,B
+Firebolt-VL,paper,compact_vlm_architecture,"linear-time decoder direction for efficient VLMs",medium,https://arxiv.org/abs/2604.04579,B

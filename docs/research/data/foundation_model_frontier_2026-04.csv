@@ -1,0 +1,19 @@
+item,modality,category,efficiency_direction,core_idea,relevance_to_leopardi,primary_source,evidence_grade
+DeepSeek-V2,LLM,architecture,active_params_plus_kv_reduction,"MoE plus MLA reduces active compute and KV cache",very_high,https://arxiv.org/abs/2405.04434,A
+DeepSeek-V3,LLM,architecture_and_training,mtp_fp8_moe,"MoE plus MLA plus auxiliary-loss-free balancing plus MTP and FP8 training",very_high,https://arxiv.org/abs/2412.19437,A
+Jamba,LLM,architecture,hybrid_ssm_transformer_moe,"Interleaved Transformer and Mamba layers with MoE",medium,https://arxiv.org/abs/2403.19887,A
+Zamba,LLM,architecture,compact_hybrid_ssm,"Compact SSM-transformer hybrid",medium,https://arxiv.org/abs/2405.16712,A
+Kimi Linear,LLM,architecture_and_inference,linear_attention,"Hybrid KDA plus MLA with strong long-context throughput",high,https://arxiv.org/abs/2510.26692,B
+OpenELM,LLM,compact_model,parameter_allocation,"Layer-wise scaling for small efficient open LMs",medium,https://arxiv.org/abs/2404.14619,A
+Qwen2.5-VL,VLM,architecture,native_resolution_vlm,"Strong open VLM base with OCR-friendly perception",very_high,https://arxiv.org/abs/2502.13923,A
+InternVL3,VLM,training_and_architecture,native_multimodal_pretraining,"Joint multimodal and text pretraining with test-time recipes",very_high,https://arxiv.org/abs/2504.10479,A
+Libra,VLM,architecture,decoupled_vision_system,"Routed visual expert plus cross-modal bridge preserves stronger visual modeling",high,https://arxiv.org/abs/2405.10140,A
+Qwen2.5-Omni,VLM,architecture,streaming_multimodal,"Thinker-Talker separation and blockwise multimodal streaming",medium,https://arxiv.org/abs/2503.20215,A
+MindVL,VLM,training_system,native_resolution_and_packaging,"Native-resolution ViT plus efficient NPU-oriented multimodal training",high,https://arxiv.org/abs/2509.11662,B
+Firebolt-VL,VLM,architecture,linear_time_decoder,"Liquid foundation decoder plus token-grid correlation for efficient VLMs",medium,https://arxiv.org/abs/2604.04579,B
+SmolVLM,VLM,compact_model,small_open_vlm,"Compact open VLM family designed for low-memory deployment",high,https://arxiv.org/abs/2504.05299,A
+Efficient Compact VLM Recipes,VLM,systems,compact_vlm_latency,"Empirical deployment recipes for small VLMs and structured perception",high,https://arxiv.org/abs/2603.16987,B
+LinguDistill,VLM,distillation,capability_recovery,"Selective cross-modal distillation recovers lost language ability",very_high,https://arxiv.org/abs/2604.00829,B
+LVPruning,VLM,inference,language_guided_visual_token_pruning,"Text-conditioned pruning removes large fractions of visual tokens with small loss",high,https://arxiv.org/abs/2501.13652,A
+DivPrune,VLM,inference,diversity_preserving_visual_pruning,"Selects a diverse visual subset without finetuning to reduce latency and memory",high,https://arxiv.org/abs/2503.02175,A
+ResPrune,VLM,inference,text_conditioned_subspace_pruning,"Recent training-free subspace-reconstruction pruning for efficient LVLM inference",high,https://arxiv.org/abs/2603.21105,B

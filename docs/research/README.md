@@ -13,6 +13,16 @@ This directory is the competitive-intelligence and benchmarking knowledge base f
 - `sources.md`: source registry with evidence quality notes.
 - `research-log-2026-04-07.md`: working notes from the first deep research pass.
 
+## Broader Frontier Documents
+
+- `frontier-synthesis-2026-04.md`: master synthesis across general VLM/LLM/model-systems frontier work relevant to Leopardi.
+- `foundation-model-frontier-2026-04.md`: architecture trends beyond OCR-specific models.
+- `efficient-training-frontier-2026-04.md`: data, post-training, RLVR, and training-system trends.
+- `inference-systems-frontier-2026-04.md`: serving runtimes, kernels, and decode-time efficiency directions.
+- `compression-and-efficiency-frontier-2026-04.md`: quantization, compactness, and deployment-oriented compression landscape.
+- `leopardi-blueprint-inputs-2026-04.md`: distilled design implications for the final Leopardi blueprint.
+- `sources-frontier-2026-04.md`: verified source registry for the broader frontier pass.
+
 ## Data Tables
 
 - `data/benchmark_omnidocbench_v15.csv`
@@ -21,6 +31,10 @@ This directory is the competitive-intelligence and benchmarking knowledge base f
 - `data/benchmark_idp_ocr_snapshot_2026-04-07.csv`
 - `data/competitor_catalog_2026-04.csv`
 - `data/competitor_codebase_audit_2026-04.csv`
+- `data/foundation_model_frontier_2026-04.csv`
+- `data/training_systems_frontier_2026-04.csv`
+- `data/inference_systems_frontier_2026-04.csv`
+- `data/compression_frontier_2026-04.csv`
 
 ## Reading Order
 
@@ -28,5 +42,11 @@ This directory is the competitive-intelligence and benchmarking knowledge base f
 2. read `leaderboard-2026-04.md`
 3. inspect `open-source-codebase-audit-2026-04.md`
 4. read `leopardi-directions-2026-04.md`
-5. inspect `model-dossiers.md`
-6. use the CSV files for experiments and dashboarding
+5. read `frontier-synthesis-2026-04.md`
+6. inspect `foundation-model-frontier-2026-04.md`
+7. inspect `efficient-training-frontier-2026-04.md`
+8. inspect `inference-systems-frontier-2026-04.md`
+9. inspect `compression-and-efficiency-frontier-2026-04.md`
+10. read `leopardi-blueprint-inputs-2026-04.md`
+11. inspect `model-dossiers.md`
+12. use the CSV files for experiments and dashboarding

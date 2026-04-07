@@ -8,6 +8,10 @@ Date locked: 2026-04-07
 - olmOCR repo and olmOCR-Bench tables: https://github.com/allenai/olmocr
 - IDP OCR leaderboard: https://idp-leaderboard.org/ocr-benchmark/
 
+## Companion Registry
+
+- Broader VLM/LLM/training/inference/compression frontier registry: `sources-frontier-2026-04.md`
+
 ## Major Open Papers and Technical Reports
 
 - PaddleOCR-VL: https://arxiv.org/abs/2510.14528

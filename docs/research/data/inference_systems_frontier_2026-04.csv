@@ -1,0 +1,19 @@
+item,type,focus,main_signal,relevance_to_leopardi,primary_source,evidence_grade
+PagedAttention,paper,kv_memory,"foundational paged KV management for high-throughput serving",very_high,https://arxiv.org/abs/2309.06180,A
+vLLM,framework,serving_runtime,"main open serving runtime with paged attention speculative decoding quantization and multimodal support",very_high,https://github.com/vllm-project/vllm,A
+SGLang,framework,serving_runtime,"fast serving framework for LLMs and VLMs with strong modern model support",very_high,https://github.com/sgl-project/sglang,A
+TensorRT-LLM,framework,serving_runtime,"state-of-the-art NVIDIA-focused inference optimization stack",high,https://github.com/NVIDIA/TensorRT-LLM,A
+LMDeploy,framework,serving_and_compression,"serving toolkit with blocked KV cache persistent batching and quantization",high,https://github.com/InternLM/lmdeploy,A
+FlashInfer,paper_and_library,kernels,"attention GEMM and MoE kernels for efficient serving",very_high,https://arxiv.org/abs/2501.01005,A
+FlashAttention,library,attention_kernels,"foundational fast exact attention implementation",high,https://github.com/Dao-AILab/flash-attention,A
+Triton,language_and_compiler,kernel_authoring,"open route for custom training and inference kernels",high,https://github.com/triton-lang/triton,A
+DeepEP,library,moe_communication,"expert-parallel communication library for MoE systems",medium,https://github.com/deepseek-ai/DeepEP,A
+Mooncake,system,kv_disaggregation,"KV-cache-centric prefill/decode disaggregated serving",high,https://github.com/kvcache-ai/Mooncake,A
+Medusa,paper,speculative_decoding,"multiple decoding heads for faster autoregressive generation",high,https://arxiv.org/abs/2401.10774,A
+Mirror-SD,paper,speculative_decoding,"heterogeneous speculative decoding with strong claimed speedups",medium,https://arxiv.org/abs/2510.13161,B
+Amphista,paper,speculative_decoding,"bi-directional multi-head decoding beyond vanilla Medusa",medium,https://arxiv.org/abs/2406.13170,A
+llama.cpp,framework,edge_inference,"practical low-footprint CPU and edge inference runtime including multimodal support",medium,https://github.com/ggml-org/llama.cpp,A
+MLX-LM,framework,apple_silicon,"LLM inference and finetuning on Apple silicon with quantization and distributed support",medium,https://github.com/ml-explore/mlx-lm,A
+MLX-VLM,framework,apple_silicon_vlm,"VLM inference and LoRA/QLoRA finetuning on Apple silicon",medium,https://github.com/Blaizzy/mlx-vlm,A
+ExecuTorch,framework,edge_inference,"on-device inference stack with torchao-backed quantization",medium,https://github.com/pytorch/executorch,A
+

@@ -1,0 +1,20 @@
+item,type,focus,main_signal,relevance_to_leopardi,primary_source,evidence_grade
+JEST,paper,data_curation,"joint example selection can cut multimodal training compute dramatically",very_high,https://arxiv.org/abs/2406.17711,A
+Molmo and PixMo,paper_and_dataset,open_data_quality,"open weights plus open data show that carefully collected multimodal data can close large quality gaps",very_high,https://arxiv.org/abs/2409.17146,A
+Visual Program Distillation,paper,synthetic_reasoning_data,"distill tools and programmatic reasoning into a single VLM",high,https://arxiv.org/abs/2312.03052,A
+ViPER,paper,self_bootstrapped_vlm_training,"self-evolution of visual perception via staged RL and reconstruction",high,https://arxiv.org/abs/2510.24285,B
+DeepSeek-R1,paper,rlvr_reasoning,"reinforcement learning with verifiable signals became a first-order post-training direction",high,https://arxiv.org/abs/2501.12948,A
+HybridFlow,paper_and_framework,rlhf_systems,"hybrid-controller RLHF framework with strong throughput",high,https://arxiv.org/abs/2409.19256,A
+verl,framework,rlvr_and_post_training,"production-grade RL post-training with VLM support",very_high,https://github.com/volcengine/verl,A
+TRL,framework,alignment,"broad post-training library with SFT DPO GRPO and VLM alignment",high,https://github.com/huggingface/trl,A
+OpenRLHF,framework,alignment_systems,"high-performance RLHF framework using Ray and vLLM",high,https://github.com/OpenRLHF/OpenRLHF,A
+LLaMA-Factory,framework,finetuning,"unified efficient finetuning for many LLMs and VLMs",high,https://github.com/hiyouga/LLaMA-Factory,A
+torchtitan,framework,pretraining_system,"PyTorch-native clean-room large-scale training platform",medium,https://github.com/pytorch/torchtitan,A
+FSDP2,library,distributed_training,"newer PyTorch-native sharding interface for training efficiency",high,https://docs.pytorch.org/docs/2.8/distributed.fsdp.fully_shard.html,A
+Liger-Kernel,library,training_kernels,"Triton kernels that reduce training memory and increase throughput",high,https://github.com/linkedin/Liger-Kernel,A
+TorchAO,library,quantization_and_qat,"PyTorch-native quantization sparsity and QAT stack",very_high,https://github.com/pytorch/ao,A
+fsdp_qlora,recipe,memory_efficient_finetuning,"quantized LoRA plus FSDP for low-memory finetuning",medium,https://github.com/AnswerDotAI/fsdp_qlora,A
+Minitron,paper,compression_and_distillation,"pruning plus distillation recipe for manufacturing strong compact LMs",medium,https://arxiv.org/abs/2407.14679,A
+DCPO,paper,rlvr_algorithm,"dynamic clipping improves GRPO-style efficiency",medium,https://arxiv.org/abs/2509.02333,B
+DaGRPO,paper,rlvr_algorithm,"reduces gradient conflict in GRPO-style reasoning RL",medium,https://arxiv.org/abs/2512.06337,B
+UI-Venus,paper,task_specific_rft,"efficient reward design and cleaning for screenshot-native VLM agents",medium,https://arxiv.org/abs/2508.10833,B

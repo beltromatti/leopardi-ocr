@@ -58,3 +58,21 @@ Map the current frontier competitors for Leopardi across:
 3. define Leopardi's own markdown-validity and latex-validity verifiers
 4. create a reproducible competitor evaluation harness on a fixed hardware target
 
+## Second Pass Added
+
+The broader frontier pass added:
+
+- a general frontier synthesis across VLM, LLM, post-training, runtime, and compression research
+- verified references for compact VLMs, open-data VLM training, RLVR infrastructure, token pruning, and deployment stacks
+- blueprint-facing notes that connect broader research trends directly to Leopardi design choices
+
+## Next Research Task
+
+The next step is to convert the full research corpus into one explicit multi-phase Leopardi blueprint:
+
+1. objective and constraints
+2. model family candidates
+3. data engine design
+4. training and post-training plan
+5. runtime and compression targets
+6. evaluation and release gates
