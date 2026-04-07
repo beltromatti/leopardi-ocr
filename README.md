@@ -29,7 +29,11 @@ The first competitive intelligence phase is now tracked in:
 - [docs/research/leaderboard-2026-04.md](./docs/research/leaderboard-2026-04.md)
 - [docs/research/unified-metrics.md](./docs/research/unified-metrics.md)
 - [docs/research/model-dossiers.md](./docs/research/model-dossiers.md)
+- [docs/research/open-source-codebase-audit-2026-04.md](./docs/research/open-source-codebase-audit-2026-04.md)
+- [docs/research/leopardi-directions-2026-04.md](./docs/research/leopardi-directions-2026-04.md)
 - [docs/research/sources.md](./docs/research/sources.md)
+
+Open-source competitor repos are vendored as submodules under [external/competitors/README.md](./external/competitors/README.md) for codebase-driven analysis and future reproducible comparisons.
 
 ## Repository Layout
 

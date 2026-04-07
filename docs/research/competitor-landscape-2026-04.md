@@ -64,6 +64,57 @@ Not optimized for OCR, but very strong on some benchmarks.
 - InternVL3.x
 - Claude 3.7 Sonnet and Claude Sonnet 4 on OCR-only leaderboards
 
+## Codebase Reality Check
+
+Not all "open-source competitors" are equally open in practice.
+
+### Complete Frameworks
+
+These ship substantial code for training, evaluation, inference, and deployment.
+
+- PaddleOCR
+- OpenOCR
+- olmOCR
+
+### SDK + Finetuning Stacks
+
+These expose serious inference stacks and at least partial finetuning workflows.
+
+- GLM-OCR
+- UniMERNet
+
+### Production Toolkits
+
+These are strong inference-first repos with practical deployment code and some evaluation assets, but less open training detail.
+
+- MinerU
+- MonkeyOCR
+- OCRFlux
+- Infinity-Parser
+
+### Inference Releases
+
+These are valuable, but they mostly expose model usage rather than a reproducible training stack.
+
+- HunyuanOCR
+- DeepSeek-OCR
+- dots.ocr
+- FireRed-OCR
+- Chandra
+
+### Paper or Model Release Only
+
+These are strategically relevant but weak from a reproducibility perspective.
+
+- OCRVerse
+
+This matters because Leopardi should benchmark competitors on two separate axes:
+
+- product performance
+- research reproducibility and learnability
+
+An inaccessible frontier result is still a market threat, but it is a weaker engineering template.
+
 ## Architectural Patterns
 
 ### Pattern A: OCR-free page-to-Markdown models
@@ -227,4 +278,3 @@ Most competitors still treat graphics as second-class. dots.mocr shows this is n
 ### We need latency-aware routing
 
 Compact 0.9B to 1.2B specialists are now competitive with or better than much larger general VLMs. Conditional computation is strategically correct.
-

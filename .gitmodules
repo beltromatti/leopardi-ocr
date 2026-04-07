@@ -1,0 +1,45 @@
+[submodule "external/competitors/paddleocr"]
+	path = external/competitors/paddleocr
+	url = https://github.com/PaddlePaddle/PaddleOCR.git
+[submodule "external/competitors/hunyuanocr"]
+	path = external/competitors/hunyuanocr
+	url = https://github.com/Tencent-Hunyuan/HunyuanOCR.git
+[submodule "external/competitors/glm-ocr"]
+	path = external/competitors/glm-ocr
+	url = https://github.com/zai-org/GLM-OCR.git
+[submodule "external/competitors/firered-ocr"]
+	path = external/competitors/firered-ocr
+	url = https://github.com/FireRedTeam/FireRed-OCR.git
+[submodule "external/competitors/ocrverse"]
+	path = external/competitors/ocrverse
+	url = https://github.com/DocTron-hub/OCRVerse.git
+[submodule "external/competitors/deepseek-ocr"]
+	path = external/competitors/deepseek-ocr
+	url = https://github.com/deepseek-ai/DeepSeek-OCR.git
+[submodule "external/competitors/monkeyocr"]
+	path = external/competitors/monkeyocr
+	url = https://github.com/Yuliang-Liu/MonkeyOCR.git
+[submodule "external/competitors/dots-ocr"]
+	path = external/competitors/dots-ocr
+	url = https://github.com/rednote-hilab/dots.ocr.git
+[submodule "external/competitors/olmocr"]
+	path = external/competitors/olmocr
+	url = https://github.com/allenai/olmocr.git
+[submodule "external/competitors/ocrflux"]
+	path = external/competitors/ocrflux
+	url = https://github.com/chatdoc-com/OCRFlux.git
+[submodule "external/competitors/openocr"]
+	path = external/competitors/openocr
+	url = https://github.com/Topdu/OpenOCR.git
+[submodule "external/competitors/mineru"]
+	path = external/competitors/mineru
+	url = https://github.com/opendatalab/MinerU.git
+[submodule "external/competitors/chandra"]
+	path = external/competitors/chandra
+	url = https://github.com/datalab-to/chandra.git
+[submodule "external/competitors/inf-mllm"]
+	path = external/competitors/inf-mllm
+	url = https://github.com/infly-ai/INF-MLLM.git
+[submodule "external/competitors/unimernet"]
+	path = external/competitors/unimernet
+	url = https://github.com/opendatalab/UniMERNet.git
