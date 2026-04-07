@@ -1,7 +1,21 @@
 runtime:
   purpose: single_gpu_training
   hardware_tag: rtx5090
+  precision: bf16
+  compile_model: false
+  gradient_checkpointing: true
+  micro_batch_size: 1
+  gradient_accumulation_steps: 16
+  dataloader_workers: 4
+  max_steps: 50000
+  log_every: 20
+  eval_every: 1000
+  save_every: 1000
   priority:
     - fast_iteration
     - reproducibility
     - memory_efficiency
+  implementation_notes:
+    - keep render resolution mixed rather than always maximal
+    - prefer native torch kernels first, then layer in flash or liger optimizations
+    - checkpoint frequently because rented machines are ephemeral

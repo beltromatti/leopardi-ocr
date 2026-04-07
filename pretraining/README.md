@@ -1,11 +1,45 @@
 # Pretraining
 
-Pretraining should optimize structured document understanding before task-specific polish:
+Date locked: 2026-04-08
 
-- page-to-Markdown reconstruction
-- math span recovery
-- table serialization
-- masked region and reading-order objectives
-- confidence calibration for routing
+This directory is the operational pretraining stack for `Leopardi-S0`.
 
-Operationally, pretraining should follow the staged plan in `docs/pretrain.md` and use layered configs from `configs/pretraining/`.
+It exists to turn the architecture and data blueprint into a real single-GPU training program for a rented `RTX 5090`.
+
+## Pretraining Goal
+
+Pretraining is not generic multimodal scaling.
+For Leopardi it must maximize:
+
+- parsing intelligence per parameter
+- exact Markdown plus LaTeX behavior
+- robustness to long-tail document conditions
+- iteration speed on one GPU
+
+## Files
+
+- `recipe.md`
+  - end-to-end recipe for the `S0` pretraining path
+- `stages.md`
+  - responsibilities and exit criteria for `P0` to `P3`
+- `objectives.md`
+  - loss design and auxiliary supervision policy
+- `rtx5090-runbook.md`
+  - realistic runtime assumptions for the rented-machine first phase
+- `artifacts.md`
+  - what each stage must save and publish
+- `curriculum/README.md`
+  - stage ordering and hard-case escalation logic
+
+## Code And Config Entry Points
+
+- `src/leopardi/model/`
+  - model architecture scaffold
+- `src/leopardi/pretraining/`
+  - stage config and loss-report scaffold
+- `configs/model/leopardi_s0.yaml`
+  - concrete model config
+- `configs/pretraining/`
+  - stage configs
+- `configs/runtime/train_rtx5090.yaml`
+  - runtime defaults for the first training vehicle

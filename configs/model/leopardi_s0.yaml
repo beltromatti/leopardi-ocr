@@ -1,9 +1,76 @@
 model:
   family: leopardi_s0
   target_params_m: 100
+  hidden_size: 448
   architecture_contract:
     parser_scope: document_parser
     processing_unit: page
     output_contract: markdown_with_latex
     backbone_regime: dense_compact
     planner_writer_split: true
+    dynamic_visual_budget: true
+    localized_repair: true
+  page_canonicalizer:
+    line_density_pool: 16
+    contrast_eps: 1.0e-5
+  visual_tokenizer:
+    stem_dim: 96
+    stage_dims: [96, 192, 288, 384]
+    stage_depths: [2, 2, 6, 3]
+    hidden_size: 448
+    dropout: 0.0
+    stage_indices: [2, 3]
+    pool_layouts:
+      fast:
+        - [4, 4]
+        - [6, 6]
+      standard:
+        - [6, 6]
+        - [8, 8]
+      hard:
+        - [8, 8]
+        - [10, 10]
+  latent_bottleneck:
+    hidden_size: 448
+    num_latents: 256
+    num_layers: 5
+    num_heads: 8
+    mlp_ratio: 4.0
+    dropout: 0.1
+  planner:
+    hidden_size: 448
+    num_layers: 4
+    num_heads: 8
+    num_blocks: 64
+    num_length_buckets: 8
+    block_types:
+      - heading
+      - paragraph
+      - list
+      - table
+      - figure
+      - figure_caption
+      - equation
+      - page_header
+      - page_footer
+      - marginalia
+    specialist_hints:
+      - default
+      - math
+      - table
+      - handwriting
+      - chart
+    dropout: 0.1
+  writer_decoder:
+    vocab_size: 40960
+    hidden_size: 448
+    num_layers: 11
+    num_heads: 8
+    mlp_ratio: 4.0
+    max_seq_len: 2048
+    dropout: 0.1
+    tie_embeddings: true
+  auxiliary_heads:
+    rotation_classes: 4
+    handwriting_classes: 4
+    table_span_dims: 4

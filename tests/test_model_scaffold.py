@@ -1,0 +1,63 @@
+from __future__ import annotations
+
+from leopardi.model import LeopardiS0, LeopardiS0Config
+from leopardi.pretraining.batch import PretrainBatch
+from leopardi.pretraining.config import PretrainStageConfig
+from leopardi.pretraining.losses import compute_pretraining_losses
+
+
+def test_leopardi_s0_tiny_forward_shapes() -> None:
+    config = LeopardiS0Config.tiny()
+    model = LeopardiS0(config)
+    batch = PretrainBatch.synthetic(
+        batch_size=2,
+        image_size=(128, 128),
+        seq_len=32,
+        vocab_size=config.writer_decoder.vocab_size,
+        planner_blocks=config.planner.num_blocks,
+        visual_tokens=25,
+        num_block_types=len(config.planner.block_types),
+        num_length_buckets=config.planner.num_length_buckets,
+        num_hints=len(config.planner.specialist_hints),
+        rotation_classes=config.auxiliary_heads.rotation_classes,
+        handwriting_classes=config.auxiliary_heads.handwriting_classes,
+    )
+
+    outputs = model(batch.image, batch.decoder_input_ids, visual_mode="standard")
+
+    assert outputs.decoder_logits.shape == (
+        2,
+        32,
+        config.writer_decoder.vocab_size,
+    )
+    assert outputs.planner.block_type_logits.shape[:2] == (2, config.planner.num_blocks)
+    assert outputs.visual_tokens.shape[1] == 25
+    assert model.num_parameters() > 0
+
+
+def test_pretraining_loss_report_smoke() -> None:
+    config = LeopardiS0Config.tiny()
+    model = LeopardiS0(config)
+    stage = PretrainStageConfig(
+        stage="p2_multimodal_core",
+        visual_mode="standard",
+    )
+    batch = PretrainBatch.synthetic(
+        batch_size=1,
+        image_size=(128, 128),
+        seq_len=24,
+        vocab_size=config.writer_decoder.vocab_size,
+        planner_blocks=config.planner.num_blocks,
+        visual_tokens=25,
+        num_block_types=len(config.planner.block_types),
+        num_length_buckets=config.planner.num_length_buckets,
+        num_hints=len(config.planner.specialist_hints),
+        rotation_classes=config.auxiliary_heads.rotation_classes,
+        handwriting_classes=config.auxiliary_heads.handwriting_classes,
+    )
+
+    outputs = model(batch.image, batch.decoder_input_ids, visual_mode=stage.visual_mode)
+    report = compute_pretraining_losses(outputs, batch, stage)
+
+    assert report.total_loss.item() > 0.0
+    assert "token_ce" in report.loss_terms

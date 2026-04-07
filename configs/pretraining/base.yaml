@@ -5,6 +5,17 @@ objective:
   math_recovery: true
   table_serialization: true
   reading_order: true
+loss_weights:
+  token_ce: 1.0
+  block_type: 0.2
+  block_length: 0.1
+  specialist_hint: 0.1
+  block_box: 0.05
+  rotation: 0.05
+  handwriting: 0.05
+  formula_tokens: 0.1
+  table_blocks: 0.1
+  table_spans: 0.05
 curriculum:
   - clean_pdf
   - layout_heavy

@@ -4,6 +4,13 @@ Date locked: 2026-04-07
 
 This document defines the pretraining plan for `Leopardi-S0` and the scale-up path to `Leopardi-S1`.
 
+The operational scaffold that implements this plan now lives in:
+
+- `pretraining/`
+- `src/leopardi/pretraining/`
+- `configs/pretraining/`
+- `configs/runtime/train_rtx5090.yaml`
+
 The pretraining objective is not “learn generic vision-language intelligence”.
 It is:
 
