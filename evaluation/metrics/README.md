@@ -9,3 +9,4 @@ Planned metrics:
 - reading order consistency
 - latency percentiles
 
+Metric definitions must stay aligned with `docs/benchmarks.md` and `docs/research/unified-metrics.md`.

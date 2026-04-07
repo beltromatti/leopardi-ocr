@@ -1,0 +1,9 @@
+model:
+  family: leopardi_s1
+  target_params_m: 500
+  parent_family: leopardi_s0
+  architecture_contract:
+    parser_scope: document_parser
+    processing_unit: page
+    output_contract: markdown_with_latex
+    recipe_preserving_scaleup: true

@@ -1,0 +1,13 @@
+data:
+  task_family: document_parser
+  product_scope: full_document
+  processing_unit: page
+  target_format: markdown_with_latex
+  canonical_output: leopardi_markdown_canonical
+  source_groups:
+    - arxiv_pairs
+    - pmc_oa_pairs
+    - layout_aux
+    - table_aux
+    - formula_aux
+    - robustness_aux

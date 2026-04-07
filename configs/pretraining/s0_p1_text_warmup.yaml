@@ -1,0 +1,6 @@
+stage: p1_text_warmup
+track: s0-core
+objective:
+  markdown_language_prior: true
+  latex_language_prior: true
+  canonical_output_only: true

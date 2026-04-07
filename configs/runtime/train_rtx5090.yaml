@@ -1,0 +1,7 @@
+runtime:
+  purpose: single_gpu_training
+  hardware_tag: rtx5090
+  priority:
+    - fast_iteration
+    - reproducibility
+    - memory_efficiency

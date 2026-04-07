@@ -6,4 +6,4 @@ One adapter per benchmark family, each responsible for:
 - normalizing samples into the shared page schema
 - exposing official splits
 - documenting license and usage constraints
-
+- declaring the benchmark protocol versions it supports

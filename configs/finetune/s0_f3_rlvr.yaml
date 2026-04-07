@@ -1,0 +1,8 @@
+stage: f3_rlvr
+track: s0-core
+reward:
+  markdown_validity: high
+  latex_validity: high
+  table_validity: high
+  reading_order_consistency: medium
+  latency_efficiency: medium

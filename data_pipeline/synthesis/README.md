@@ -9,3 +9,8 @@ Generate hard training cases that current OCR systems fail on:
 
 Targets must stay Markdown-native with LaTeX spans preserved.
 
+Every synthetic output family should record:
+
+- parent source pools
+- transform recipe version
+- split destination

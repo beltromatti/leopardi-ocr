@@ -1,0 +1,5 @@
+stage: p0_tokenizer
+track: s0-core
+goal:
+  - tokenizer_for_markdown_and_latex
+  - canonical_table_block_support

@@ -1,7 +1,0 @@
-stage: finetune_preference
-reward:
-  markdown_validity: 0.30
-  latex_validity: 0.25
-  page_similarity: 0.25
-  latency_efficiency: 0.20
-

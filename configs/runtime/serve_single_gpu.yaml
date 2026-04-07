@@ -1,0 +1,9 @@
+runtime:
+  purpose: single_gpu_serving
+  targets:
+    - vllm
+    - sglang
+  serving_modes:
+    - fast
+    - standard
+    - hard

@@ -1,0 +1,7 @@
+stage: p2_multimodal_core
+track: s0-core
+objective:
+  page_to_markdown: true
+  planner_supervision: true
+  formula_span_supervision: true
+  table_topology_supervision: true

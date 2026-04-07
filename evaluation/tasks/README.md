@@ -8,3 +8,4 @@ Task adapters normalize different datasets into a common page schema:
 - optional region annotations
 - latency budget and difficulty tags
 
+Task adapters should not redefine benchmark policy. They should consume protocol versions from `benchmark/protocols/`.

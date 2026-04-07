@@ -1,0 +1,11 @@
+eval:
+  protocol: internal_holdout
+  difficulty_tiers:
+    - easy
+    - medium
+    - hard
+    - pathological
+  reporting:
+    - quality
+    - latency
+    - failure_taxonomy

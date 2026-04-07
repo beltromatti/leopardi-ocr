@@ -8,3 +8,8 @@ Focus areas:
 - math- and table-dense pages
 
 Every page should be versioned by manifest entry with source URI, license, split, and target format.
+
+All ingestion outputs should register into:
+
+- `data_pipeline/manifests/`
+- `data_pipeline/registry/`

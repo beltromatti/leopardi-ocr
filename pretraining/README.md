@@ -8,3 +8,4 @@ Pretraining should optimize structured document understanding before task-specif
 - masked region and reading-order objectives
 - confidence calibration for routing
 
+Operationally, pretraining should follow the staged plan in `docs/pretrain.md` and use layered configs from `configs/pretraining/`.

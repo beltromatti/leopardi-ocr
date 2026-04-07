@@ -1,0 +1,5 @@
+stage: f2_repair_sft
+track: s0-repair
+objective:
+  local_block_repair: true
+  stronger_structured_constraints: true

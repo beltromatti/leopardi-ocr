@@ -8,3 +8,4 @@ Quality gates before data enters training:
 - OCR disagreement mining for active curation
 - length and block-structure sanity checks
 
+Curated outputs should promote into explicit split versions, never directly into anonymous training pools.

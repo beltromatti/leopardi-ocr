@@ -1,0 +1,9 @@
+model:
+  family: leopardi_s0
+  target_params_m: 100
+  architecture_contract:
+    parser_scope: document_parser
+    processing_unit: page
+    output_contract: markdown_with_latex
+    backbone_regime: dense_compact
+    planner_writer_split: true

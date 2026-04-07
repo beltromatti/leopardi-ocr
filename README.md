@@ -39,6 +39,7 @@ Open-source competitor repos are vendored as submodules under [external/competit
 
 ## Repository Layout
 
+- `experiments/`: experiment registry, templates, track definitions, and promotion rules.
 - `data_pipeline/`: ingestion, synthesis, curation, and manifests for large-scale pretraining and finetuning data.
 - `evaluation/`: metrics, task definitions, and baseline protocol.
 - `benchmark/`: benchmark runners and dataset-specific adapters.
@@ -47,6 +48,23 @@ Open-source competitor repos are vendored as submodules under [external/competit
 - `configs/`: shared experiment configuration.
 - `src/leopardi/`: Python package, CLI, and output schema.
 - `docs/`: architecture, roadmap, benchmarks, and paper references.
+
+## Experiment System
+
+Leopardi is set up for many disciplined experiments rather than a few ad hoc runs.
+
+Start here:
+
+- [docs/experimentation.md](./docs/experimentation.md)
+- [experiments/README.md](./experiments/README.md)
+- [configs/README.md](./configs/README.md)
+
+The intended workflow is:
+
+1. define a layered config stack
+2. register the experiment
+3. run and evaluate it under a pinned benchmark protocol
+4. promote only after explicit checklist review
 
 ## Quickstart
 

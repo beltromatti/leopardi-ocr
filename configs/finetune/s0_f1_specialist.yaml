@@ -1,0 +1,8 @@
+stage: f1_specialist_sft
+track: s0-core
+focus:
+  - merged_cell_tables
+  - dense_formula_pages
+  - handwriting
+  - rotation
+  - charts

@@ -1,0 +1,13 @@
+eval:
+  protocol: public_frontier
+  public_benchmarks:
+    - omnidocbench_v15
+    - real5_or_wild_extension
+    - olmocr_bench
+    - mdpbench
+  required_slices:
+    - formulas
+    - tables
+    - handwriting
+    - rotation
+    - graphics

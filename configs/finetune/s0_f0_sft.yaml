@@ -1,0 +1,7 @@
+stage: f0_general_sft
+track: s0-core
+objective:
+  target_format: markdown_with_latex
+  structure_loss: true
+  math_loss: true
+  reading_order_loss: true

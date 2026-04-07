@@ -1,0 +1,6 @@
+stack:
+  model: configs/model/leopardi_s0.yaml
+  data: configs/data/document_parser_core.yaml
+  train: configs/pretraining/s0_p2_multimodal_core.yaml
+  eval: configs/eval/public_frontier.yaml
+  runtime: configs/runtime/train_rtx5090.yaml

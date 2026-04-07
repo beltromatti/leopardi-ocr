@@ -1,0 +1,6 @@
+stage: p3_hard_curriculum
+track: s0-core
+objective:
+  synthetic_hardening: true
+  arbitrary_rotation: true
+  handwriting_and_photo_robustness: true
