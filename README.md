@@ -41,8 +41,7 @@ Open-source competitor repos are vendored as submodules under [external/competit
 
 - `experiments/`: experiment registry, templates, track definitions, and promotion rules.
 - `data_pipeline/`: ingestion, synthesis, curation, and manifests for large-scale pretraining and finetuning data.
-- `evaluation/`: metrics, task definitions, and baseline protocol.
-- `benchmark/`: benchmark runners and dataset-specific adapters.
+- `evaluation/`: unified evaluation system including datasets, protocols, runners, metrics, baselines, and reports.
 - `pretraining/`: curriculum and objectives for large-scale synthetic + paired document pretraining.
 - `finetune/`: supervised and preference-based alignment stages.
 - `configs/`: shared experiment configuration.
@@ -63,7 +62,7 @@ The intended workflow is:
 
 1. define a layered config stack
 2. register the experiment
-3. run and evaluate it under a pinned benchmark protocol
+3. run and evaluate it under a pinned evaluation protocol
 4. promote only after explicit checklist review
 
 ## Quickstart

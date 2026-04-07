@@ -26,9 +26,10 @@ def schema_example() -> None:
 @app.command()
 def benchmark(checkpoint: str = typer.Argument("draft")) -> None:
     console.print(f"Benchmark runner scaffold for checkpoint: [bold]{checkpoint}[/bold]")
-    console.print("Implement dataset adapters in benchmark/datasets and runners in benchmark/runners.")
+    console.print(
+        "Implement dataset adapters in evaluation/datasets and runners in evaluation/runners."
+    )
 
 
 if __name__ == "__main__":
     app()
-
