@@ -1,10 +1,17 @@
-# Baselines
+# Evaluation Baselines
 
-Track open and commercial baselines with pinned versions, prompts, and hardware:
+Date locked: 2026-04-08
 
-- classic OCR pipelines
-- open VLM document parsers
-- internal Leopardi checkpoints
-- commercial OCR APIs where reproducible evaluation is possible
+This directory defines how Leopardi represents and compares against competitors.
 
-Every baseline entry should map back to the benchmark protocol used for comparison.
+It is not a dump of model names.
+It is the policy layer for fair baseline comparison.
+
+## Files
+
+- `registry.csv`
+  - baseline registry
+- `reproduction-policy.md`
+  - rules for using reproduced, official, and literature numbers
+- `competitor-groups.md`
+  - grouping of competitors by role and threat profile

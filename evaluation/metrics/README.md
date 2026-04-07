@@ -1,12 +1,22 @@
-# Metrics
+# Evaluation Metrics
 
-Planned metrics:
+Date locked: 2026-04-08
 
-- normalized edit distance on Markdown text
-- block-level F1 on headings, paragraphs, lists, tables, figures, and formulas
-- table TEDS or equivalent structure score
-- normalized LaTeX exact match and tree distance
-- reading order consistency
-- latency percentiles
+This directory defines the operational metric system for Leopardi.
 
-Metric definitions must stay aligned with `docs/benchmarks.md` and `docs/research/unified-metrics.md`.
+It turns the research-layer synthesis in `docs/research/unified-metrics.md` into a stable measurement contract.
+
+## Files
+
+- `catalog.md`
+  - metric definitions and required reporting fields
+- `normalization.md`
+  - canonical output normalization rules
+- `scorecards.md`
+  - standard tables used for model review and promotion
+
+## Rules
+
+1. Metrics must be comparable across time.
+2. Normalization may remove stylistic noise but must not forgive structural errors.
+3. Latency and footprint are part of the evaluation surface, not optional add-ons.

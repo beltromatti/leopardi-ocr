@@ -1,10 +1,18 @@
 # Evaluation Reports
 
-Store immutable benchmark outputs and summary reports here.
+Date locked: 2026-04-08
 
-Recommended layout:
+This directory defines the immutable reporting layer for Leopardi evaluation.
 
-- one directory per protocol version
-- one subdirectory per experiment id
+It is where measurement becomes archival evidence.
 
-Reports should be append-only once an experiment is promoted or frozen.
+## Files
+
+- `report-contract.md`
+  - required artifact layout and immutability rules
+- `templates.md`
+  - report section template and naming rules
+
+## Rule
+
+Once an experiment is promoted or frozen, the report package it points to must be immutable.

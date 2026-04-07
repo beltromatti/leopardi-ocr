@@ -1,13 +1,25 @@
-# Benchmark Protocols
+# Evaluation Protocols
 
-This directory stores benchmark protocol versions.
+Date locked: 2026-04-08
 
-A protocol version should define:
+Protocols are versioned measurement contracts.
 
-- benchmark set
-- normalization rules
-- decode mode
-- hardware rules
-- reporting requirements
+They exist so that a result means the same thing across time.
 
-Never silently change a protocol that has already been used for promoted or frozen results.
+## Protocol Rules
+
+1. A promoted result must name exactly one protocol version.
+2. Protocols are append-only once used for a promoted or frozen run.
+3. Hardware assumptions are part of the protocol, not an afterthought.
+4. Output normalization rules are part of the protocol, not a runner preference.
+
+## Files
+
+- `public_frontier_v1.md`
+  - main protocol for external and release-facing claims
+- `internal_holdout_v1.md`
+  - protocol for internal regression control and promotion review
+- `competitor_reproduction_v1.md`
+  - protocol for reproducing or comparing against open competitors
+- `release_gate_v1.md`
+  - minimum gate protocol for promotion to release-candidate status

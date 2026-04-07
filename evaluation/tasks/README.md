@@ -1,11 +1,21 @@
-# Tasks
+# Evaluation Tasks
 
-Task adapters normalize different datasets into a common page schema:
+Date locked: 2026-04-08
 
-- page image or rendered PDF
-- target Markdown
-- target LaTeX spans
-- optional region annotations
-- latency budget and difficulty tags
+Tasks are the bridge between benchmark families and metric bundles.
 
-Task adapters should not redefine evaluation policy. They should consume protocol versions from `evaluation/protocols/`.
+They define:
+
+- the expected input unit
+- the expected output contract
+- the relevant metric families
+- the protocol bundles in which they appear
+
+## Files
+
+- `task-model.md`
+  - formal task model used across evaluation
+- `task-bundles.md`
+  - named task bundles aligned to benchmark families
+- `output-contract.md`
+  - expected output forms for each task family
