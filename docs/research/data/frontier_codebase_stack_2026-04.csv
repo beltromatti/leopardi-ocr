@@ -1,0 +1,11 @@
+repo,submodule_path,category,local_commit_date,local_commit_sha,main_signal,relevance_to_leopardi,main_risk
+vLLM,external/frontier-runtime/vllm,runtime,2026-04-07,08bfedc15,"default open serving baseline with multimodal and quantized serving support",very_high,"not always the fastest structured-output path"
+SGLang,external/frontier-runtime/sglang,runtime,2026-04-07,cc35714b0,"fast-moving serving stack with strong structured output and rollout relevance",very_high,"higher operational complexity and rapid surface changes"
+FlashInfer,external/frontier-runtime/flashinfer,kernels,2026-04-07,edcef4b0,"attention GEMM and MoE kernel engine aligned with current serving needs",high,"kernel-level complexity is high"
+verl,external/frontier-training/verl,post_training,2026-04-07,52bf6abb,"production-grade RLVR stack with VLM support and runtime integrations",very_high,"rapid evolution can make recipes unstable"
+Liger-Kernel,external/frontier-training/liger-kernel,training_kernels,2026-04-03,969d4ab,"practical throughput and memory gains for SFT and post-training",high,"requires careful kernel compatibility management"
+TorchTitan,external/frontier-training/torchtitan,pretraining_system,2026-04-07,ac2de18a,"clean PyTorch-native reference for large-scale training with FSDP2 and float8",high,"not a turnkey RLVR stack by itself"
+TorchAO,external/frontier-compression/torchao,compression,2026-04-07,2a8fa55c5,"PyTorch-native training-to-serving quantization and QAT stack",very_high,"feature surface is broad and moving quickly"
+LLM Compressor,external/frontier-compression/llm-compressor,compression,2026-04-07,82b31ecf,"vLLM-aligned deployment quantization with KV and attention quantization paths",very_high,"best fit is vLLM-centric rather than runtime-agnostic"
+XGrammar,external/frontier-structured/xgrammar,structured_decoding,2026-04-05,537a465,"widely integrated grammar engine with near-zero-overhead claims",very_high,"performance depends on grammar shape and compilation behavior"
+llguidance,external/frontier-structured/llguidance,structured_decoding,2026-04-01,d787735,"fast low-overhead constrained decoding with strong benchmark posture",very_high,"benchmark advantage is clearest on JSON-schema-style tasks rather than Markdown"

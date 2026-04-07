@@ -55,6 +55,10 @@ Evidence grades:
 - LVPruning. Language-guided visual token pruning. Evidence `A`. https://arxiv.org/abs/2501.13652
 - DivPrune. Diversity-based visual token pruning. Evidence `A`. https://arxiv.org/abs/2503.02175
 - ResPrune. Recent text-conditioned subspace reconstruction pruning. Evidence `B`. https://arxiv.org/abs/2603.21105
+- XGrammar. Structured decoding engine for low-overhead grammar-constrained generation. Evidence `A`. https://arxiv.org/abs/2411.15100
+- XGrammar 2. Dynamic structured generation engine for agentic workloads. Evidence `B`. https://arxiv.org/abs/2601.04426
+- JSONSchemaBench. Benchmark and study for structured output generation. Evidence `A`. https://arxiv.org/abs/2501.10868
+- llguidance. Fast structured decoding engine with strong runtime integrations. Evidence `A`. https://github.com/guidance-ai/llguidance
 
 ## Compression and Quantization
 

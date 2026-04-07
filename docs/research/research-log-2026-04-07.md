@@ -63,6 +63,7 @@ Map the current frontier competitors for Leopardi across:
 The broader frontier pass added:
 
 - a general frontier synthesis across VLM, LLM, post-training, runtime, and compression research
+- a codebase-level audit of the broader serving, training, compression, and structured-decoding stack
 - verified references for compact VLMs, open-data VLM training, RLVR infrastructure, token pruning, and deployment stacks
 - blueprint-facing notes that connect broader research trends directly to Leopardi design choices
 

@@ -144,6 +144,21 @@ Why it matters:
 - visual token cost is frequently the bottleneck in VLM serving
 - the latest pruning papers are increasingly text-conditioned and training-free or near-training-free
 
+### Structured Decoding
+
+Important signals:
+
+- `XGrammar`
+- `XGrammar 2`
+- `llguidance`
+- `JSONSchemaBench`
+
+Why it matters:
+
+- Leopardi requires valid structured output, not just semantically good text
+- constrained decoding overhead is now low enough that it can be part of a production parser design
+- grammar-compilation behavior and grammar shape still matter, so Markdown-plus-LaTeX must be benchmarked directly
+
 ## Leopardi Runtime Guidance
 
 ### First-class targets
@@ -156,6 +171,7 @@ Why it matters:
 - paged KV cache
 - speculative decoding or MTP-style acceleration
 - adaptive visual token budget
+- low-overhead grammar-constrained decoding for exact-output modes
 - mixed precision and later quantized serving
 
 ### Optional but strategically strong

@@ -59,6 +59,8 @@ Relevant frontier signals:
 - FlashInfer
 - Mooncake
 - DeepEP
+- XGrammar
+- llguidance
 
 Implication:
 
@@ -91,6 +93,7 @@ Implication:
 - first-class support for `vLLM` and `SGLang`
 - adaptive token routing
 - speculative or MTP-friendly decode path
+- structured decoding path for exact-output modes
 - quantization-aware serving plan from the beginning
 
 ## Key Research Gaps Leopardi Can Exploit
@@ -106,6 +109,8 @@ Implication:
 ### 5. Many strong systems still report weak latency cards
 
 ### 6. The broader frontier still underexploits grammar-aware exact-output RL for document parsing
+
+### 7. Exact Markdown plus LaTeX remains underexplored as a constrained-decoding problem
 
 ## Blueprint Constraints Implied by the Frontier
 

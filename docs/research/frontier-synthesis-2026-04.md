@@ -170,6 +170,24 @@ Leopardi implication:
 
 - adaptive visual budgets are mandatory for fast document parsing because not all pages deserve the same amount of compute
 
+### 9. Structured decoding has become real systems infrastructure
+
+The strongest evidence comes from:
+
+- `XGrammar`
+- `XGrammar 2`
+- `llguidance`
+- `JSONSchemaBench`
+
+What changed:
+
+- constrained decoding has moved from niche library code to runtime-integrated infrastructure
+- exact-output systems no longer need to choose between validity and practical latency by default
+
+Leopardi implication:
+
+- exact Markdown and LaTeX generation should be treated as both a modeling and decoding problem
+
 ## Cross-Cutting Takeaways
 
 ### The current frontier is systems-shaped
@@ -209,6 +227,7 @@ This is especially relevant for Leopardi because OCR-VL is an exact-output task.
 - native or dynamic visual resolution
 - adaptive visual token routing and pruning
 - RLVR for structured output exactness
+- grammar-aware structured decoding or repair
 - first-class `vLLM` and `SGLang` compatibility
 - quantization-aware deployment targets from the first training cycle
 

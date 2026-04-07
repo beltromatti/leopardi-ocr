@@ -43,3 +43,33 @@
 [submodule "external/competitors/unimernet"]
 	path = external/competitors/unimernet
 	url = https://github.com/opendatalab/UniMERNet.git
+[submodule "external/frontier-runtime/vllm"]
+	path = external/frontier-runtime/vllm
+	url = https://github.com/vllm-project/vllm.git
+[submodule "external/frontier-runtime/sglang"]
+	path = external/frontier-runtime/sglang
+	url = https://github.com/sgl-project/sglang.git
+[submodule "external/frontier-runtime/flashinfer"]
+	path = external/frontier-runtime/flashinfer
+	url = https://github.com/flashinfer-ai/flashinfer.git
+[submodule "external/frontier-training/verl"]
+	path = external/frontier-training/verl
+	url = https://github.com/volcengine/verl.git
+[submodule "external/frontier-training/liger-kernel"]
+	path = external/frontier-training/liger-kernel
+	url = https://github.com/linkedin/Liger-Kernel.git
+[submodule "external/frontier-training/torchtitan"]
+	path = external/frontier-training/torchtitan
+	url = https://github.com/pytorch/torchtitan.git
+[submodule "external/frontier-compression/torchao"]
+	path = external/frontier-compression/torchao
+	url = https://github.com/pytorch/ao.git
+[submodule "external/frontier-compression/llm-compressor"]
+	path = external/frontier-compression/llm-compressor
+	url = https://github.com/vllm-project/llm-compressor.git
+[submodule "external/frontier-structured/xgrammar"]
+	path = external/frontier-structured/xgrammar
+	url = https://github.com/mlc-ai/xgrammar.git
+[submodule "external/frontier-structured/llguidance"]
+	path = external/frontier-structured/llguidance
+	url = https://github.com/guidance-ai/llguidance.git
