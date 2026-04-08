@@ -22,6 +22,7 @@ Why:
 - versioned publication flow
 - easy downstream consumption
 - practical for ephemeral build machines
+- supports large-folder publication workflows and selective downstream downloads
 
 ### Training payload format
 
@@ -81,6 +82,7 @@ The local stack must support:
 - partial rebuilds
 - persist-then-purge
 - resumable uploads and resumable downstream consumption
+- selective download patterns so later training runs pull only the bundle slices they need
 
 ## Why This Stack Fits Leopardi
 

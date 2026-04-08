@@ -9,7 +9,7 @@ This file is the single operator entry point for moving Leopardi onto a rented e
 The repo is ready as a research and operations control plane:
 
 - architecture, data, pretraining, finetuning, optimization, inference, evaluation, and runtime strategy are locked in docs
-- model, pretraining, finetune, optimization, inference, evaluation, and shared ops layers are importable and tested
+- model, data-pipeline, pretraining, finetune, optimization, inference, evaluation, and shared ops layers are importable and tested
 - run layout, heartbeat, event logging, control files, and persistence targets are defined
 - phase-specific runtime presets exist for data build, pretraining, finetuning, optimization, inference, evaluation, and serving
 
@@ -19,7 +19,7 @@ The repo is not yet ready for a full frontier run.
 
 Missing execution layers:
 
-- real data builders that ingest sources and publish canonical bundles
+- source-specific data builders that ingest raw sources and transform them into the already-defined canonical bundle contract
 - end-to-end training loop connected to published bundles
 - end-to-end finetuning loop connected to published bundles and checkpoints
 - optimization export backends that materialize deployable low-bit artifacts
@@ -36,6 +36,8 @@ source .venv/bin/activate
 ./scripts/smoke_cpu.sh
 python3 -m leopardi.cli --help
 python3 -m leopardi.cli doctor
+python3 -m leopardi.cli data-pipeline-summary configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml
+python3 -m leopardi.cli data-pipeline-materialize leo-s0-data-exact-20260408-001 configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml --root runs
 python3 -m leopardi.cli model-summary configs/model/leopardi_s0.yaml
 python3 -m leopardi.cli pretrain-summary configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml
 python3 -m leopardi.cli pretrain-materialize leo-s0-p2-20260408-001 configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml configs/model/leopardi_s0.yaml --root runs
@@ -64,7 +66,7 @@ python3 -m leopardi.cli materialize-run-example --root runs
 
 ## Recommended First Engineering Sequence
 
-1. Implement `data_pipeline` builders for `arXiv` and `PMC OA`.
+1. Implement source workers for `arXiv` and `PMC OA` against the existing `data_pipeline` plan and publish ledger.
 2. Implement the pretraining loop against published bundles.
 3. Implement the finetune loop for `F0` and `F1`.
 4. Implement the optimization export backends and variant validation loop.

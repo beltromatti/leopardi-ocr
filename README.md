@@ -41,7 +41,7 @@ Open-source competitor repos are vendored as submodules under [external/competit
 
 - `experiments/`: experiment registry, templates, track definitions, and promotion rules.
 - `model/`: model-family control plane, preset policy, interfaces, and artifact rules.
-- `data_pipeline/`: ingestion, synthesis, curation, and manifests for large-scale pretraining and finetuning data.
+- `data_pipeline/`: ingestion, synthesis, curation, manifests, and operational policy for large-scale pretraining and finetuning data.
 - `evaluation/`: unified evaluation system including datasets, protocols, runners, metrics, baselines, and reports.
 - `pretraining/`: curriculum and objectives for large-scale synthetic + paired document pretraining.
 - `finetune/`: supervised and preference-based alignment stages.
@@ -49,7 +49,7 @@ Open-source competitor repos are vendored as submodules under [external/competit
 - `inference/`: runtime, routing, validation, and serving plans for promoted artifacts.
 - `ops/`: shared run, logging, recovery, and persistence contract for all phases.
 - `configs/`: shared experiment configuration.
-- `src/leopardi/`: Python package, CLI, and output schema.
+- `src/leopardi/`: Python package, CLI, runtime materializers, and output schema.
 - `docs/`: architecture, roadmap, benchmarks, and paper references.
 
 ## Experiment System
@@ -94,7 +94,7 @@ That means:
 
 What is still missing before the first full training campaign:
 
-- real data builders
+- source-specific data acquisition and transformation workers
 - real end-to-end train and finetune loops
 - real optimization export backends
 - real inference supervisor that boots the chosen runtime automatically

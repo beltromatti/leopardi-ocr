@@ -6,6 +6,12 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from leopardi.data_pipeline import (
+    DataBuildStageConfig,
+    build_data_build_execution_plan,
+    materialize_data_build_stage,
+    registry_summary as data_pipeline_registry_summary,
+)
 from leopardi.evaluation import (
     EvaluationSample,
     EvaluationStageConfig,
@@ -82,6 +88,52 @@ def doctor() -> None:
 def schema_example() -> None:
     page = ParsedPage.example()
     console.print(page.model_dump_json(indent=2))
+
+
+@app.command()
+def data_pipeline_summary(
+    stage_config: Path = typer.Argument(Path("configs/data/s0_exact_core_build.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+) -> None:
+    stage = DataBuildStageConfig.from_yaml(stage_config, runtime_config)
+    console.print({"stage": asdict(stage), "registry": data_pipeline_registry_summary()})
+
+
+@app.command()
+def data_pipeline_plan(
+    stage_config: Path = typer.Argument(Path("configs/data/s0_exact_core_build.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+) -> None:
+    stage = DataBuildStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        asdict(
+            build_data_build_execution_plan(
+                experiment_id="data-plan-preview",
+                stage=stage,
+                stage_config_path=str(stage_config),
+                runtime_config_path=str(runtime_config),
+            )
+        )
+    )
+
+
+@app.command()
+def data_pipeline_materialize(
+    experiment_id: str = typer.Argument("leo-s0-data-build-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/data/s0_exact_core_build.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    stage = DataBuildStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        materialize_data_build_stage(
+            experiment_id=experiment_id,
+            stage=stage,
+            stage_config_path=str(stage_config),
+            runtime_config_path=str(runtime_config),
+            root=root,
+        )
+    )
 
 
 @app.command()

@@ -193,3 +193,22 @@ This class is allowed for mining and triage, but it is not allowed to silently c
   - defines common run layout, logging, control, and persistence policy
 
 `data_pipeline/` turns those decisions into reproducible build policy.
+
+## Current Implementation Surface
+
+The operational code for this directory now lives in:
+
+- `src/leopardi/data_pipeline/`
+- `configs/data/`
+- `configs/runtime/data_build_rtx5090.yaml`
+
+The current code surface covers:
+
+- source, bundle, profile, and publish registry loading
+- profile-aware build planning
+- source-wave scheduling for bounded local storage
+- local cache and upload-staging layout
+- publish-ledger materialization
+- artifact plans aligned with HF dataset publication and later remote-first reuse
+
+The remaining execution layer is the source-specific acquisition and transformation worker code.

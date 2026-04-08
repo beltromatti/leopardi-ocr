@@ -16,6 +16,8 @@ fi
 "$RUFF_BIN" check src tests ops docs configs experiments evaluation data_pipeline inference pretraining finetune optimization scripts
 "$PYTHON_BIN" -m leopardi.cli doctor
 "$PYTHON_BIN" -m leopardi.cli schema-example >/dev/null
+"$PYTHON_BIN" -m leopardi.cli data-pipeline-summary configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml >/dev/null
+"$PYTHON_BIN" -m leopardi.cli data-pipeline-plan configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml >/dev/null
 "$PYTHON_BIN" -m leopardi.cli model-summary configs/model/leopardi_s0.yaml >/dev/null
 "$PYTHON_BIN" -m leopardi.cli pretrain-summary configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml >/dev/null
 "$PYTHON_BIN" -m leopardi.cli pretrain-recipes >/dev/null
@@ -42,8 +44,10 @@ fi
 "$PYTHON_BIN" -m leopardi.cli pretrain-materialize leo-s0-p2-smoke-20260408-001 configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml configs/model/leopardi_s0.yaml --root tmp/pretraining-smoke >/dev/null
 "$PYTHON_BIN" -m leopardi.cli finetune-materialize leo-s0-f0-smoke-20260408-001 configs/finetune/s0_f0_sft.yaml configs/runtime/finetune_rtx5090.yaml configs/model/leopardi_s0.yaml --root tmp/finetune-smoke >/dev/null
 "$PYTHON_BIN" -m leopardi.cli evaluation-materialize leo-s0-eval-smoke-20260408-001 configs/eval/public_frontier.yaml configs/runtime/eval_rtx5090.yaml --root tmp/evaluation-smoke >/dev/null
+"$PYTHON_BIN" -m leopardi.cli data-pipeline-materialize leo-s0-data-smoke-20260408-001 configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml --root tmp/data-smoke >/dev/null
 "$PYTHON_BIN" -m leopardi.cli evaluation-report-example leo-s0-eval-smoke-20260408-001 configs/eval/public_frontier.yaml configs/runtime/eval_rtx5090.yaml --root tmp/evaluation-smoke >/dev/null
 "$PYTHON_BIN" -m leopardi.cli materialize-run-example --root tmp/ops-smoke >/dev/null
+rm -rf tmp/data-smoke
 rm -rf tmp/evaluation-smoke
 rm -rf tmp/finetune-smoke
 rm -rf tmp/inference-smoke

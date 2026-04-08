@@ -1,0 +1,13 @@
+data_build:
+  stage: s0_exact_core_build
+  profile_id: exact_core_only
+  target_model_family: leopardi_s0
+  target_param_budget_m: 100
+  future_scale_family: leopardi_s1
+  shard_format: webdataset
+  shard_target_size_mb: 256
+  manifest_format: parquet
+  strict_disk_guard: true
+  raw_retention_mode: publish_canonical_then_purge_raw
+  publish_verify_required: true
+  allow_research_watchlist: false

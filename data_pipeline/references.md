@@ -77,6 +77,8 @@ Why used:
 
 - practical large-artifact publication and downstream distribution
 - streaming-friendly dataset workflows
+- selective bundle download patterns for ephemeral machines
+- large-folder upload and verification workflows that fit shard-heavy corpora
 
 Primary references:
 
@@ -98,6 +100,14 @@ Primary references:
 Why used:
 
 - shard-first multimodal training format with strong precedent in vision-language training
+
+### Recent frontier data-engine lessons
+
+Why used:
+
+- `FireRed-OCR`: geometry-plus-semantics long-tail balancing is a serious data-engine idea
+- `GLM-OCR`: synthetic data plus contamination discipline plus MTP-friendly training are tightly coupled
+- `olmOCR`: synthetic plus RL gains only matter when the base Markdown pairing pipeline is clean and benchmark-safe
 
 ### Megatron-Energon data preparation guidance
 
