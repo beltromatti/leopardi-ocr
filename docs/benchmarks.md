@@ -85,6 +85,11 @@ Before scoring, outputs must be normalized:
 
 The goal is to remove stylistic noise while preserving structural correctness.
 
+The control-plane implementation for this lives in:
+
+- `evaluation/`
+- `src/leopardi/evaluation/`
+
 ## North-Star Metrics
 
 ### Parsing Quality

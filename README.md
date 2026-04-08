@@ -86,7 +86,7 @@ Leopardi is currently ready as a research and run-control workspace.
 
 That means:
 
-- the model, config, runtime, logging, and persistence layers are in place
+- the model, config, runtime, logging, persistence, and evaluation scoring layers are in place
 - the experiment system and benchmark protocol surface are defined
 - the rented-machine workflow is documented
 
@@ -96,7 +96,7 @@ What is still missing before the first full training campaign:
 - real end-to-end train and finetune loops
 - real optimization export backends
 - real inference supervisor that boots the chosen runtime automatically
-- real evaluation runners
+- real benchmark-specific dataset adapters and automated evaluation supervisors
 
 Helpful local scripts:
 

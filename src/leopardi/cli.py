@@ -6,6 +6,14 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from leopardi.evaluation import (
+    EvaluationSample,
+    EvaluationStageConfig,
+    compile_evaluation_result,
+    materialize_evaluation_stage,
+    registry_summary,
+    write_evaluation_report,
+)
 from leopardi.finetune.batch import FinetuneBatch
 from leopardi.finetune.config import FinetuneStageConfig
 from leopardi.finetune.losses import compute_finetune_losses
@@ -65,10 +73,21 @@ def schema_example() -> None:
 
 
 @app.command()
-def benchmark(checkpoint: str = typer.Argument("draft")) -> None:
-    console.print(f"Evaluation runners are not implemented yet for checkpoint: [bold]{checkpoint}[/bold]")
+def benchmark(
+    experiment_id: str = typer.Argument("leo-s0-eval-public-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/eval/public_frontier.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/eval_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    stage = EvaluationStageConfig.from_yaml(stage_config, runtime_config)
     console.print(
-        "Implement dataset adapters in evaluation/datasets and runners in evaluation/runners."
+        materialize_evaluation_stage(
+            experiment_id=experiment_id,
+            stage=stage,
+            stage_config_path=str(stage_config),
+            runtime_config_path=str(runtime_config),
+            root=root,
+        )
     )
 
 
@@ -500,6 +519,166 @@ def inference_assemble_example() -> None:
     ]
     stage = InferenceStageConfig(stage="demo")
     console.print(assemble_document(pages, stage.assembly))
+
+
+@app.command()
+def evaluation_summary(
+    stage_config: Path = typer.Argument(Path("configs/eval/public_frontier.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/eval_rtx5090.yaml")),
+) -> None:
+    stage = EvaluationStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        {
+            "stage": asdict(stage),
+            "registry": registry_summary(),
+        }
+    )
+
+
+@app.command()
+def evaluation_scorecard_example(
+    stage_config: Path = typer.Argument(Path("configs/eval/public_frontier.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/eval_rtx5090.yaml")),
+) -> None:
+    stage = EvaluationStageConfig.from_yaml(stage_config, runtime_config)
+    samples = [
+        EvaluationSample(
+            sample_id="omnidocbench-v15-0001",
+            dataset_family="OmniDocBench_v15",
+            decode_mode="standard",
+            prediction_markdown="# Title\n\nParagraph\n\n| a | b |\n| --- | --- |\n| 1 | 2 |",
+            reference_markdown="# Title\n\nParagraph\n\n| a | b |\n| --- | --- |\n| 1 | 2 |",
+            latency_ms=1180.0,
+            output_tokens=384,
+            native_metrics={
+                "page_overall": 0.946,
+                "table_teds": 0.938,
+                "rotation_score": 0.982,
+                "wild_page_score": 0.901,
+                "vram_peak_gib": 18.4,
+            },
+        ),
+        EvaluationSample(
+            sample_id="olmocr-bench-0001",
+            dataset_family="olmOCR_Bench",
+            decode_mode="standard",
+            prediction_markdown="## Methods\n\nEuler: $e^{i\\pi}+1=0$",
+            reference_markdown="## Methods\n\nEuler: $e^{i\\pi}+1=0$",
+            latency_ms=1210.0,
+            output_tokens=352,
+            formula_prediction="e^{i\\pi}+1=0",
+            formula_reference="e^{i\\pi}+1=0",
+            native_metrics={
+                "page_overall": 0.952,
+                "table_teds": 0.0,
+                "rotation_score": 0.976,
+                "wild_page_score": 0.908,
+                "vram_peak_gib": 18.4,
+            },
+        ),
+    ]
+    result = compile_evaluation_result(
+        experiment_id="leo-s0-eval-example",
+        stage=stage,
+        runtime_family=stage.runtime.primary_runtime,
+        decode_mode="standard",
+        model_name="Leopardi-S0",
+        size_band="~100M",
+        evidence_grade="local_synthetic_preview",
+        samples=samples,
+        datasets=[],
+        baselines=[],
+        params_total_b=0.093,
+        lus=1.37,
+        evidence_notes=[
+            "Synthetic example for CLI verification only.",
+        ],
+    )
+    console.print(
+        {
+            "aggregate_metrics": result.aggregate_metrics,
+            "scorecards": [row.values for row in result.scorecards],
+            "failure_slices": [row.values for row in result.failure_slices],
+            "report": result.report_package,
+        }
+    )
+
+
+@app.command()
+def evaluation_materialize(
+    experiment_id: str = typer.Argument("leo-s0-eval-public-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/eval/public_frontier.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/eval_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    stage = EvaluationStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        materialize_evaluation_stage(
+            experiment_id=experiment_id,
+            stage=stage,
+            stage_config_path=str(stage_config),
+            runtime_config_path=str(runtime_config),
+            root=root,
+        )
+    )
+
+
+@app.command()
+def evaluation_report_example(
+    experiment_id: str = typer.Argument("leo-s0-eval-public-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/eval/public_frontier.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/eval_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    stage = EvaluationStageConfig.from_yaml(stage_config, runtime_config)
+    samples = [
+        EvaluationSample(
+            sample_id="real5-0001",
+            dataset_family="Real5_OmniDocBench",
+            decode_mode="hard",
+            prediction_markdown="# Scan\n\nSkewed text",
+            reference_markdown="# Scan\n\nSkewed text",
+            latency_ms=1490.0,
+            output_tokens=410,
+            native_metrics={
+                "page_overall": 0.941,
+                "rotation_score": 0.984,
+                "wild_page_score": 0.926,
+                "vram_peak_gib": 18.9,
+            },
+            protocol_version=stage.protocol,
+        ),
+        EvaluationSample(
+            sample_id="mdpbench-0001",
+            dataset_family="MDPBench",
+            decode_mode="hard",
+            prediction_markdown="## Multilingual\n\nمرحبا",
+            reference_markdown="## Multilingual\n\nمرحبا",
+            latency_ms=1525.0,
+            output_tokens=430,
+            native_metrics={
+                "page_overall": 0.937,
+                "wild_page_score": 0.914,
+                "rotation_score": 0.971,
+                "vram_peak_gib": 18.9,
+            },
+            protocol_version=stage.protocol,
+        ),
+    ]
+    console.print(
+        write_evaluation_report(
+            experiment_id=experiment_id,
+            stage=stage,
+            runtime_family=stage.runtime.primary_runtime,
+            decode_mode="hard",
+            samples=samples,
+            model_name="Leopardi-S0",
+            size_band="~100M",
+            params_total_b=0.093,
+            lus=1.42,
+            root=root,
+        )
+    )
 
 
 if __name__ == "__main__":

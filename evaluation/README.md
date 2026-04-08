@@ -29,6 +29,10 @@ It is the place where Leopardi defines:
 - competitor baselines
 - immutable reports
 
+The importable implementation package lives in:
+
+- `src/leopardi/evaluation/`
+
 ### 2. Protocols are versioned and stable
 
 A promoted result is always tied to:
@@ -82,6 +86,22 @@ That means evaluation must normalize format variation without forgiving structur
   - execution contract and artifact expectations for future implementations
 - `reports/`
   - immutable report contract and templates
+
+## Current Implementation Status
+
+Implemented now:
+
+- registry loading
+- canonical Markdown and LaTeX normalization
+- generic metric cards and aggregation
+- fixed scorecard generation
+- report-package generation
+- shared run-contract materialization for evaluation runs
+
+Still to implement:
+
+- benchmark-specific dataset adapters
+- automated execution supervisors that call the inference runtime and fill reports from real public bundles
 
 ## Shared Operations
 
