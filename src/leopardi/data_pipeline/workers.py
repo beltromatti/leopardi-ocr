@@ -603,7 +603,7 @@ def _hf_row_to_sample(
 ) -> CanonicalSample:
     image_asset = _extract_image_asset(row)
     doc_id = str(row.get("id") or row.get("image_id") or row.get("uid") or row_index)
-    if source_id in {"mathwriting", "im2latex_100k"}:
+    if source_id in {"mathwriting", "im2latex_100k", "crohme"}:
         target = ""
         for key in ("latex", "label", "formula", "text", "transcription", "gt"):
             value = row.get(key)
@@ -621,7 +621,7 @@ def _hf_row_to_sample(
             task_family="formula",
             target_type="latex_formula",
             canonical_target=normalize_target_text(target),
-            slice_tags=("formula", "aux"),
+            slice_tags=("formula", "handwritten") if source_id == "crohme" else ("formula", "aux"),
             metadata={key: value for key, value in row.items() if key != "image"},
             assets=(image_asset,) if image_asset else (),
         )
@@ -814,6 +814,194 @@ def _pascal_xml_to_json(xml_bytes: bytes) -> str:
             }
         )
     return normalize_target_text(json.dumps(objects, sort_keys=True))
+
+
+def _archive_stem(path: str) -> str:
+    name = Path(path).name
+    lowered = name.lower()
+    for suffix in (
+        ".page.xml",
+        ".xml",
+        ".txt",
+        ".gt",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".tif",
+        ".tiff",
+    ):
+        if lowered.endswith(suffix):
+            return name[: -len(suffix)]
+    return Path(name).stem
+
+
+def _member_rank(path: str, *, prefer_page_dir: bool = False, prefer_xml: bool = False) -> tuple[int, int]:
+    lowered = path.lower()
+    page_bonus = 0 if prefer_page_dir and "/page/" in lowered else 1
+    xml_bonus = 0 if prefer_xml and lowered.endswith(".xml") else 1
+    return (page_bonus, xml_bonus)
+
+
+def _xml_local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def _pagexml_to_markdown(xml_text: str) -> str:
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return normalize_target_text(xml_text)
+
+    blocks: list[str] = []
+    for region in root.iter():
+        if _xml_local_name(region.tag) != "TextRegion":
+            continue
+        lines: list[str] = []
+        for line in region:
+            if _xml_local_name(line.tag) != "TextLine":
+                continue
+            unicode_nodes = [
+                node.text.strip()
+                for node in line.iter()
+                if _xml_local_name(node.tag) == "Unicode" and isinstance(node.text, str) and node.text.strip()
+            ]
+            if unicode_nodes:
+                lines.append(normalize_target_text(" ".join(unicode_nodes)))
+        if lines:
+            blocks.append("\n".join(lines))
+            continue
+        region_unicode = [
+            node.text.strip()
+            for node in region.iter()
+            if _xml_local_name(node.tag) == "Unicode" and isinstance(node.text, str) and node.text.strip()
+        ]
+        if region_unicode:
+            blocks.append(normalize_target_text(" ".join(region_unicode)))
+    if not blocks:
+        fallback = [
+            node.text.strip()
+            for node in root.iter()
+            if _xml_local_name(node.tag) == "Unicode" and isinstance(node.text, str) and node.text.strip()
+        ]
+        if fallback:
+            blocks = [normalize_target_text("\n".join(fallback))]
+    return normalize_target_text("\n\n".join(blocks))
+
+
+def _textlike_target_from_bytes(member_name: str, payload: bytes) -> str:
+    lowered = member_name.lower()
+    if lowered.endswith(".xml"):
+        return _pagexml_to_markdown(payload.decode("utf-8", "ignore"))
+    return normalize_target_text(payload.decode("utf-8", "ignore"))
+
+
+class ArchivePairWorker(SourceWorker):
+    def __init__(
+        self,
+        *,
+        source_id: str,
+        archives: tuple[tuple[str, str], ...],
+        task_family: str,
+        target_type: str,
+        slice_tags: tuple[str, ...],
+        split_from_path: bool = False,
+        prefer_page_dir: bool = False,
+    ) -> None:
+        self.source_id = source_id
+        self.archives = archives
+        self.task_family = task_family
+        self.target_type = target_type
+        self.slice_tags = slice_tags
+        self.split_from_path = split_from_path
+        self.prefer_page_dir = prefer_page_dir
+
+    def _archive_path(self, context: SourceBuildContext, filename: str) -> Path:
+        archive_path = context.raw_cache_dir / self.source_id / filename
+        if not archive_path.exists():
+            url = dict(self.archives)[filename]
+            _download_to_path(url, archive_path)
+        return archive_path
+
+    def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
+        limit = context.source_limit(self.source_id, 5000)
+        archive_paths = [self._archive_path(context, filename) for filename, _ in self.archives]
+        archive_handles = [tarfile.open(path, "r:*") for path in archive_paths]
+        try:
+            image_members: dict[str, tuple[int, tarfile.TarInfo]] = {}
+            target_members: dict[str, tuple[int, tarfile.TarInfo]] = {}
+            for archive_index, archive in enumerate(archive_handles):
+                for member in archive.getmembers():
+                    if not member.isfile():
+                        continue
+                    lowered = member.name.lower()
+                    stem = _archive_stem(member.name)
+                    if lowered.endswith((".jpg", ".jpeg", ".png", ".tif", ".tiff")):
+                        candidate = (archive_index, member)
+                        existing = image_members.get(stem)
+                        if existing is None or _member_rank(
+                            member.name, prefer_page_dir=self.prefer_page_dir
+                        ) < _member_rank(existing[1].name, prefer_page_dir=self.prefer_page_dir):
+                            image_members[stem] = candidate
+                    elif lowered.endswith((".xml", ".txt", ".gt")):
+                        candidate = (archive_index, member)
+                        existing = target_members.get(stem)
+                        if existing is None or _member_rank(
+                            member.name, prefer_page_dir=self.prefer_page_dir, prefer_xml=True
+                        ) < _member_rank(
+                            existing[1].name, prefer_page_dir=self.prefer_page_dir, prefer_xml=True
+                        ):
+                            target_members[stem] = candidate
+
+            yielded = 0
+            for stem in sorted(set(image_members) & set(target_members)):
+                if yielded >= limit:
+                    return
+                image_archive_index, image_member = image_members[stem]
+                target_archive_index, target_member = target_members[stem]
+                image_handle = archive_handles[image_archive_index].extractfile(image_member)
+                target_handle = archive_handles[target_archive_index].extractfile(target_member)
+                if image_handle is None or target_handle is None:
+                    continue
+                image_bytes = image_handle.read()
+                target = _textlike_target_from_bytes(target_member.name, target_handle.read())
+                if not target:
+                    continue
+                split_assignment = "train"
+                if self.split_from_path:
+                    lowered = target_member.name.lower()
+                    if "/validation/" in lowered or "/val/" in lowered:
+                        split_assignment = "validation"
+                    elif "/test/" in lowered:
+                        split_assignment = "test"
+                suffix = Path(image_member.name).suffix.lstrip(".") or "jpg"
+                yielded += 1
+                yield CanonicalSample(
+                    sample_id=f"{self.source_id}-{stem}",
+                    source_id=self.source_id,
+                    bundle_id=context.bundle_id,
+                    doc_id=stem,
+                    page_id=f"{stem}:1",
+                    data_class="trusted_aux",
+                    task_family=self.task_family,
+                    target_type=self.target_type,
+                    canonical_target=target,
+                    split_assignment=split_assignment,
+                    slice_tags=self.slice_tags,
+                    metadata={
+                        "image_member": image_member.name,
+                        "target_member": target_member.name,
+                    },
+                    assets=(
+                        CanonicalAsset(
+                            name=f"image.{suffix}",
+                            media_type=f"image/{'jpeg' if suffix in {'jpg', 'jpeg'} else 'png'}",
+                            payload_bytes=image_bytes,
+                        ),
+                    ),
+                )
+        finally:
+            for archive in archive_handles:
+                archive.close()
 
 
 class PubTablesWorker(SourceWorker):
@@ -1012,6 +1200,37 @@ def build_worker_registry() -> dict[str, SourceWorker]:
         "scitsr": SciTSRWorker(),
         "mathwriting": HFParquetWorker("mathwriting", "deepcopy/MathWriting-human"),
         "im2latex_100k": HFParquetWorker("im2latex_100k", "yuntian-deng/im2latex-100k"),
+        "crohme": HFParquetWorker("crohme", "Neeze/CROHME-full"),
+        "bentham": ArchivePairWorker(
+            source_id="bentham",
+            archives=(
+                (
+                    "BenthamDatasetR0-Images.tbz",
+                    "https://zenodo.org/api/records/44519/files/BenthamDatasetR0-Images.tbz/content",
+                ),
+                (
+                    "BenthamDatasetR0-GT.tbz",
+                    "https://zenodo.org/api/records/44519/files/BenthamDatasetR0-GT.tbz/content",
+                ),
+            ),
+            task_family="handwriting",
+            target_type="page_markdown_projection",
+            slice_tags=("handwriting", "historical", "manuscript"),
+        ),
+        "read_2016": ArchivePairWorker(
+            source_id="read_2016",
+            archives=(
+                (
+                    "PublicData.tgz",
+                    "https://zenodo.org/api/records/218236/files/PublicData.tgz/content",
+                ),
+            ),
+            task_family="handwriting",
+            target_type="page_markdown_projection",
+            slice_tags=("handwriting", "layout", "historical"),
+            split_from_path=True,
+            prefer_page_dir=True,
+        ),
         "funsd": HFParquetWorker("funsd", "nielsr/funsd"),
         "cord": HFParquetWorker("cord", "naver-clova-ix/cord-v2"),
         "sroie": HFParquetWorker("sroie", "jsdnrs/ICDAR2019-SROIE"),
@@ -1020,10 +1239,7 @@ def build_worker_registry() -> dict[str, SourceWorker]:
         "fintabnet_family": HFParquetWorker(
             "fintabnet_family", "docling-project/FinTabNet_OTSL"
         ),
-        "crohme": ManualManifestWorker("crohme"),
         "iam": ManualManifestWorker("iam"),
-        "bentham": ManualManifestWorker("bentham"),
-        "read_2016": ManualManifestWorker("read_2016"),
         "approved_exact_full_page_targets": ManualManifestWorker("approved_exact_full_page_targets"),
         "synthetic_from_exact": ManualManifestWorker("synthetic_from_exact"),
         "model_failures_plus_exact_truth": ManualManifestWorker("model_failures_plus_exact_truth"),

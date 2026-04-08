@@ -183,7 +183,7 @@ Role:
 
 Current ingestion stance:
 
-- keep manual until a reproducible public package fetch is pinned
+- automated via pinned public complete mirror aligned to CROHME train and benchmark splits
 
 ### 9. MathWriting
 
@@ -234,7 +234,7 @@ Role:
 
 Current ingestion stance:
 
-- keep manual because official acquisition still requires registration
+- official download page is reproducible, but archive fetch still redirects to login without an authenticated IAM session
 
 ### 13. Bentham
 
@@ -249,7 +249,7 @@ Role:
 
 Current ingestion stance:
 
-- keep manual until a canonical package fetch is reproducible from the official lineage
+- automated via official Zenodo Bentham Dataset R0 image and ground-truth archives
 
 ### 14. READ 2016
 
@@ -264,7 +264,7 @@ Role:
 
 Current ingestion stance:
 
-- keep manual until the release package itself is fetchable reproducibly, even though official metadata is public
+- automated via official Zenodo `PublicData.tgz` with PAGE-XML page supervision
 
 ## Forms, Receipts, and Noisy Business Documents
 

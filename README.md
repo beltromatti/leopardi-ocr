@@ -116,10 +116,7 @@ The data pipeline now includes executable workers for:
 
 Manual or conditional sources still use a strict local-manifest import contract:
 
-- CROHME
 - IAM
-- Bentham
-- READ 2016
 - derived internal bundles when they are promoted from prior runs
 
 Helpful local scripts:

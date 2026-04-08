@@ -228,13 +228,14 @@ The current code surface covers:
 - canonical target normalization for TeX and JATS exact sources
 - canonical target feature inference for tables, formulas, captions, headings, and lists
 - tar-shard writing and Parquet manifest emission
-- real source workers for arXiv, PMC OA, DocLayNet, PubTables-1M, SciTSR, and selected HF parquet datasets
+- real source workers for arXiv, PMC OA, DocLayNet, PubTables-1M, SciTSR, selected HF parquet datasets, and official archive-based handwriting sources
 - strict manual-manifest import workers for sources that still require human-approved access or curated local mirrors
 - bundle-level HF publication with verification and post-publish raw purge
 
-At the current source-verification boundary, `sroie` and `fintabnet_family`
-have been promoted to automated ingestion. `iam`, `bentham`, `read_2016`, and
-`crohme` remain manual for rigor.
+At the current source-verification boundary, `sroie`, `fintabnet_family`,
+`crohme`, `bentham`, and `read_2016` have been promoted to automated ingestion.
+`iam` remains manual because the official archive URLs redirect to login without
+an authenticated session.
 
 ## Manual Source Contract
 
@@ -242,10 +243,7 @@ Sources that remain manual must be seeded under a local root passed with `--manu
 
 Current manual-only external sources:
 
-- `crohme`
 - `iam`
-- `bentham`
-- `read_2016`
 
 Expected layout:
 

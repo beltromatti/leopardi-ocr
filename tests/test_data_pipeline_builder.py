@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import io
 import json
 from pathlib import Path
 import tarfile
@@ -16,8 +17,15 @@ from leopardi.data_pipeline.config import DataBuildStageConfig
 from leopardi.data_pipeline.executor import build_data_pipeline_stage
 from leopardi.data_pipeline.publish import parse_hf_uri
 from leopardi.data_pipeline.schemas import CanonicalSample
-from leopardi.data_pipeline.workers import HFParquetWorker, ManualManifestWorker, build_worker_registry
-from leopardi.data_pipeline.workers import _hf_row_to_sample
+from leopardi.data_pipeline.workers import (
+    ArchivePairWorker,
+    HFParquetWorker,
+    ManualManifestWorker,
+    SourceBuildContext,
+    _hf_row_to_sample,
+    _pagexml_to_markdown,
+    build_worker_registry,
+)
 
 
 _PNG_1X1 = base64.b64decode(
@@ -50,6 +58,16 @@ def _manual_stage() -> DataBuildStageConfig:
             }
         },
     )
+
+
+def _write_tar_archive(path: Path, members: dict[str, bytes]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    mode = "w:bz2" if path.suffix == ".tbz" else "w:gz"
+    with tarfile.open(path, mode) as archive:
+        for name, payload in members.items():
+            info = tarfile.TarInfo(name=name)
+            info.size = len(payload)
+            archive.addfile(info, fileobj=io.BytesIO(payload))
 
 
 def test_tex_and_jats_canonicalizers() -> None:
@@ -251,10 +269,10 @@ def test_worker_registry_promotions_for_verified_sources() -> None:
     registry = build_worker_registry()
     assert isinstance(registry["sroie"], HFParquetWorker)
     assert isinstance(registry["fintabnet_family"], HFParquetWorker)
+    assert isinstance(registry["crohme"], HFParquetWorker)
+    assert isinstance(registry["bentham"], ArchivePairWorker)
+    assert isinstance(registry["read_2016"], ArchivePairWorker)
     assert isinstance(registry["iam"], ManualManifestWorker)
-    assert isinstance(registry["bentham"], ManualManifestWorker)
-    assert isinstance(registry["read_2016"], ManualManifestWorker)
-    assert isinstance(registry["crohme"], ManualManifestWorker)
 
 
 def test_manifest_record_infers_canonical_features() -> None:
@@ -329,6 +347,19 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
     assert plotqa.target_type == "chart_serialization"
     assert "```chart" in plotqa.canonical_target
 
+    crohme_row = {
+        "label": r"\frac{a}{b}",
+        "image": {"bytes": _PNG_1X1, "path": "formula.png"},
+    }
+    crohme = _hf_row_to_sample(
+        source_id="crohme",
+        bundle_id="preview",
+        row=crohme_row,
+        row_index=0,
+    )
+    assert crohme.target_type == "latex_formula"
+    assert crohme.canonical_target == r"\frac{a}{b}"
+
 
 def test_tex_canonicalizer_preserves_spaces_around_inline_math() -> None:
     tex = r"""
@@ -353,3 +384,73 @@ def test_tex_canonicalizer_trims_inline_math_punctuation_spacing() -> None:
     """
     markdown = tex_to_markdown(tex)
     assert r"$m=O(n^{1+1/[2k(k+3)]}\,)$" in markdown
+
+
+def test_pagexml_to_markdown_preserves_reading_order() -> None:
+    xml = """
+    <PcGts xmlns="http://schema.primaresearch.org/PAGE/gts/pagecontent/2013-07-15">
+      <Page imageFilename="demo.JPG">
+        <TextRegion id="r1">
+          <TextLine id="l1"><TextEquiv><Unicode>Line one</Unicode></TextEquiv></TextLine>
+          <TextLine id="l2"><TextEquiv><Unicode>Line two</Unicode></TextEquiv></TextLine>
+        </TextRegion>
+        <TextRegion id="r2">
+          <TextLine id="l3"><TextEquiv><Unicode>Line three</Unicode></TextEquiv></TextLine>
+        </TextRegion>
+      </Page>
+    </PcGts>
+    """
+    markdown = _pagexml_to_markdown(xml)
+    assert "Line one\nLine two" in markdown
+    assert "\n\nLine three" in markdown
+
+
+def test_archive_pair_workers_read_and_bentham_from_local_archives(tmp_path: Path) -> None:
+    registry = build_worker_registry()
+    page_xml = b"""
+    <PcGts xmlns=\"http://schema.primaresearch.org/PAGE/gts/pagecontent/2013-07-15\">
+      <Page imageFilename=\"demo.JPG\">
+        <TextRegion id=\"r1\">
+          <TextLine id=\"l1\"><TextEquiv><Unicode>Archivio uno</Unicode></TextEquiv></TextLine>
+          <TextLine id=\"l2\"><TextEquiv><Unicode>Archivio due</Unicode></TextEquiv></TextLine>
+        </TextRegion>
+      </Page>
+    </PcGts>
+    """.strip()
+
+    read_path = tmp_path / "raw" / "read_2016" / "PublicData.tgz"
+    _write_tar_archive(
+        read_path,
+        {
+            "PublicData/Training/page/Seite0001.JPG": _PNG_1X1,
+            "PublicData/Training/page/Seite0001.xml": page_xml,
+        },
+    )
+
+    bentham_images = tmp_path / "raw" / "bentham" / "BenthamDatasetR0-Images.tbz"
+    bentham_gt = tmp_path / "raw" / "bentham" / "BenthamDatasetR0-GT.tbz"
+    _write_tar_archive(
+        bentham_images,
+        {"BenthamDatasetR0-Images/Pages/Page0001.jpg": _PNG_1X1},
+    )
+    _write_tar_archive(
+        bentham_gt,
+        {"BenthamDatasetR0-GT/Pages/Page0001.xml": page_xml},
+    )
+
+    context = SourceBuildContext(
+        stage=_manual_stage(),
+        experiment_id="archive-test",
+        bundle_id="p3_hardcases_v1",
+        bundle_class="trusted_aux",
+        raw_cache_dir=tmp_path / "raw",
+        work_cache_dir=tmp_path / "work",
+    )
+
+    read_sample = next(iter(registry["read_2016"].iter_samples(context)))
+    assert read_sample.split_assignment == "train"
+    assert "Archivio uno" in read_sample.canonical_target
+
+    bentham_sample = next(iter(registry["bentham"].iter_samples(context)))
+    assert bentham_sample.source_id == "bentham"
+    assert "Archivio due" in bentham_sample.canonical_target
