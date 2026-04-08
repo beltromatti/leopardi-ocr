@@ -82,6 +82,12 @@ ruff check src tests ops docs configs experiments evaluation data_pipeline infer
 python -m leopardi.cli doctor
 ```
 
+For the rented `RTX 5090` machine, use:
+
+- `scripts/bootstrap_rtx5090.sh`
+- `scripts/smoke_cpu.sh`
+- `scripts/smoke_chain_cpu.sh`
+
 ## Current Readiness
 
 Leopardi is currently ready as a research and run-control workspace.
@@ -103,7 +109,9 @@ What is still missing before the first full training campaign:
 Helpful local scripts:
 
 - `scripts/bootstrap_env.sh`
+- `scripts/bootstrap_rtx5090.sh`
 - `scripts/smoke_cpu.sh`
+- `scripts/smoke_chain_cpu.sh`
 
 ## First Milestones
 
