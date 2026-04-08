@@ -99,6 +99,7 @@ class PretrainStageConfig:
     track: str = "s0-core"
     text_only: bool = False
     visual_mode: str = "standard"
+    data_bundle_ids: tuple[str, ...] = ("p2_exact_core_v1",)
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
@@ -116,6 +117,7 @@ class PretrainStageConfig:
             track=payload.get("track", "s0-core"),
             text_only=payload.get("text_only", False),
             visual_mode=payload.get("visual_mode", "standard"),
+            data_bundle_ids=tuple(payload.get("data_bundle_ids", ("p2_exact_core_v1",))),
             optimizer=OptimizerConfig(**payload.get("optimizer", {})),
             runtime=RuntimeConfig(
                 hardware_tag=runtime_root.get("hardware_tag", "rtx5090"),

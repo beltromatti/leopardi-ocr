@@ -2,6 +2,10 @@ stage: p2_multimodal_core
 track: s0-core
 text_only: false
 visual_mode: standard
+data_bundle_ids:
+  - p2_exact_core_v1
+  - p2_structural_aux_v1
+  - p3_hardcases_v1
 objective:
   page_to_markdown: true
   planner_supervision: true

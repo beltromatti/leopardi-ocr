@@ -2,6 +2,8 @@ stage: f3_rlvr
 track: s0-core
 visual_mode: hard
 text_only: false
+data_bundle_ids:
+  - f3_rlvr_v1
 adapter:
   mode: lora
   rank: 32

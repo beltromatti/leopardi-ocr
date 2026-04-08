@@ -25,6 +25,7 @@ from leopardi.pretraining.config import PretrainStageConfig
 class PretrainingExecutionPlan:
     stage: str
     track: str
+    data_bundle_ids: tuple[str, ...]
     effective_batch_size: int
     train_command: str
     plan_path: str
@@ -144,6 +145,7 @@ def build_pretraining_execution_plan(
     return PretrainingExecutionPlan(
         stage=stage.stage,
         track=stage.track,
+        data_bundle_ids=stage.data_bundle_ids,
         effective_batch_size=effective_batch_size(stage),
         train_command=train_command,
         plan_path=str(plan_dir / "training-plan.json"),
@@ -183,7 +185,7 @@ def materialize_pretraining_stage(
                 stage_config_path or f"generated::pretraining::{stage.stage}",
                 runtime_config_path or "generated::runtime::pretraining",
             ],
-            data_bundle_ids=[f"{stage.stage}_bundle"],
+            data_bundle_ids=list(stage.data_bundle_ids),
             protocol_version="internal_holdout_v1",
             local_run_root=str(layout.experiment_root),
             persistent_targets={
@@ -215,6 +217,7 @@ def materialize_pretraining_stage(
             "optimizer": asdict(stage.optimizer),
             "scheduler": asdict(stage.scheduler),
             "data_mix": asdict(stage.data_mix),
+            "data_bundle_ids": list(stage.data_bundle_ids),
             "curriculum": asdict(stage.curriculum),
             "module_lr": asdict(stage.module_lr),
             "objective_weights": asdict(stage.objective_weights),

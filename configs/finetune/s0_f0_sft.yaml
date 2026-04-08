@@ -2,6 +2,8 @@ stage: f0_general_sft
 track: s0-core
 visual_mode: standard
 text_only: false
+data_bundle_ids:
+  - f0_general_sft_v1
 adapter:
   mode: full
   rank: 0

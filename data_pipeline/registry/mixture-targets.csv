@@ -6,3 +6,4 @@ p2_structural_aux_v1,0,0,100,0,inject_specialist_structure_pressure,tables formu
 p3_hardcases_v1,35,45,20,0,build_robustness_on_top_of_exact_core,synthetic exact dominates but exact anchor remains
 sft_core_v1,85,0,15,0,maximize_exact_output_fidelity,prefer gold exact
 sft_repair_v1,45,40,15,0,repair_brittle_long_tail_failures,exact and synthetic both matter
+o_calibration_docmix_v1,35,0,65,0,build_representative_quantization_calibration_pool,medium and hard pages only with no evaluation overlap

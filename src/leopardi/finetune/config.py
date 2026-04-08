@@ -125,6 +125,7 @@ class FinetuneStageConfig:
     track: str = "s0-core"
     visual_mode: str = "standard"
     text_only: bool = False
+    data_bundle_ids: tuple[str, ...] = ("f0_general_sft_v1",)
     adapter: AdapterConfig = field(default_factory=AdapterConfig)
     optimizer: FinetuneOptimizerConfig = field(default_factory=FinetuneOptimizerConfig)
     runtime: FinetuneRuntimeConfig = field(default_factory=FinetuneRuntimeConfig)
@@ -148,6 +149,7 @@ class FinetuneStageConfig:
             track=payload.get("track", "s0-core"),
             visual_mode=payload.get("visual_mode", "standard"),
             text_only=payload.get("text_only", False),
+            data_bundle_ids=tuple(payload.get("data_bundle_ids", ("f0_general_sft_v1",))),
             adapter=AdapterConfig(
                 mode=adapter_payload.get("mode", "full"),
                 rank=adapter_payload.get("rank", 16),

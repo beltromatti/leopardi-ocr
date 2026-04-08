@@ -2,6 +2,8 @@ stage: f1_specialist_sft
 track: s0-core
 visual_mode: hard
 text_only: false
+data_bundle_ids:
+  - f1_specialist_sft_v1
 adapter:
   mode: full
   rank: 0

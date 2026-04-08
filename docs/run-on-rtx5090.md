@@ -4,6 +4,20 @@ Date locked: 2026-04-08
 
 This file is the single operator entry point for moving Leopardi onto a rented ephemeral machine.
 
+## GPU Runtime Packages
+
+The dev machine does not need GPU-serving packages.
+The rented `RTX 5090` machine does.
+
+The pinned operator path is:
+
+- `vLLM` via the official quickstart flow with `uv pip install vllm --torch-backend=auto`
+- `LLM Compressor` via `pip install llmcompressor`
+- `TorchAO` via `pip install torchao`
+- `SGLang` via `uv pip install "sglang[all]"`
+
+These commands are encoded in `scripts/bootstrap_rtx5090.sh`.
+
 ## What Is Ready Now
 
 The repo is ready as a research and operations control plane:
@@ -31,9 +45,10 @@ This means the repo is ready for active engineering work on the rented machine, 
 ## First Commands On A Fresh Machine
 
 ```bash
-./scripts/bootstrap_env.sh
+./scripts/bootstrap_rtx5090.sh
 source .venv/bin/activate
 ./scripts/smoke_cpu.sh
+./scripts/smoke_chain_cpu.sh
 python3 -m leopardi.cli --help
 python3 -m leopardi.cli doctor
 python3 -m leopardi.cli data-pipeline-summary configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml

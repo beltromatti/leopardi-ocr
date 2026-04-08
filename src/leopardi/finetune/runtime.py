@@ -25,6 +25,7 @@ from leopardi.ops import (
 class FinetuneExecutionPlan:
     stage: str
     track: str
+    data_bundle_ids: tuple[str, ...]
     effective_batch_size: int
     train_command: str
     plan_path: str
@@ -159,6 +160,7 @@ def build_finetune_execution_plan(
     return FinetuneExecutionPlan(
         stage=stage.stage,
         track=stage.track,
+        data_bundle_ids=stage.data_bundle_ids,
         effective_batch_size=finetune_effective_batch_size(stage),
         train_command=train_command,
         plan_path=str(plan_dir / "finetune-plan.json"),
@@ -198,7 +200,7 @@ def materialize_finetune_stage(
                 stage_config_path or f"generated::finetune::{stage.stage}",
                 runtime_config_path or "generated::runtime::finetune",
             ],
-            data_bundle_ids=[f"{stage.stage}_bundle"],
+            data_bundle_ids=list(stage.data_bundle_ids),
             protocol_version="internal_holdout_v1",
             local_run_root=str(layout.experiment_root),
             persistent_targets={
@@ -230,6 +232,7 @@ def materialize_finetune_stage(
             "optimizer": asdict(stage.optimizer),
             "scheduler": asdict(stage.scheduler),
             "sampling": asdict(stage.sampling),
+            "data_bundle_ids": list(stage.data_bundle_ids),
             "module_lr": asdict(stage.module_lr),
             "verifier": asdict(stage.verifier),
             "loss_weights": asdict(stage.loss_weights),

@@ -48,6 +48,7 @@ fi
 "$PYTHON_BIN" -m leopardi.cli data-pipeline-materialize leo-s0-data-smoke-20260408-001 configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml --root tmp/data-smoke >/dev/null
 "$PYTHON_BIN" -m leopardi.cli evaluation-report-example leo-s0-eval-smoke-20260408-001 configs/eval/public_frontier.yaml configs/runtime/eval_rtx5090.yaml --root tmp/evaluation-smoke >/dev/null
 "$PYTHON_BIN" -m leopardi.cli materialize-run-example --root tmp/ops-smoke >/dev/null
+bash scripts/smoke_chain_cpu.sh >/dev/null
 rm -rf tmp/data-smoke
 rm -rf tmp/evaluation-smoke
 rm -rf tmp/finetune-smoke
