@@ -152,7 +152,8 @@ Use:
 
 Role:
 
-- optional high-value table extension
+- table specialist training
+- specialist SFT extension for deep financial headers and grouped columns
 
 Current ingestion stance:
 

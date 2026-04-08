@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shutil
 import ssl
+import statistics
 import tarfile
 from typing import Any, Iterator
 from urllib.request import HTTPSHandler, HTTPCookieProcessor, Request, build_opener
@@ -445,7 +446,152 @@ def _extract_image_asset(row: dict[str, Any]) -> CanonicalAsset | None:
 
 
 def _json_target(row: dict[str, Any]) -> str:
-    return normalize_target_text(json.dumps(row, ensure_ascii=True, sort_keys=True))
+    def _json_safe(value: Any) -> Any:
+        if isinstance(value, bytes):
+            return {"bytes_len": len(value)}
+        if isinstance(value, dict):
+            return {key: _json_safe(item) for key, item in value.items() if key != "bytes"}
+        if isinstance(value, list):
+            return [_json_safe(item) for item in value]
+        return value
+
+    sanitized = {key: _json_safe(value) for key, value in row.items() if key != "image"}
+    return normalize_target_text(json.dumps(sanitized, ensure_ascii=True, sort_keys=True))
+
+
+def _markdown_escape_cell(text: str) -> str:
+    return normalize_target_text(text).replace("|", r"\|")
+
+
+def _simple_markdown_table(rows: list[list[str]], caption: str = "") -> str:
+    if not rows:
+        return ""
+    header = rows[0]
+    body = rows[1:] or [["" for _ in header]]
+    lines: list[str] = []
+    if caption:
+        lines.append(f"Table: {normalize_target_text(caption)}")
+        lines.append("")
+    lines.append("| " + " | ".join(_markdown_escape_cell(cell) for cell in header) + " |")
+    lines.append("| " + " | ".join(":---" for _ in header) + " |")
+    for row in body:
+        padded = row + [""] * (len(header) - len(row))
+        lines.append("| " + " | ".join(_markdown_escape_cell(cell) for cell in padded[: len(header)]) + " |")
+    return "\n".join(lines)
+
+
+def _flatten_mapping(prefix: str, payload: Any) -> list[tuple[str, str]]:
+    if isinstance(payload, dict):
+        rows: list[tuple[str, str]] = []
+        for key, value in payload.items():
+            nested_prefix = f"{prefix}.{key}" if prefix else str(key)
+            rows.extend(_flatten_mapping(nested_prefix, value))
+        return rows
+    if isinstance(payload, list):
+        if all(not isinstance(item, (dict, list)) for item in payload):
+            return [(prefix, normalize_target_text(", ".join(str(item) for item in payload)))]
+        rows: list[tuple[str, str]] = []
+        for index, value in enumerate(payload):
+            rows.extend(_flatten_mapping(f"{prefix}[{index}]", value))
+        return rows
+    return [(prefix, normalize_target_text(str(payload)))]
+
+
+def _mapping_to_markdown(title: str, payload: dict[str, Any]) -> str:
+    lines = [f"## {title}"]
+    for key, value in _flatten_mapping("", payload):
+        if key and value:
+            lines.append(f"- {key}: {value}")
+    return normalize_target_text("\n".join(lines))
+
+
+def _words_to_lines(words: list[Any], bboxes: list[Any]) -> list[str]:
+    if not words or not bboxes or len(words) != len(bboxes):
+        fallback = normalize_target_text(" ".join(str(item) for item in words if str(item).strip()))
+        return [fallback] if fallback else []
+    items: list[tuple[float, float, float, str]] = []
+    heights: list[float] = []
+    for word, bbox in zip(words, bboxes):
+        if not isinstance(bbox, list) or len(bbox) != 4:
+            continue
+        text = normalize_target_text(str(word))
+        if not text:
+            continue
+        x0, y0, x1, y1 = [float(value) for value in bbox]
+        height = max(1.0, y1 - y0)
+        heights.append(height)
+        items.append(((y0 + y1) / 2.0, x0, height, text))
+    if not items:
+        return []
+    line_threshold = max(10.0, statistics.median(heights) * 0.8)
+    items.sort(key=lambda item: (item[0], item[1]))
+    lines: list[list[tuple[float, str]]] = []
+    current: list[tuple[float, str]] = []
+    current_y = items[0][0]
+    for y_center, x0, _, text in items:
+        if current and abs(y_center - current_y) > line_threshold:
+            lines.append(sorted(current, key=lambda item: item[0]))
+            current = []
+            current_y = y_center
+        current.append((x0, text))
+        current_y = (current_y + y_center) / 2.0
+    if current:
+        lines.append(sorted(current, key=lambda item: item[0]))
+    return [
+        normalize_target_text(" ".join(text for _, text in line if text))
+        for line in lines
+        if any(text for _, text in line)
+    ]
+
+
+def _ocr_lines_markdown(title: str, words: list[Any], bboxes: list[Any]) -> str:
+    lines = _words_to_lines(words, bboxes)
+    payload = [f"## {title}"] if title else []
+    payload.extend(lines)
+    return normalize_target_text("\n".join(payload))
+
+
+def _fintabnet_table_markdown(row: dict[str, Any]) -> str:
+    cells = row.get("cells")
+    if not isinstance(cells, list) or not cells:
+        return _json_target(row)
+    row_groups: list[list[Any]]
+    if len(cells) == 1 and isinstance(cells[0], list) and isinstance(row.get("cols"), int):
+        flat_cells = cells[0]
+        cols = max(1, int(row.get("cols") or 1))
+        row_groups = [flat_cells[index : index + cols] for index in range(0, len(flat_cells), cols)]
+    else:
+        row_groups = [row_cells for row_cells in cells if isinstance(row_cells, list)]
+    rows: list[list[str]] = []
+    for row_cells in row_groups:
+        rendered_row: list[str] = []
+        for cell in row_cells:
+            if isinstance(cell, dict):
+                tokens = cell.get("tokens", [])
+                text = "".join(str(token) for token in tokens) if isinstance(tokens, list) else str(tokens)
+            else:
+                text = str(cell)
+            rendered_row.append(normalize_target_text(text))
+        if rendered_row:
+            rows.append(rendered_row)
+    if not rows:
+        return _json_target(row)
+    max_cols = max(len(row_cells) for row_cells in rows)
+    normalized_rows = [row_cells + [""] * (max_cols - len(row_cells)) for row_cells in rows]
+    caption = str(row.get("filename") or "").strip()
+    return _simple_markdown_table(normalized_rows, caption=caption)
+
+
+def _plotqa_markdown(text: str) -> str:
+    fields = re.findall(r"<s_([^>]+)>(.*?)</s_\1>", text, flags=re.DOTALL)
+    if not fields:
+        return normalize_target_text(text)
+    lines = ["```chart"]
+    for name, value in fields:
+        normalized = normalize_target_text(value.replace("<sep/>", " | "))
+        lines.append(f"{name}: {normalized}")
+    lines.append("```")
+    return "\n".join(lines)
 
 
 def _hf_row_to_sample(
@@ -480,9 +626,16 @@ def _hf_row_to_sample(
             assets=(image_asset,) if image_asset else (),
         )
     if source_id in {"chartqa", "plotqa"}:
-        question = str(row.get("question") or row.get("query") or "").strip()
-        answer = str(row.get("answer") or row.get("label") or "").strip()
-        target = normalize_target_text(f"Question: {question}\nAnswer: {answer}")
+        if source_id == "chartqa":
+            question = str(row.get("question") or row.get("query") or "").strip()
+            answer = row.get("answer") or row.get("label") or ""
+            if isinstance(answer, list):
+                answer = " | ".join(str(item) for item in answer)
+            target = normalize_target_text(f"Question: {question}\nAnswer: {answer}")
+            target_type = "chart_qa"
+        else:
+            target = _plotqa_markdown(str(row.get("text") or ""))
+            target_type = "chart_serialization"
         return CanonicalSample(
             sample_id=f"{source_id}-{doc_id}",
             source_id=source_id,
@@ -490,17 +643,40 @@ def _hf_row_to_sample(
             doc_id=doc_id,
             data_class="trusted_aux",
             task_family="graphics",
-            target_type="chart_qa",
+            target_type=target_type,
             canonical_target=target or _json_target(row),
             slice_tags=("graphics", "qa"),
             metadata={key: value for key, value in row.items() if key != "image"},
             assets=(image_asset,) if image_asset else (),
         )
     if source_id in {"funsd", "cord", "sroie"}:
-        words = row.get("words")
         target = ""
-        if isinstance(words, list):
-            target = normalize_target_text(" ".join(str(item) for item in words))
+        if source_id == "cord":
+            raw = row.get("ground_truth")
+            if isinstance(raw, str) and raw.strip():
+                try:
+                    parsed = json.loads(raw)
+                except json.JSONDecodeError:
+                    target = normalize_target_text(raw)
+                else:
+                    payload = parsed.get("gt_parse", parsed)
+                    if isinstance(payload, dict):
+                        target = _mapping_to_markdown("Receipt Fields", payload)
+        elif source_id == "sroie":
+            entities = row.get("entities")
+            words = row.get("words")
+            bboxes = row.get("bboxes")
+            blocks: list[str] = []
+            if isinstance(entities, dict):
+                blocks.append(_mapping_to_markdown("Receipt Fields", entities))
+            if isinstance(words, list) and isinstance(bboxes, list):
+                blocks.append(_ocr_lines_markdown("Receipt OCR", words, bboxes))
+            target = normalize_target_text("\n\n".join(block for block in blocks if block))
+        else:
+            words = row.get("words")
+            bboxes = row.get("bboxes")
+            if isinstance(words, list) and isinstance(bboxes, list):
+                target = _ocr_lines_markdown("Form OCR", words, bboxes)
         if not target:
             target = _json_target(row)
         return CanonicalSample(
@@ -510,7 +686,7 @@ def _hf_row_to_sample(
             doc_id=doc_id,
             data_class="trusted_aux",
             task_family="forms",
-            target_type="aux_annotation",
+            target_type="page_markdown_projection",
             canonical_target=target,
             slice_tags=("forms", "business_docs", "receipts"),
             metadata={key: value for key, value in row.items() if key != "image"},
@@ -524,8 +700,8 @@ def _hf_row_to_sample(
             doc_id=doc_id,
             data_class="trusted_aux",
             task_family="tables",
-            target_type="aux_annotation",
-            canonical_target=_json_target(row),
+            target_type="table_markdown",
+            canonical_target=_fintabnet_table_markdown(row),
             slice_tags=("table", "financial", "aligned_benchmark"),
             metadata={key: value for key, value in row.items() if key != "image"},
             assets=(image_asset,) if image_asset else (),

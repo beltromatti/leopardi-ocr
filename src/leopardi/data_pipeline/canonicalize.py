@@ -26,6 +26,17 @@ _TEXT_UNWRAP_COMMANDS = (
     "mbox",
 )
 
+_FRONT_MATTER_COMMANDS = (
+    "TITLE",
+    "title",
+    "RUNTITLE",
+    "runtitle",
+    "ABSTRACT",
+    "abstract",
+    "ARTICLEAUTHORS",
+    "author",
+)
+
 
 def normalize_target_text(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -69,6 +80,153 @@ def _strip_tex_comments(tex: str) -> str:
     return "\n".join(stripped_lines)
 
 
+def _extract_tex_braced_payload(content: str, command: str) -> str:
+    match = re.search(rf"\\{re.escape(command)}\*?\s*\{{", content)
+    if match is None:
+        return ""
+    index = match.end() - 1
+    depth = 0
+    start = index + 1
+    for cursor in range(index, len(content)):
+        char = content[cursor]
+        if char == "{":
+            depth += 1
+            if depth == 1:
+                start = cursor + 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return content[start:cursor]
+    return ""
+
+
+def _extract_braced_from_index(content: str, brace_index: int) -> tuple[str, int]:
+    if brace_index < 0 or brace_index >= len(content) or content[brace_index] != "{":
+        return "", brace_index
+    depth = 0
+    start = brace_index + 1
+    for cursor in range(brace_index, len(content)):
+        char = content[cursor]
+        if char == "{":
+            depth += 1
+            if depth == 1:
+                start = cursor + 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return content[start:cursor], cursor + 1
+    return "", brace_index
+
+
+def _extract_tex_environment(content: str, environment: str) -> str:
+    match = re.search(
+        rf"\\begin\{{{re.escape(environment)}\}}(.*?)\\end\{{{re.escape(environment)}\}}",
+        content,
+        flags=re.DOTALL,
+    )
+    if match is None:
+        return ""
+    return match.group(1).strip()
+
+
+def _extract_simple_tex_macros(content: str) -> dict[str, str]:
+    macros: dict[str, str] = {}
+    command_pattern = re.compile(
+        r"\\(?:newcommand|renewcommand|providecommand)\*?\s*\{\\([A-Za-z@]+)\}\s*(?:\[(\d+)\])?\s*\{",
+        flags=re.DOTALL,
+    )
+    for match in command_pattern.finditer(content):
+        if match.group(2) not in {None, "0"}:
+            continue
+        name = match.group(1)
+        if len(name) < 3:
+            continue
+        value, _ = _extract_braced_from_index(content, match.end() - 1)
+        cleaned = _strip_tex_wrappers(value)
+        if cleaned and cleaned != "\\":
+            macros[name] = cleaned
+    def_pattern = re.compile(r"\\def\\([A-Za-z@]+)\s*\{", flags=re.DOTALL)
+    for match in def_pattern.finditer(content):
+        name = match.group(1)
+        if len(name) < 3:
+            continue
+        value, _ = _extract_braced_from_index(content, match.end() - 1)
+        cleaned = _strip_tex_wrappers(value)
+        if cleaned and cleaned != "\\":
+            macros[name] = cleaned
+    return macros
+
+
+def _apply_simple_tex_macros(content: str, macros: dict[str, str]) -> str:
+    for name, value in sorted(macros.items(), key=lambda item: -len(item[0])):
+        content = re.sub(rf"\\{re.escape(name)}\b", lambda _match, replacement=value: replacement, content)
+    return content
+
+
+def _extract_tex_front_matter(content: str) -> list[str]:
+    blocks: list[str] = []
+    title = ""
+    for command in ("TITLE", "title", "RUNTITLE", "runtitle"):
+        title = _strip_tex_wrappers(_extract_tex_braced_payload(content, command))
+        if title:
+            blocks.append(f"# {title}")
+            break
+
+    article_authors = _extract_tex_braced_payload(content, "ARTICLEAUTHORS")
+    if article_authors:
+        authors = [
+            _strip_tex_wrappers(match.group(1))
+            for match in re.finditer(r"\\AUTHOR\{([^{}]+)\}", article_authors, flags=re.DOTALL)
+        ]
+        affiliations = [
+            _strip_tex_wrappers(match.group(1))
+            for match in re.finditer(r"\\AFF\{([^{}]+)\}", article_authors, flags=re.DOTALL)
+        ]
+        if authors:
+            blocks.append("\n".join(authors))
+        for affiliation in affiliations:
+            if affiliation:
+                blocks.append(affiliation)
+    else:
+        authors = _strip_tex_wrappers(_extract_tex_braced_payload(content, "author"))
+        if authors:
+            blocks.append(authors)
+
+    abstract = _clean_tex_text_preserve_math(_extract_tex_braced_payload(content, "ABSTRACT"))
+    if not abstract:
+        abstract = _clean_tex_text_preserve_math(_extract_tex_environment(content, "abstract"))
+    if abstract:
+        blocks.append("## Abstract")
+        blocks.append(abstract)
+    return [block for block in blocks if normalize_target_text(block)]
+
+
+def _strip_tex_named_commands(content: str, commands: tuple[str, ...]) -> str:
+    output = content
+    for command in commands:
+        cursor = 0
+        chunks: list[str] = []
+        while True:
+            match = re.search(rf"\\{re.escape(command)}\*?\s*\{{", output[cursor:])
+            if match is None:
+                chunks.append(output[cursor:])
+                break
+            absolute_start = cursor + match.start()
+            absolute_brace = cursor + match.end() - 1
+            chunks.append(output[cursor:absolute_start])
+            _, next_index = _extract_braced_from_index(output, absolute_brace)
+            cursor = next_index if next_index > absolute_brace else absolute_brace + 1
+        output = "".join(chunks)
+    return output
+
+
+def _extract_tex_document_body(content: str) -> str:
+    match = re.search(r"\\begin\{document\}(.*?)\\end\{document\}", content, flags=re.DOTALL)
+    if match is not None:
+        return match.group(1)
+    return content
+
+
 def _replace_tex_command(content: str, command: str, replacement: str) -> str:
     pattern = re.compile(rf"\\{command}\*?\{{([^{{}}]+)\}}", re.DOTALL)
     return pattern.sub(lambda match: f"{replacement} {match.group(1).strip()}\n\n", content)
@@ -88,6 +246,17 @@ def _strip_tex_wrappers(text: str) -> str:
     value = re.sub(r"\\ref\{[^{}]+\}", "[REF]", value)
     value = re.sub(r"\\[a-zA-Z@]+\*?(?:\[[^\]]*\])?", "", value)
     value = value.replace("{", "").replace("}", "")
+    return normalize_target_text(value)
+
+
+def _clean_tex_text_preserve_math(text: str) -> str:
+    value = text.strip()
+    for command in _TEXT_UNWRAP_COMMANDS:
+        value = _unwrap_tex_command(value, command)
+    value = re.sub(r"\\label\{[^{}]+\}", "", value)
+    value = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "[CITE]", value)
+    value = re.sub(r"\\ref\{[^{}]+\}", "[REF]", value)
+    value = re.sub(r"\\[a-zA-Z@]+\*?(?:\[[^\]]*\])?", "", value)
     return normalize_target_text(value)
 
 
@@ -212,15 +381,24 @@ def _extract_tex_figures(content: str) -> str:
 
 def tex_to_markdown(tex: str) -> str:
     content = _strip_tex_comments(tex)
+    macros = _extract_simple_tex_macros(content)
+    content = _apply_simple_tex_macros(content, macros)
+    front_matter = _extract_tex_front_matter(content)
+    content = _extract_tex_document_body(content)
     content = re.sub(r"\\documentclass(?:\[[^\]]*\])?\{[^{}]+\}", "", content)
     content = re.sub(r"\\usepackage(?:\[[^\]]*\])?\{[^{}]+\}", "", content)
     content = re.sub(r"\\bibliographystyle\{[^{}]+\}", "", content)
     content = re.sub(r"\\bibliography\{[^{}]+\}", "", content)
+    content = re.sub(r"\\(?:newcommand|renewcommand|providecommand)\*?\s*\{\\[A-Za-z@]+\}\s*(?:\[[0-9]+\])?\s*\{[^{}]*\}", "", content)
+    content = re.sub(r"\\def\\[A-Za-z@]+\s*\{[^{}]*\}", "", content)
+    content = re.sub(r"\\(?:definecolor|hypersetup)\*?(?:\[[^\]]*\])?\s*\{[^{}]*\}", "", content)
+    content = re.sub(r"\\(?:TheoremsNumberedThrough|TheoremsNumberedByChapter|ECRepeatTheorems|EquationsNumberedThrough|EquationsNumberedBySection)\b", "", content)
     content = re.sub(r"\\label\{[^{}]+\}", "", content)
     content = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "[CITE]", content)
     content = re.sub(r"\\ref\{[^{}]+\}", "[REF]", content)
     content = re.sub(r"\\maketitle", "", content)
     content = re.sub(r"\\tableofcontents", "", content)
+    content = _strip_tex_named_commands(content, _FRONT_MATTER_COMMANDS)
 
     content = re.sub(
         r"\\begin\{abstract\}(.*?)\\end\{abstract\}",
@@ -258,8 +436,12 @@ def tex_to_markdown(tex: str) -> str:
     content = re.sub(r"\\begin\{document\}", "", content)
     content = re.sub(r"\\end\{document\}", "", content)
     content = re.sub(r"\\[a-zA-Z@]+(\[[^\]]*\])?", "", content)
-    content = content.replace("{", "").replace("}", "")
-    return normalize_target_text(content)
+    payload = normalize_target_text(content)
+    if front_matter:
+        payload = normalize_target_text("\n\n".join((*front_matter, payload)))
+    payload = re.sub(r"^\{([^{}\n]+)\}$", r"\1", payload, flags=re.MULTILINE)
+    payload = re.sub(r"\$\s+([^$]+?)\s*\$", lambda match: f"${match.group(1).strip()}$", payload)
+    return payload
 
 
 def _node_text(node: ET.Element | None) -> str:

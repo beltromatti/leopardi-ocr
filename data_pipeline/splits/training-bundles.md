@@ -51,6 +51,7 @@ Composition:
 - DocLayNet
 - PubTables-1M
 - SciTSR
+- FinTabNet family
 - CROHME
 - MathWriting
 - Im2LaTeX-100K
@@ -103,6 +104,7 @@ Why:
 Composition:
 
 - merged-cell tables
+- financial tables with deep headers and grouped columns
 - dense formula pages
 - handwriting pages
 - rotated pages
