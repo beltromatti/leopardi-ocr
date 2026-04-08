@@ -556,6 +556,30 @@ def _mapping_to_markdown(title: str, payload: dict[str, Any]) -> str:
     return normalize_target_text("\n".join(lines))
 
 
+def _standalone_formula_markdown(formula: str) -> str:
+    normalized = normalize_target_text(formula)
+    if not normalized:
+        return ""
+    normalized = re.sub(r"\.\s*\.\s*\.", r"\\dots", normalized)
+    normalized = re.sub(r"\s*_\s*\{\s*", "_{", normalized)
+    normalized = re.sub(r"\s*\^\s*\{\s*", "^{", normalized)
+    normalized = re.sub(r"\{\s*", "{", normalized)
+    normalized = re.sub(r"\s*\}", "}", normalized)
+    normalized = re.sub(r"\(\s*", "(", normalized)
+    normalized = re.sub(r"\s*\)", ")", normalized)
+    normalized = re.sub(r"\s+,", ",", normalized)
+    normalized = re.sub(r"\s+;", ";", normalized)
+    normalized = re.sub(r"(?<=\d)\s+(?=[A-Za-z](?:\b|[^A-Za-z]))", "", normalized)
+    normalized = normalize_target_text(normalized)
+    if normalized.startswith("$$") and normalized.endswith("$$"):
+        return normalized
+    if normalized.startswith("$") and normalized.endswith("$"):
+        inner = normalized.strip("$").strip()
+    else:
+        inner = normalized
+    return normalize_target_text(f"$$\n{inner}\n$$")
+
+
 def _words_to_lines(words: list[Any], bboxes: list[Any]) -> list[str]:
     if not words or not bboxes or len(words) != len(bboxes):
         fallback = normalize_target_text(" ".join(str(item) for item in words if str(item).strip()))
@@ -600,6 +624,42 @@ def _ocr_lines_markdown(title: str, words: list[Any], bboxes: list[Any]) -> str:
     payload = [f"## {title}"] if title else []
     payload.extend(lines)
     return normalize_target_text("\n".join(payload))
+
+
+def _cord_ocr_markdown(payload: dict[str, Any]) -> str:
+    valid_line = payload.get("valid_line")
+    if not isinstance(valid_line, list):
+        return ""
+    grouped_lines: list[tuple[int | None, list[str]]] = []
+    for item in valid_line:
+        if not isinstance(item, dict):
+            continue
+        words = item.get("words")
+        if not isinstance(words, list):
+            continue
+        tokens: list[str] = []
+        for word in words:
+            if not isinstance(word, dict):
+                continue
+            text = normalize_target_text(str(word.get("text") or ""))
+            if text:
+                tokens.append(text)
+        line = normalize_target_text(" ".join(tokens))
+        if not line:
+            continue
+        group_id = item.get("group_id")
+        if grouped_lines and grouped_lines[-1][0] == group_id:
+            grouped_lines[-1][1].append(line)
+        else:
+            grouped_lines.append((group_id, [line]))
+    if not grouped_lines:
+        return ""
+    lines = ["## Receipt OCR"]
+    for _, parts in grouped_lines:
+        merged = normalize_target_text(" ".join(part for part in parts if part))
+        if merged:
+            lines.append(merged)
+    return normalize_target_text("\n".join(lines))
 
 
 _FUNSD_NER_LABELS = {
@@ -732,7 +792,7 @@ def _hf_row_to_sample(
             data_class="trusted_aux",
             task_family="formula",
             target_type="latex_formula",
-            canonical_target=normalize_target_text(target),
+            canonical_target=_standalone_formula_markdown(target),
             slice_tags=("formula", "handwritten") if source_id == "crohme" else ("formula", "aux"),
             metadata={key: value for key, value in row.items() if key != "image"},
             assets=(image_asset,) if image_asset else (),
@@ -789,8 +849,13 @@ def _hf_row_to_sample(
                     target = normalize_target_text(raw)
                 else:
                     payload = parsed.get("gt_parse", parsed)
+                    blocks: list[str] = []
                     if isinstance(payload, dict):
-                        target = _mapping_to_markdown("Receipt Fields", payload)
+                        blocks.append(_mapping_to_markdown("Receipt Fields", payload))
+                    ocr_block = _cord_ocr_markdown(parsed)
+                    if ocr_block:
+                        blocks.append(ocr_block)
+                    target = normalize_target_text("\n\n".join(block for block in blocks if block))
         elif source_id == "sroie":
             entities = row.get("entities")
             words = row.get("words")

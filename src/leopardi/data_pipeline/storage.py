@@ -10,6 +10,10 @@ from typing import Iterable
 from leopardi.data_pipeline.schemas import CanonicalSample
 
 
+def target_extension_for_type(target_type: str) -> str:
+    return "md" if "markdown" in target_type else "txt"
+
+
 def sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
@@ -60,7 +64,7 @@ class TarShardWriter:
         if self._tar is None or self._current_size + estimated_size > self.shard_target_bytes:
             self._open_next_shard()
 
-        target_extension = "md" if sample.target_type.endswith("markdown") else "txt"
+        target_extension = target_extension_for_type(sample.target_type)
         self._write_member(f"{sample.sample_id}.sample.json", sample_payload)
         self._write_member(
             f"{sample.sample_id}.target.{target_extension}",

@@ -17,6 +17,7 @@ from leopardi.data_pipeline.config import DataBuildStageConfig
 from leopardi.data_pipeline.executor import build_data_pipeline_stage
 from leopardi.data_pipeline.publish import parse_hf_uri
 from leopardi.data_pipeline.schemas import CanonicalSample
+from leopardi.data_pipeline.storage import TarShardWriter
 from leopardi.data_pipeline.workers import (
     ArchivePairWorker,
     HFParquetWorker,
@@ -292,6 +293,26 @@ def test_data_pipeline_build_manual_source(tmp_path: Path) -> None:
     assert "iam-0001.target.txt" in names
 
 
+def test_tar_shard_writer_uses_markdown_extension_for_page_markdown_projection(tmp_path: Path) -> None:
+    writer = TarShardWriter(tmp_path / "shards", shard_target_size_mb=1)
+    writer.write_sample(
+        CanonicalSample(
+            sample_id="page-1",
+            source_id="unit",
+            bundle_id="bundle",
+            data_class="gold_exact",
+            task_family="document_parsing",
+            target_type="page_markdown_projection",
+            canonical_target="# Title",
+            doc_id="doc-1",
+        )
+    )
+    writer.close()
+    with tarfile.open(tmp_path / "shards" / "shard-000000.tar", "r") as archive:
+        names = archive.getnames()
+    assert "page-1.target.md" in names
+
+
 def test_worker_registry_promotions_for_verified_sources() -> None:
     registry = build_worker_registry()
     assert isinstance(registry["sroie"], HFParquetWorker)
@@ -393,6 +414,40 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
     assert "```chart" in plotqa.canonical_target
     assert "(x=11, y=10, w=12, h=13)" in plotqa.canonical_target
 
+    cord_row = {
+        "ground_truth": json.dumps(
+            {
+                "gt_parse": {"total": {"total_price": "60.000"}},
+                "valid_line": [
+                    {
+                        "category": "menu.num",
+                        "group_id": 2,
+                        "sub_group_id": 0,
+                        "words": [{"text": "901016"}],
+                    },
+                    {
+                        "category": "menu.nm",
+                        "group_id": 1,
+                        "sub_group_id": 0,
+                        "words": [{"text": "-TICKET"}, {"text": "CP"}],
+                    },
+                ],
+            }
+        ),
+        "image": {"bytes": _PNG_1X1, "path": "receipt.png"},
+    }
+    cord = _hf_row_to_sample(
+        source_id="cord",
+        bundle_id="preview",
+        row=cord_row,
+        row_index=0,
+    )
+    assert cord.target_type == "page_markdown_projection"
+    assert "## Receipt Fields" in cord.canonical_target
+    assert "## Receipt OCR" in cord.canonical_target
+    assert "-TICKET CP" in cord.canonical_target
+    assert "901016" in cord.canonical_target
+
     crohme_row = {
         "label": r"\frac{a}{b}",
         "image": {"bytes": _PNG_1X1, "path": "formula.png"},
@@ -404,7 +459,7 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
         row_index=0,
     )
     assert crohme.target_type == "latex_formula"
-    assert crohme.canonical_target == r"\frac{a}{b}"
+    assert crohme.canonical_target == "$$\n\\frac{a}{b}\n$$"
 
     iam_row = {
         "text": "put down a resolution on the subject",
