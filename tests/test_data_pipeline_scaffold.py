@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from leopardi.data_pipeline import (
+    audit_data_pipeline,
     DataBuildStageConfig,
     build_data_build_execution_plan,
     materialize_data_build_stage,
+    probe_sources,
     registry_summary,
 )
 
@@ -12,6 +14,13 @@ def test_data_pipeline_registry_summary_smoke() -> None:
     summary = registry_summary()
     assert summary["source_count"] >= 10
     assert "arxiv_source_pdf" in summary["exact_foundations"]
+    assert "arxiv_source_pdf" in summary["remote_fetchable_sources"]
+
+
+def test_data_pipeline_audit_is_error_free() -> None:
+    report = audit_data_pipeline()
+    assert report.ok
+    assert report.summary["error_count"] == 0
 
 
 def test_data_pipeline_plan_exact_core(tmp_path) -> None:
@@ -57,3 +66,10 @@ def test_data_pipeline_materialization(tmp_path) -> None:
         / "s0_exact_core_build"
         / "data-build-plan.json"
     ).exists()
+
+
+def test_data_pipeline_probe_mixed_policies_local_only() -> None:
+    results = probe_sources(selected_source_ids={"iam", "synthetic_from_exact"})
+    by_id = {item.source_id: item for item in results}
+    assert by_id["iam"].status == "manual"
+    assert by_id["synthetic_from_exact"].status == "skipped"

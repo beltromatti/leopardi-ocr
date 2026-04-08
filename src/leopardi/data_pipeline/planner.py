@@ -12,6 +12,7 @@ from leopardi.data_pipeline.registry import (
     SourceStatusEntry,
     load_build_profiles,
     load_bundle_registry,
+    load_source_endpoints,
     load_publish_registry,
     load_source_registry,
     load_source_status,
@@ -123,10 +124,24 @@ def _resolve_selected_sources(
     profile: BuildProfileEntry,
     sources: list[SourceRegistryEntry],
     statuses: list[SourceStatusEntry],
+    bundles: list[BundleRegistryEntry],
 ) -> tuple[str, ...]:
     source_index = {entry.source_id: entry for entry in sources}
     status_index = {entry.source_id: entry for entry in statuses}
     requested = stage.source_ids or profile.source_groups
+    if not stage.source_ids:
+        unresolved = [source_id for source_id in requested if source_id not in source_index]
+        if unresolved:
+            bundle_ids = set(profile.bundles)
+            derived = {
+                source_id
+                for bundle in bundles
+                if bundle.bundle_id in bundle_ids
+                for source_id in bundle.primary_sources
+            }
+            requested = tuple(
+                source_id for source_id in dict.fromkeys((*requested, *sorted(derived))) if source_id in source_index
+            )
     selected = []
     for source_id in requested:
         source = source_index.get(source_id)
@@ -176,18 +191,25 @@ def build_data_build_execution_plan(
     sources = load_source_registry()
     statuses = load_source_status()
     bundles = load_bundle_registry()
+    endpoints = load_source_endpoints()
     publish_entries = load_publish_registry()
 
     profile = _resolve_profile(stage.profile_id, profiles)
-    selected_sources = _resolve_selected_sources(stage, profile, sources, statuses)
+    selected_sources = _resolve_selected_sources(stage, profile, sources, statuses, bundles)
     selected_bundles = _resolve_selected_bundles(stage, profile, bundles)
+    endpoint_index = {entry.source_id: entry for entry in endpoints}
+    fetchable_sources = tuple(
+        source_id
+        for source_id in selected_sources
+        if endpoint_index.get(source_id) is not None and endpoint_index[source_id].remote_fetchable
+    )
     waves = tuple(
         SourceWave(
             wave_index=index + 1,
             source_ids=wave,
             rationale="metadata-first selective acquisition within disk and bandwidth guardrails",
         )
-        for index, wave in enumerate(_chunk(selected_sources, stage.runtime.max_active_sources))
+        for index, wave in enumerate(_chunk(fetchable_sources, stage.runtime.max_active_sources))
     )
 
     stage_root = layout.artifacts_dir / "data_pipeline" / stage.stage

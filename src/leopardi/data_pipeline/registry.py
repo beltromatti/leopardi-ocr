@@ -38,6 +38,17 @@ class SourceStatusEntry:
 
 
 @dataclass(slots=True)
+class SourceEndpointEntry:
+    source_id: str
+    probe_policy: str
+    probe_method: str
+    probe_url: str
+    remote_fetchable: bool
+    build_surface: str
+    notes: str
+
+
+@dataclass(slots=True)
 class BundleRegistryEntry:
     bundle_id: str
     stage: str
@@ -106,6 +117,24 @@ def load_source_status(
     ]
 
 
+def load_source_endpoints(
+    path: str | Path = "data_pipeline/ingestion/source-endpoints.csv",
+) -> list[SourceEndpointEntry]:
+    rows = _read_csv(path)
+    return [
+        SourceEndpointEntry(
+            source_id=row["source_id"],
+            probe_policy=row["probe_policy"],
+            probe_method=row["probe_method"],
+            probe_url=row["probe_url"],
+            remote_fetchable=row["remote_fetchable"] == "yes",
+            build_surface=row["build_surface"],
+            notes=row["notes"],
+        )
+        for row in rows
+    ]
+
+
 def load_bundle_registry(
     path: str | Path = "data_pipeline/registry/bundle-registry.csv",
 ) -> list[BundleRegistryEntry]:
@@ -165,13 +194,18 @@ def registry_summary() -> dict[str, object]:
     profiles = load_build_profiles()
     publish = load_publish_registry()
     statuses = load_source_status()
+    endpoints = load_source_endpoints()
     return {
         "source_count": len(sources),
         "approved_source_count": sum(item.current_status == "approved" for item in statuses),
+        "endpoint_count": len(endpoints),
         "bundle_count": len(bundles),
         "profile_count": len(profiles),
         "publish_groups": sorted(item.artifact_group for item in publish),
         "exact_foundations": sorted(
             item.source_id for item in sources if item.data_class == "exact_pair"
+        ),
+        "remote_fetchable_sources": sorted(
+            item.source_id for item in endpoints if item.remote_fetchable
         ),
     }

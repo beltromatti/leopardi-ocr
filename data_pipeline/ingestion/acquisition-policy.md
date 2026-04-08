@@ -16,6 +16,10 @@ Builds should default to a named profile from:
 
 - `data_pipeline/profiles/`
 
+Automated reachability checks should be declared in:
+
+- `data_pipeline/ingestion/source-endpoints.csv`
+
 ## Local Disk Policy
 
 The first full builds should assume constrained local NVMe and no guarantee of multi-terabyte free space.
@@ -67,3 +71,15 @@ A transient raw asset is deletable once all are true:
 - dataset cards
 - publish ledgers
 - source-to-sample lineage tables
+
+## Manual-Access Rule
+
+Some approved public datasets still require registration, gated download, or mirror pinning.
+
+For those sources the rule is:
+
+1. complete the manual access step once
+2. publish the resulting canonical Leopardi bundle to persistent storage
+3. never rely on repeating the manual raw acquisition step on rented training machines
+
+The rented `RTX 5090` machine should consume the published bundle, not re-negotiate dataset access.

@@ -7,9 +7,11 @@ import typer
 from rich.console import Console
 
 from leopardi.data_pipeline import (
+    audit_data_pipeline,
     DataBuildStageConfig,
     build_data_build_execution_plan,
     materialize_data_build_stage,
+    probe_sources,
     registry_summary as data_pipeline_registry_summary,
 )
 from leopardi.evaluation import (
@@ -114,6 +116,33 @@ def data_pipeline_plan(
                 runtime_config_path=str(runtime_config),
             )
         )
+    )
+
+
+@app.command()
+def data_pipeline_audit() -> None:
+    report = audit_data_pipeline()
+    console.print(
+        {
+            "ok": report.ok,
+            "summary": report.summary,
+            "findings": [asdict(item) for item in report.findings],
+        }
+    )
+
+
+@app.command()
+def data_pipeline_probe_sources(
+    source_ids: list[str] = typer.Argument(None),
+    timeout_seconds: float = typer.Option(8.0, "--timeout-seconds"),
+) -> None:
+    selected = set(source_ids) if source_ids else None
+    results = probe_sources(selected_source_ids=selected, timeout_seconds=timeout_seconds)
+    console.print(
+        {
+            "probe_count": len(results),
+            "results": [asdict(item) for item in results],
+        }
     )
 
 

@@ -51,6 +51,8 @@ Priority order is strict for `Leopardi-S0`.
 
 - `source-registry.csv`
   - the authoritative source inventory and role map
+- `source-endpoints.csv`
+  - automated probe policy and acquisition-surface coverage for each source
 - `source-priority.md`
   - why each core source matters and when to ingest it
 - `acquisition-policy.md`

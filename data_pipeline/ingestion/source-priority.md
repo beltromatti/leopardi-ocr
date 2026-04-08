@@ -21,6 +21,7 @@ Leopardi role:
 - text warmup corpus
 - core multimodal pretraining
 - exact SFT
+- first automated endpoint probe should succeed before any large transfer is attempted
 
 ### PMC Open Access XML plus PDF
 

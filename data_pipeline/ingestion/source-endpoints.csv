@@ -1,0 +1,26 @@
+source_id,probe_policy,probe_method,probe_url,remote_fetchable,build_surface,notes
+arxiv_source_pdf,automated,get,https://export.arxiv.org/oai2?verb=Identify,yes,official_api,official metadata endpoint for exact-pair discovery
+pmc_oa_pdf_xml,automated,get,https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_bulk/,yes,official_ftp,official PMC OA bulk listing root
+publaynet,automated,get,https://github.com/ibm-aur-nlp/PubLayNet,yes,github_repo,public upstream repository used for availability checks
+doclaynet,automated,get,https://huggingface.co/datasets/ds4sd/DocLayNet,yes,hf_dataset_repo,public dataset landing page confirmed by upstream repo
+pubtables_1m,automated,get,https://huggingface.co/datasets/bsmock/pubtables-1m,yes,hf_dataset_repo,public dataset landing page for availability checks
+scitsr,automated,get,https://github.com/Academic-Hammer/SciTSR,yes,github_repo,public upstream repository for dataset access
+fintabnet_family,manual,, ,conditional,manual_access,license and split review required before ingestion
+crohme,manual,get,https://www.isical.ac.in/~crohme/CROHME_data.html,yes,manual_access,competition dataset access varies by edition and release terms
+mathwriting,automated,get,https://huggingface.co/datasets/deepcopy/MathWriting-human,yes,hf_dataset_repo,public HF dataset page for availability checks
+im2latex_100k,manual,get,https://github.com/harvardnlp/im2markup,yes,github_repo,stable public mirrors vary and require explicit mirror selection
+iam,manual,get,https://fki.tic.heia-fr.ch/databases/iam-handwriting-database,yes,manual_access,registration and manual approval flow expected
+bentham,manual,get,https://transkribus.eu/r/bentham-collection/,yes,manual_access,manual archive acquisition path expected
+read_2016,manual,get,https://read.transkribus.eu/,yes,manual_access,manual competition/archive retrieval expected
+funsd,automated,get,https://huggingface.co/datasets/nielsr/funsd,yes,hf_dataset_repo,public dataset landing page used for availability checks
+cord,automated,get,https://huggingface.co/datasets/naver-clova-ix/cord-v2,yes,hf_dataset_repo,public dataset landing page used for availability checks
+sroie,manual,get,https://rrc.cvc.uab.es/?ch=13,yes,manual_access,release mirrors vary and should be pinned manually
+chartqa,automated,get,https://huggingface.co/datasets/HuggingFaceM4/ChartQA,yes,hf_dataset_repo,public dataset landing page used for availability checks
+plotqa,automated,get,https://github.com/NiteshMethani/PlotQA,yes,github_repo,public upstream repository used for availability checks
+approved_exact_full_page_targets,internal,, ,no,internal_generated,derived from exact-core canonicalization output
+synthetic_from_exact,internal,, ,no,internal_generated,derived from exact canonical samples via deterministic transforms
+model_failures_plus_exact_truth,internal,, ,no,internal_generated,derived after benchmark and evaluation failure mining
+sft_and_repair_prompt_packs,internal,, ,no,internal_generated,derived from promoted SFT and repair bundles
+curated_non_overlap_holdouts,internal,, ,no,internal_generated,derived from leakage-safe curated holdout slices
+monkeydoc,manual,, ,conditional,research_watchlist,verify release terms and overlap before any ingestion
+churro_ds,manual,, ,conditional,research_watchlist,verify release terms and target compatibility before ingestion

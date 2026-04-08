@@ -18,6 +18,7 @@ fi
 "$PYTHON_BIN" -m leopardi.cli schema-example >/dev/null
 "$PYTHON_BIN" -m leopardi.cli data-pipeline-summary configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml >/dev/null
 "$PYTHON_BIN" -m leopardi.cli data-pipeline-plan configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml >/dev/null
+"$PYTHON_BIN" -m leopardi.cli data-pipeline-audit >/dev/null
 "$PYTHON_BIN" -m leopardi.cli model-summary configs/model/leopardi_s0.yaml >/dev/null
 "$PYTHON_BIN" -m leopardi.cli pretrain-summary configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml >/dev/null
 "$PYTHON_BIN" -m leopardi.cli pretrain-recipes >/dev/null

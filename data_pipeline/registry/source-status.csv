@@ -17,5 +17,10 @@ cord,noisy_business_docs,approved,ingest_for_hardcases,receipt source
 sroie,noisy_business_docs,approved,ingest_for_hardcases,receipt OCR source
 chartqa,graphics_specialist,approved,ingest_for_hardcases,chart-heavy source
 plotqa,graphics_specialist,approved,ingest_for_hardcases,plot-heavy source
+approved_exact_full_page_targets,exact_target_projection,approved,derive_from_exact_core,generated only after exact-core canonicalization passes
+synthetic_from_exact,hardcase_synthesis,approved,derive_from_exact_core,build after exact-core canonical samples are published
+model_failures_plus_exact_truth,repair_and_replay,approved,derive_from_failures,build from benchmark/eval failure mining after first model runs
+sft_and_repair_prompt_packs,rlvr_pack,approved,derive_from_promoted_sft,assemble after SFT and repair bundles are promoted
+curated_non_overlap_holdouts,holdout_curation,approved,derive_from_curated_split,assemble after final leakage and duplication review
 monkeydoc,research_watchlist,research_only,verify_release_terms,promising recent competitor data source
 churro_ds,research_watchlist,research_only,verify_release_terms,promising handwriting extension

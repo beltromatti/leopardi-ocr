@@ -116,9 +116,12 @@ Once a source item has been converted into a verified canonical sample and publi
 
 Published bundles should be consumable by streaming loaders so that later pretraining and finetuning runs can avoid full local materialization on rented machines.
 
+For sources that require one-time manual approval or mirror pinning, the persistent Leopardi bundle becomes the durable handoff.
+The rented training machine should never be the place where those access negotiations happen.
+
 ## Data Classes
 
-Leopardi uses four data classes.
+Leopardi uses five data classes.
 
 ### 1. `exact_pair`
 
@@ -155,6 +158,18 @@ Primary examples:
 Teacher-derived or tool-derived labels used only when explicitly separated and tracked.
 
 This class is allowed for mining and triage, but it is not allowed to silently contaminate exact bundles.
+
+### 5. `derived_internal`
+
+These are not external source corpora.
+They are promoted internal derivatives built from already verified exact, synthetic, or evaluation-linked assets.
+
+Primary examples:
+
+- approved exact full-page target packs
+- synthetic hard cases derived from exact samples
+- mined failure replay packs
+- RL prompt packs assembled from promoted SFT and repair bundles
 
 ## Directory Map
 
