@@ -15,6 +15,7 @@ artifacts/
 checkpoints/
 logs/
 runs/
+runs-mini/
 wandb/
 outputs/
 /data/
@@ -24,3 +25,4 @@ outputs/
 /ray_results/
 /tensorboard/
 tmp/
+.env
