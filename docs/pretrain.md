@@ -78,6 +78,7 @@ Auxiliary supervision:
 Main objective:
 
 - page to canonical Markdown plus LaTeX transduction
+- preserve table, caption, and formula structure instead of learning a prose-only target
 
 Auxiliary objectives:
 
@@ -105,6 +106,7 @@ Data:
 - handwriting corpora
 - forms and receipts
 - chart and figure subsets
+- rotation-equivalent exact pairs built from exact core pages
 
 Goal:
 
@@ -167,6 +169,12 @@ Recommended initial mixture:
 - `10%` table-focused supervision from PubTables-1M and SciTSR
 - `10%` formula-focused supervision from CROHME, MathWriting, and Im2LaTeX-100K
 - `5%` handwriting, forms, and chart-heavy tasks
+
+Inside those buckets, the first compact-model recipe should explicitly oversample:
+
+- `formula + rotation`
+- `table + caption`
+- `handwriting + structure`
 
 This should be treated as the first strong prior, not as immutable truth.
 Weak or partially teacher-derived supervision should be discounted explicitly rather than mixed at full strength.
@@ -235,6 +243,10 @@ It obscures the architecture search.
 ### 5. Do not use a flat token loss for all structures
 
 Formulas and complex tables dominate the frontier error surface and need explicit token-level emphasis.
+
+### 6. Do not let exact-core targets collapse into plain text
+
+If exact-core conversion drops tables, captions, or display math, the model learns the wrong task.
 
 ## Scale-Up Path To `Leopardi-S1`
 

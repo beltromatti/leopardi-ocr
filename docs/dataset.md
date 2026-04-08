@@ -173,6 +173,10 @@ Role:
 - formula specialist training
 - formula evaluation
 
+Current ingestion stance:
+
+- keep manual until a reproducible public package fetch is pinned
+
 ### 9. MathWriting
 
 Use:
@@ -220,6 +224,10 @@ Role:
 - handwriting specialist training
 - handwriting evaluation
 
+Current ingestion stance:
+
+- keep manual because official acquisition still requires registration
+
 ### 13. Bentham
 
 Use:
@@ -231,6 +239,10 @@ Role:
 
 - handwriting robustness extension
 
+Current ingestion stance:
+
+- keep manual until a canonical package fetch is reproducible from the official lineage
+
 ### 14. READ 2016
 
 Use:
@@ -241,6 +253,10 @@ Use:
 Role:
 
 - handwriting-plus-layout supervision
+
+Current ingestion stance:
+
+- keep manual until the release package itself is fetchable reproducibly, even though official metadata is public
 
 ## Forms, Receipts, and Noisy Business Documents
 
@@ -275,6 +291,10 @@ Use:
 Role:
 
 - receipt robustness
+
+Current ingestion stance:
+
+- promoted to automated ingestion through a public curated release with explicit license metadata
 
 ## Graphics and Chart Supervision
 

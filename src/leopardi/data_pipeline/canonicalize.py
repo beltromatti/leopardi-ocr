@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from typing import Iterable
 from xml.etree import ElementTree as ET
@@ -28,9 +29,30 @@ _TEXT_UNWRAP_COMMANDS = (
 
 def normalize_target_text(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-    text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
-    return text.strip()
+    lines = text.split("\n")
+    normalized_lines: list[str] = []
+    in_fence = False
+    for raw_line in lines:
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            normalized_lines.append(stripped)
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            normalized_lines.append(line)
+            continue
+        if not stripped:
+            if normalized_lines and normalized_lines[-1] != "":
+                normalized_lines.append("")
+            continue
+        leading = re.match(r"^\s*", line).group(0).replace("\t", "  ")
+        normalized_lines.append(leading + re.sub(r"[ \t]+", " ", stripped))
+    while normalized_lines and normalized_lines[0] == "":
+        normalized_lines.pop(0)
+    while normalized_lines and normalized_lines[-1] == "":
+        normalized_lines.pop()
+    return "\n".join(normalized_lines)
 
 
 def _strip_tex_comments(tex: str) -> str:
@@ -55,6 +77,137 @@ def _replace_tex_command(content: str, command: str, replacement: str) -> str:
 def _unwrap_tex_command(content: str, command: str) -> str:
     pattern = re.compile(rf"\\{command}\{{([^{{}}]+)\}}", re.DOTALL)
     return pattern.sub(lambda match: match.group(1).strip(), content)
+
+
+def _strip_tex_wrappers(text: str) -> str:
+    value = text.strip()
+    for command in _TEXT_UNWRAP_COMMANDS:
+        value = _unwrap_tex_command(value, command)
+    value = re.sub(r"\\label\{[^{}]+\}", "", value)
+    value = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "[CITE]", value)
+    value = re.sub(r"\\ref\{[^{}]+\}", "[REF]", value)
+    value = re.sub(r"\\[a-zA-Z@]+\*?(?:\[[^\]]*\])?", "", value)
+    value = value.replace("{", "").replace("}", "")
+    return normalize_target_text(value)
+
+
+def _markdown_escape_cell(text: str) -> str:
+    return normalize_target_text(text).replace("|", r"\|")
+
+
+def _canonical_table_block(caption: str, cells: list[tuple[int, int, int, int, str]], columns: int) -> str:
+    lines = ["```table"]
+    if caption:
+        lines.append(f"caption: {normalize_target_text(caption)}")
+    lines.append(f"columns: {columns}")
+    lines.append("cells:")
+    for row_start, col_start, row_end, col_end, text in cells:
+        payload = json.dumps(normalize_target_text(text), ensure_ascii=False)
+        lines.append(f"  - [{row_start}, {col_start}, {row_end}, {col_end}, {payload}]")
+    lines.append("```")
+    return "\n".join(lines)
+
+
+def _simple_markdown_table(caption: str, rows: list[list[str]]) -> str:
+    header = rows[0]
+    body = rows[1:] or [["" for _ in header]]
+    lines: list[str] = []
+    if caption:
+        lines.append(f"Table: {normalize_target_text(caption)}")
+        lines.append("")
+    lines.append("| " + " | ".join(_markdown_escape_cell(cell) for cell in header) + " |")
+    lines.append("| " + " | ".join(":---" for _ in header) + " |")
+    for row in body:
+        padded = row + [""] * (len(header) - len(row))
+        lines.append("| " + " | ".join(_markdown_escape_cell(cell) for cell in padded[: len(header)]) + " |")
+    return "\n".join(lines)
+
+
+def _parse_tex_table_cell(cell: str) -> tuple[int, int, str]:
+    value = cell.strip()
+    rowspan = 1
+    colspan = 1
+    multirow = re.match(r"\\multirow\{(\d+)\}\{[^{}]*\}\{(.*)\}", value, flags=re.DOTALL)
+    if multirow is not None:
+        rowspan = max(1, int(multirow.group(1)))
+        value = multirow.group(2).strip()
+    multicol = re.match(r"\\multicolumn\{(\d+)\}\{[^{}]*\}\{(.*)\}", value, flags=re.DOTALL)
+    if multicol is not None:
+        colspan = max(1, int(multicol.group(1)))
+        value = multicol.group(2).strip()
+    return rowspan, colspan, _strip_tex_wrappers(value)
+
+
+def _split_tex_rows(tabular: str) -> list[str]:
+    text = re.sub(r"\\(?:toprule|midrule|bottomrule|hline|cline\{[^{}]+\})", "", tabular)
+    rows = re.split(r"(?<!\\)\\\\", text)
+    return [row.strip() for row in rows if row.strip()]
+
+
+def _tex_table_to_markdown(tabular: str, caption: str) -> str:
+    rows_raw = _split_tex_rows(tabular)
+    active_rowspans: dict[int, int] = {}
+    cells: list[tuple[int, int, int, int, str]] = []
+    simple_rows: list[list[str]] = []
+    max_columns = 0
+    complex_table = False
+    for row_index, row in enumerate(rows_raw):
+        row_cells = [cell for cell in re.split(r"(?<!\\)&", row) if cell.strip()]
+        rendered_row: list[str] = []
+        col_index = 0
+        while active_rowspans.get(col_index, 0) > 0:
+            active_rowspans[col_index] -= 1
+            col_index += 1
+        for raw_cell in row_cells:
+            while active_rowspans.get(col_index, 0) > 0:
+                active_rowspans[col_index] -= 1
+                col_index += 1
+            rowspan, colspan, text = _parse_tex_table_cell(raw_cell)
+            cells.append((row_index, col_index, row_index + rowspan - 1, col_index + colspan - 1, text))
+            if rowspan > 1 or colspan > 1:
+                complex_table = True
+            if rowspan > 1:
+                for offset in range(colspan):
+                    active_rowspans[col_index + offset] = rowspan - 1
+            rendered_row.extend([text] + [""] * (colspan - 1))
+            col_index += colspan
+        max_columns = max(max_columns, col_index)
+        simple_rows.append(rendered_row)
+    rectangular = all(len(row) == max_columns for row in simple_rows if row)
+    if not complex_table and rectangular and simple_rows and max_columns > 1:
+        return _simple_markdown_table(caption, simple_rows)
+    return _canonical_table_block(caption, cells, max_columns or 1)
+
+
+def _extract_tex_tables(content: str) -> str:
+    def _replace(match: re.Match[str]) -> str:
+        body = match.group(1)
+        caption_match = re.search(r"\\caption\{(.*?)\}", body, flags=re.DOTALL)
+        caption = _strip_tex_wrappers(caption_match.group(1)) if caption_match else ""
+        tabular_match = re.search(
+            r"\\begin\{tabular\*?\}(?:\{[^{}]*\})?\{[^{}]*\}(.*?)\\end\{tabular\*?\}",
+            body,
+            flags=re.DOTALL,
+        )
+        if tabular_match is None:
+            return ""
+        return "\n" + _tex_table_to_markdown(tabular_match.group(1), caption) + "\n"
+
+    return re.sub(r"\\begin\{table\*?\}(.*?)\\end\{table\*?\}", _replace, content, flags=re.DOTALL)
+
+
+def _extract_tex_figures(content: str) -> str:
+    def _replace(match: re.Match[str]) -> str:
+        body = match.group(1)
+        caption_match = re.search(r"\\caption\{(.*?)\}", body, flags=re.DOTALL)
+        if caption_match is None:
+            return ""
+        caption = _strip_tex_wrappers(caption_match.group(1))
+        if not caption:
+            return ""
+        return f"\nFigure: {caption}\n"
+
+    return re.sub(r"\\begin\{figure\*?\}(.*?)\\end\{figure\*?\}", _replace, content, flags=re.DOTALL)
 
 
 def tex_to_markdown(tex: str) -> str:
@@ -100,8 +253,8 @@ def tex_to_markdown(tex: str) -> str:
             flags=re.DOTALL,
         )
 
-    content = re.sub(r"\\begin\{figure\*?\}(.*?)\\end\{figure\*?\}", "", content, flags=re.DOTALL)
-    content = re.sub(r"\\begin\{table\*?\}(.*?)\\end\{table\*?\}", "", content, flags=re.DOTALL)
+    content = _extract_tex_figures(content)
+    content = _extract_tex_tables(content)
     content = re.sub(r"\\begin\{document\}", "", content)
     content = re.sub(r"\\end\{document\}", "", content)
     content = re.sub(r"\\[a-zA-Z@]+(\[[^\]]*\])?", "", content)
@@ -113,6 +266,87 @@ def _node_text(node: ET.Element | None) -> str:
     if node is None:
         return ""
     return "".join(node.itertext()).strip()
+
+
+def _jats_tag(node: ET.Element) -> str:
+    return node.tag.split("}")[-1]
+
+
+def _jats_formula_text(node: ET.Element) -> str:
+    tex = node.find(".//tex-math")
+    if tex is not None and _node_text(tex):
+        return normalize_target_text(_node_text(tex))
+    return normalize_target_text(_node_text(node))
+
+
+def _collect_jats_inline(node: ET.Element | None) -> str:
+    if node is None:
+        return ""
+    parts: list[str] = []
+    if node.text:
+        parts.append(node.text)
+    for child in list(node):
+        tag = _jats_tag(child)
+        if tag == "inline-formula":
+            formula = _jats_formula_text(child)
+            if formula:
+                parts.append(f"${formula}$")
+        elif tag == "disp-formula":
+            formula = _jats_formula_text(child)
+            if formula:
+                parts.append(f"\n$$\n{formula}\n$$\n")
+        else:
+            parts.append(_collect_jats_inline(child))
+        if child.tail:
+            parts.append(child.tail)
+    return normalize_target_text("".join(parts))
+
+
+def _jats_table_to_markdown(table_wrap: ET.Element) -> str:
+    caption_bits = [
+        _collect_jats_inline(table_wrap.find("./caption/title")),
+        _collect_jats_inline(table_wrap.find("./caption/p")),
+    ]
+    caption = normalize_target_text(" ".join(bit for bit in caption_bits if bit))
+    rows = table_wrap.findall(".//tr")
+    cells: list[tuple[int, int, int, int, str]] = []
+    simple_rows: list[list[str]] = []
+    active_rowspans: dict[int, int] = {}
+    max_columns = 0
+    complex_table = False
+    for row_index, row in enumerate(rows):
+        rendered_row: list[str] = []
+        col_index = 0
+        while active_rowspans.get(col_index, 0) > 0:
+            active_rowspans[col_index] -= 1
+            col_index += 1
+        for cell in row:
+            tag = _jats_tag(cell)
+            if tag not in {"th", "td"}:
+                continue
+            while active_rowspans.get(col_index, 0) > 0:
+                active_rowspans[col_index] -= 1
+                col_index += 1
+            rowspan = max(1, int(cell.attrib.get("rowspan", "1")))
+            colspan = max(1, int(cell.attrib.get("colspan", "1")))
+            text = _collect_jats_inline(cell)
+            cells.append((row_index, col_index, row_index + rowspan - 1, col_index + colspan - 1, text))
+            if rowspan > 1 or colspan > 1:
+                complex_table = True
+            if rowspan > 1:
+                for offset in range(colspan):
+                    active_rowspans[col_index + offset] = rowspan - 1
+            rendered_row.extend([text] + [""] * (colspan - 1))
+            col_index += colspan
+        max_columns = max(max_columns, col_index)
+        if rendered_row:
+            simple_rows.append(rendered_row)
+    rectangular = all(len(row) == max_columns for row in simple_rows if row)
+    if not cells:
+        return ""
+    if not complex_table and rectangular and simple_rows and max_columns > 1:
+        return _simple_markdown_table(caption, simple_rows)
+    return _canonical_table_block(caption, cells, max_columns or 1)
 
 
 def _iter_jats_sections(root: ET.Element) -> Iterable[str]:
@@ -131,24 +365,32 @@ def _iter_jats_sections(root: ET.Element) -> Iterable[str]:
         if title:
             yield f"## {title}"
         for paragraph in sec.findall("./p"):
-            text = _node_text(paragraph)
+            text = _collect_jats_inline(paragraph)
             if text:
                 yield text
         for formula in sec.findall(".//disp-formula"):
-            formula_text = _node_text(formula)
+            formula_text = _jats_formula_text(formula)
             if formula_text:
                 yield "$$"
                 yield formula_text
                 yield "$$"
         for table_wrap in sec.findall(".//table-wrap"):
-            table_title = _node_text(table_wrap.find("./caption/title")) or _node_text(
-                table_wrap.find("./label")
+            table_markdown = _jats_table_to_markdown(table_wrap)
+            if table_markdown:
+                yield table_markdown
+        for figure in sec.findall(".//fig"):
+            caption = normalize_target_text(
+                " ".join(
+                    part
+                    for part in (
+                        _collect_jats_inline(figure.find("./caption/title")),
+                        _collect_jats_inline(figure.find("./caption/p")),
+                    )
+                    if part
+                )
             )
-            if table_title:
-                yield f"### {table_title}"
-            caption_text = _node_text(table_wrap.find("./caption/p"))
-            if caption_text:
-                yield caption_text
+            if caption:
+                yield f"Figure: {caption}"
 
 
 def jats_to_markdown(xml_text: str) -> str:

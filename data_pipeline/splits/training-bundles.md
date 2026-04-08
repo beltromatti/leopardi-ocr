@@ -40,6 +40,8 @@ Oversample:
 - dense formulas
 - dense tables
 - multi-column pages
+- pages with both formulas and rotation-augmented views
+- pages with tables plus nearby captions or prose explanation
 
 ## Bundle: `p2_structural_aux_v1`
 
@@ -66,10 +68,13 @@ Composition:
 - forms and receipts
 - chart-heavy pages
 - photo or scan degradation variants
+- rotation-equivalent exact pairs
+- structured handwritten notes and schedule-like pages
 
 Why:
 
 - this is where Leopardi must separate from cleaner born-digital parsers
+- this is where compact models learn to preserve structure instead of only text under distortion
 
 ## Bundle: `sft_core_v1`
 

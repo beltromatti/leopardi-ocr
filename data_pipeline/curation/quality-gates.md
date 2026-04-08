@@ -24,11 +24,17 @@ Required:
 - target string exists
 - target type is declared
 - target normalization succeeds under Leopardi rules
+- obvious source-visible structure is preserved when available:
+  - figure captions
+  - simple tables
+  - formulas
+  - handwritten document sections, schedules, and warnings
 
 Reject if:
 
 - canonical target is empty after normalization
 - block structure is clearly malformed
+- high-salience source structure is silently dropped by canonicalization
 
 ## Gate 3: Markdown Structural Validity
 
@@ -36,6 +42,7 @@ Required:
 
 - headings, lists, and fenced blocks obey Leopardi canonical constraints
 - tables use canonical simple or complex-table representation
+- structured handwritten notes remain structured Markdown, not flattened prose
 
 Reject or demote if:
 
@@ -47,6 +54,7 @@ Required when formulas are present:
 
 - formula boundaries are preserved
 - LaTeX normalization succeeds
+- rotation-equivalent views remain semantically consistent
 
 Promote to `gold_exact` only if:
 
@@ -79,6 +87,18 @@ Required:
 Purpose:
 
 - catch empty, exploded, or truncated targets
+- catch outputs that preserved text but lost table, caption, or formula structure
+
+## Gate 6b: External Oracle Audit, Offline Only
+
+Allowed:
+
+- compare a tiny held-out sample against a strong external parser
+- use the comparison only to improve Leopardi target rules and failure taxonomies
+
+Not allowed:
+
+- using external parser output as hidden automated training truth
 
 ## Gate 7: Difficulty Tagging
 

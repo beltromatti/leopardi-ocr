@@ -40,7 +40,9 @@ Oversample the slices that most public parsers still mishandle:
 - merged-cell tables
 - dense formula pages
 - rotated pages
+- rotated formula pages
 - handwriting
+- structured handwriting pages with implicit schedule or list layout
 - forms and receipts
 - chart-heavy pages
 
@@ -61,6 +63,7 @@ Inputs:
 - original page context
 - block descriptor
 - invalid or low-quality block
+- block-local target class such as `table`, `formula`, `handwriting_section`, or `caption`
 
 Target:
 
@@ -193,6 +196,8 @@ Every finetune round should include mined failure cases from:
 - LaTeX syntax failures
 - complex table failures
 - hallucinated headers and footers
+- rotation-sensitive formula failures
+- structured-handwriting formatting failures
 
 This mined set is one of the most valuable assets in the project.
 

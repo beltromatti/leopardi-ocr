@@ -4,7 +4,29 @@ from dataclasses import dataclass, field
 import hashlib
 import json
 from pathlib import Path
+import re
 from typing import Any
+
+
+def _infer_canonical_features(text: str) -> dict[str, Any]:
+    lines = text.splitlines()
+    has_display_math = "$$" in text
+    has_inline_math = bool(re.search(r"(?<!\$)\$(?!\$).+?(?<!\$)\$(?!\$)", text, flags=re.DOTALL))
+    has_gfm_table = any(line.strip().startswith("|") and line.strip().endswith("|") for line in lines)
+    has_table_block = "```table" in text
+    has_figure_caption = bool(re.search(r"(?im)^figure:\s+", text))
+    has_heading = bool(re.search(r"(?m)^#{1,6}\s", text))
+    has_list = bool(re.search(r"(?m)^\s*[-*]\s", text))
+    return {
+        "target_char_count": len(text),
+        "has_display_math": has_display_math,
+        "has_inline_math": has_inline_math,
+        "has_gfm_table": has_gfm_table,
+        "has_table_block": has_table_block,
+        "has_figure_caption": has_figure_caption,
+        "has_heading": has_heading,
+        "has_list": has_list,
+    }
 
 
 @dataclass(slots=True)
@@ -58,6 +80,7 @@ class CanonicalSample:
         return hashlib.sha256(self.canonical_target.encode("utf-8")).hexdigest()
 
     def manifest_record(self) -> dict[str, Any]:
+        features = _infer_canonical_features(self.canonical_target)
         return {
             "sample_id": self.sample_id,
             "source_id": self.source_id,
@@ -74,6 +97,7 @@ class CanonicalSample:
             "split_assignment": self.split_assignment,
             "transform_recipe": self.transform_recipe,
             "source_license": self.source_license,
+            **features,
             "asset_names": [asset.name for asset in self.assets],
             "asset_media_types": [asset.media_type for asset in self.assets],
             "metadata_json": json.dumps(self.metadata, sort_keys=True),

@@ -226,6 +226,7 @@ The current code surface covers:
 - publish-ledger materialization
 - artifact plans aligned with HF dataset publication and later remote-first reuse
 - canonical target normalization for TeX and JATS exact sources
+- canonical target feature inference for tables, formulas, captions, headings, and lists
 - tar-shard writing and Parquet manifest emission
 - real source workers for arXiv, PMC OA, DocLayNet, PubTables-1M, SciTSR, and selected HF parquet datasets
 - strict manual-manifest import workers for sources that still require human-approved access or curated local mirrors

@@ -23,6 +23,9 @@ Preferred path:
 
 - source archive
 - normalized markup extraction
+- figure caption preservation
+- simple-table recovery to GFM Markdown when rectangular
+- complex-table recovery to Leopardi fenced `table` blocks when spans are present
 - page alignment against compiled PDF
 - page-level canonical Markdown plus LaTeX target
 
@@ -36,7 +39,8 @@ Preferred path:
 
 - XML hierarchy
 - section and caption extraction
-- table and formula preservation where possible
+- figure caption preservation
+- table and formula preservation with canonical Markdown plus LaTeX mapping
 - page alignment against PDF
 
 Primary purpose:
@@ -54,7 +58,8 @@ From:
 
 Emit:
 
-- canonical complex-table blocks
+- GFM tables when the source table is simple and rectangular
+- canonical complex-table blocks when rowspan or colspan is present
 - topology metadata
 - optional region-level aux targets
 
@@ -71,6 +76,7 @@ Emit:
 
 - exact LaTeX targets
 - formula difficulty tags
+- rotation-equivalent exact targets for synthetic hard-case generation
 
 ### Handwriting
 
@@ -85,6 +91,7 @@ Emit:
 - text targets
 - page- or line-level layout targets when available
 - handwriting style tags
+- structured Markdown when the source page clearly contains sections, schedules, warnings, or nested bullets
 
 ## Canonical Sample Requirements
 
@@ -109,3 +116,18 @@ Leopardi must explicitly support mixed samples that contain:
 - charts or diagrams
 
 For such samples, truth must still be fully attributable to known source components.
+
+## Canonical Form Bias
+
+Leopardi canonical targets should prefer:
+
+- standard Markdown headings, paragraphs, and lists
+- GFM tables for simple rectangular tables
+- fenced `table` blocks only when standard Markdown would lose structure
+- LaTeX for math, preserving source-native matrix and display environments when possible
+
+Leopardi canonical targets should avoid:
+
+- flattening tables into prose
+- dropping captions
+- flattening structured handwriting into plain text
