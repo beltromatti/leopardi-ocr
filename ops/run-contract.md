@@ -85,8 +85,12 @@ Must include:
 
 - unit: variant planning run or export run
 
+### Inference
+
+- unit: runtime plan or serving run
+
 ### Evaluation
 
 - unit: protocol run
 
-The layout stays the same across all four.
+The layout stays the same across all five.

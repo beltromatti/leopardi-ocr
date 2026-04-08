@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class ArtifactPointer(BaseModel):
-    artifact_kind: Literal["checkpoint", "bundle", "report", "release_card", "summary_table"]
+    artifact_kind: Literal["checkpoint", "bundle", "report", "release_card", "summary_table", "runtime_plan", "request_template"]
     uri: str
     local_path: str | None = None
     checksum: str | None = None
@@ -29,7 +29,7 @@ class RunHeartbeat(BaseModel):
 
 class RunManifest(BaseModel):
     experiment_id: str
-    phase: Literal["data_pipeline", "pretraining", "finetune", "optimization", "evaluation", "serve"]
+    phase: Literal["data_pipeline", "pretraining", "finetune", "optimization", "inference", "evaluation", "serve"]
     stage: str
     track: str
     hardware_tag: str

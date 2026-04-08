@@ -37,6 +37,7 @@ def main() -> int:
                 "- model config: ",
                 "- data config: ",
                 "- optimization config: ",
+                "- inference config: ",
                 "- runtime config: ",
                 f"- run root: {layout.experiment_root}",
                 "",

@@ -10,6 +10,16 @@ from leopardi.finetune.batch import FinetuneBatch
 from leopardi.finetune.config import FinetuneStageConfig
 from leopardi.finetune.losses import compute_finetune_losses
 from leopardi.finetune.rewards import compute_reward_breakdown
+from leopardi.inference import (
+    DocumentPage,
+    InferenceStageConfig,
+    PageSignals,
+    assemble_document,
+    build_launch_plan,
+    materialize_inference_stage,
+    route_page,
+    validate_markdown,
+)
 from leopardi.model import LeopardiS0
 from leopardi.optimization import (
     OptimizationGoalConfig,
@@ -399,6 +409,97 @@ def optimization_materialize(
             root=root,
         )
     )
+
+
+@app.command()
+def inference_summary(
+    stage_config: Path = typer.Argument(Path("configs/inference/s0_i1_vllm_adaptive.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/inference_rtx5090.yaml")),
+) -> None:
+    stage = InferenceStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(stage)
+
+
+@app.command()
+def inference_route_example(
+    stage_config: Path = typer.Argument(Path("configs/inference/s0_i1_vllm_adaptive.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/inference_rtx5090.yaml")),
+) -> None:
+    stage = InferenceStageConfig.from_yaml(stage_config, runtime_config)
+    signals = PageSignals(
+        visual_density=0.72,
+        block_count_estimate=18,
+        formula_density=0.14,
+        table_density=0.18,
+        handwriting_likelihood=0.08,
+        chart_likelihood=0.02,
+        long_tiny_text_likelihood=0.31,
+        photo_distortion_likelihood=0.04,
+        orientation_uncertainty=0.06,
+    )
+    console.print(asdict(route_page(stage, signals)))
+
+
+@app.command()
+def inference_validate_example() -> None:
+    markdown = "# Title\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\nEuler: $e^{i\\pi}+1=0$"
+    console.print(asdict(validate_markdown(markdown, InferenceStageConfig(stage="demo").validation)))
+
+
+@app.command()
+def inference_plan(
+    stage_config: Path = typer.Argument(Path("configs/inference/s0_i1_vllm_adaptive.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/inference_rtx5090.yaml")),
+) -> None:
+    stage = InferenceStageConfig.from_yaml(stage_config, runtime_config)
+    plans = [
+        asdict(
+            build_launch_plan(
+                experiment_id="inference-plan-preview",
+                stage=stage,
+                runtime_family=runtime_family,
+                artifacts_root="runs/inference-plan-preview/artifacts",
+                persistent_report_root="hf://leopardi-ocr-reports",
+            )
+        )
+        for runtime_family in dict.fromkeys((stage.runtime_family, stage.fallback_runtime_family))
+    ]
+    console.print(
+        {
+            "stage": stage.stage,
+            "artifact_uri": stage.artifact_uri,
+            "plans": plans,
+        }
+    )
+
+
+@app.command()
+def inference_materialize(
+    experiment_id: str = typer.Argument("leo-s0-i1-infer-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/inference/s0_i1_vllm_adaptive.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/inference_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    stage = InferenceStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        materialize_inference_stage(
+            experiment_id=experiment_id,
+            stage=stage,
+            stage_config_path=str(stage_config),
+            runtime_config_path=str(runtime_config),
+            root=root,
+        )
+    )
+
+
+@app.command()
+def inference_assemble_example() -> None:
+    pages = [
+        DocumentPage(page_number=1, markdown="Document Title\n\n# Intro\n\nParagraph 1\n\nPage 1"),
+        DocumentPage(page_number=2, markdown="Document Title\n\nParagraph 2\n\nPage 1"),
+    ]
+    stage = InferenceStageConfig(stage="demo")
+    console.print(assemble_document(pages, stage.assembly))
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ This protocol defines the minimum evidence required before a checkpoint is promo
 7. report artifacts are archived
 8. experiment registry entry is complete
 9. if the claim uses an optimized artifact, the matching `bf16_reference` report also exists
+10. inference runtime family and structured-output backend are pinned in the report package
 
 ## Required Report Artifacts
 
@@ -24,6 +25,7 @@ This protocol defines the minimum evidence required before a checkpoint is promo
 - public benchmark table
 - internal holdout table
 - latency card
+- inference runtime card
 - failure-slice summary
 - promotion recommendation
 - optimized-vs-reference comparison card when applicable

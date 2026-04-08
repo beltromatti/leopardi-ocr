@@ -16,6 +16,7 @@ Finetuning is where Leopardi wins:
 - cheaper and more reliable local repair
 - RL improvements that do not destroy format stability
 - compression-aware behavior strong enough to survive the later `optimization/` stage
+- task behavior stable enough to survive the later `inference/` routing and validation stage
 
 ## Files
 
@@ -59,3 +60,5 @@ The deployable artifact selection and export logic now lives in:
 
 - `optimization/`
 - `src/leopardi/optimization/`
+- `inference/`
+- `src/leopardi/inference/`

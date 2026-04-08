@@ -1,0 +1,64 @@
+stage: i1_vllm_adaptive
+track: s0-runtime
+artifact_variant_id: llmcompressor_fp8_dynamic
+artifact_uri: hf://leopardi-ocr-checkpoints/leo-s0-o2/llmcompressor_fp8_dynamic
+runtime_family: vllm
+fallback_runtime_family: sglang
+structured_backend_default: xgrammar
+render:
+  target_longest_image_dim: 1280
+  max_page_pixels: 2200000
+  permit_auto_rotation: true
+  permit_crop_refinement: true
+routing:
+  standard_threshold: 0.34
+  hard_threshold: 0.62
+  hard_formula_density: 0.08
+  hard_table_density: 0.12
+  hard_handwriting_likelihood: 0.40
+  hard_chart_likelihood: 0.35
+  hard_long_tiny_text_likelihood: 0.45
+  hard_photo_distortion_likelihood: 0.35
+  hard_orientation_uncertainty: 0.20
+validation:
+  require_balanced_code_fences: true
+  require_balanced_math_delimiters: true
+  require_table_shape_checks: true
+  allow_html_tables: true
+  max_error_count_before_hard_fail: 2
+assembly:
+  suppress_repeated_headers: true
+  suppress_repeated_footers: true
+  min_repeat_pages: 2
+  emit_page_break_markers: false
+modes:
+  - name: fast
+    visual_token_budget: 96
+    max_output_tokens: 3072
+    crop_budget: 0
+    repair_budget: 0
+    grammar_mode: light
+    structured_output_backend: auto
+    allow_block_local_repair: false
+  - name: standard
+    visual_token_budget: 160
+    max_output_tokens: 5120
+    crop_budget: 2
+    repair_budget: 1
+    grammar_mode: light
+    structured_output_backend: xgrammar
+    allow_block_local_repair: true
+    specialist_hints:
+      - table
+  - name: hard
+    visual_token_budget: 256
+    max_output_tokens: 8192
+    crop_budget: 4
+    repair_budget: 2
+    grammar_mode: strict
+    structured_output_backend: xgrammar
+    allow_block_local_repair: true
+    specialist_hints:
+      - formula
+      - handwriting
+      - table

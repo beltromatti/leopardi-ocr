@@ -1,10 +1,17 @@
 # Leopardi Inference Plan
 
-Date locked: 2026-04-07
+Date locked: 2026-04-08
 
 This document defines the serving and decoding blueprint for Leopardi.
 
 It consumes artifacts promoted by the dedicated `optimization/` stage.
+
+The operational implementation surface for this plan now lives in:
+
+- `inference/`
+- `src/leopardi/inference/`
+- `configs/inference/`
+- `configs/runtime/inference_rtx5090.yaml`
 
 The inference goal is not only low latency.
 It is low latency without giving away exactness on the hard slices that matter.

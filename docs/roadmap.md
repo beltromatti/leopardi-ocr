@@ -1,6 +1,6 @@
 # Leopardi Roadmap
 
-Date locked: 2026-04-07
+Date locked: 2026-04-08
 
 This roadmap turns the research corpus and blueprint into an execution sequence.
 
@@ -92,6 +92,7 @@ Deliverables:
 - objective reward suite
 - compression-aware serving variants
 - post-finetune optimization stage and artifact family
+- inference stage shared by production and evaluation
 
 Must answer:
 
@@ -164,5 +165,6 @@ The next engineering step after this blueprint is:
 2. implement the first end-to-end pretraining loop against those bundles
 3. implement the first end-to-end finetune loop against promoted checkpoints
 4. implement the first optimization export backends and reference artifact flow
-5. implement the first evaluation runners for `public_frontier_v1` and `internal_holdout_v1`
-6. launch the first real `Leopardi-S0` baseline on `RTX 5090`
+5. implement the first inference supervisor and runtime measurement loop
+6. implement the first evaluation runners for `public_frontier_v1` and `internal_holdout_v1`
+7. launch the first real `Leopardi-S0` baseline on `RTX 5090`

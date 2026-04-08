@@ -1,0 +1,57 @@
+stage: i2_sglang_structured
+track: s0-runtime
+artifact_variant_id: llmcompressor_fp8_dynamic
+artifact_uri: hf://leopardi-ocr-checkpoints/leo-s0-o2/llmcompressor_fp8_dynamic
+runtime_family: sglang
+fallback_runtime_family: vllm
+structured_backend_default: xgrammar
+render:
+  target_longest_image_dim: 1280
+  max_page_pixels: 2200000
+  permit_auto_rotation: true
+  permit_crop_refinement: true
+validation:
+  require_balanced_code_fences: true
+  require_balanced_math_delimiters: true
+  require_table_shape_checks: true
+  allow_html_tables: true
+  max_error_count_before_hard_fail: 2
+assembly:
+  suppress_repeated_headers: true
+  suppress_repeated_footers: true
+  min_repeat_pages: 2
+  emit_page_break_markers: true
+  page_break_marker: "<!-- page-break -->"
+modes:
+  - name: fast
+    visual_token_budget: 96
+    max_output_tokens: 3072
+    crop_budget: 0
+    repair_budget: 0
+    grammar_mode: light
+    structured_output_backend: xgrammar
+    allow_block_local_repair: false
+  - name: standard
+    visual_token_budget: 160
+    max_output_tokens: 5120
+    crop_budget: 2
+    repair_budget: 1
+    grammar_mode: strict
+    structured_output_backend: xgrammar
+    allow_block_local_repair: true
+    specialist_hints:
+      - table
+      - formula
+  - name: hard
+    visual_token_budget: 256
+    max_output_tokens: 8192
+    crop_budget: 4
+    repair_budget: 2
+    grammar_mode: strict
+    structured_output_backend: xgrammar
+    allow_block_local_repair: true
+    specialist_hints:
+      - formula
+      - handwriting
+      - table
+      - chart

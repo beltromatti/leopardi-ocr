@@ -45,6 +45,7 @@ Open-source competitor repos are vendored as submodules under [external/competit
 - `pretraining/`: curriculum and objectives for large-scale synthetic + paired document pretraining.
 - `finetune/`: supervised and preference-based alignment stages.
 - `optimization/`: post-finetune compression, export, and deployable variant selection.
+- `inference/`: runtime, routing, validation, and serving plans for promoted artifacts.
 - `ops/`: shared run, logging, recovery, and persistence contract for all phases.
 - `configs/`: shared experiment configuration.
 - `src/leopardi/`: Python package, CLI, and output schema.
@@ -75,7 +76,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,train]"
 pytest -q
-ruff check src tests ops docs configs experiments evaluation data_pipeline pretraining finetune optimization scripts
+ruff check src tests ops docs configs experiments evaluation data_pipeline inference pretraining finetune optimization scripts
 python -m leopardi.cli doctor
 ```
 
@@ -94,6 +95,7 @@ What is still missing before the first full training campaign:
 - real data builders
 - real end-to-end train and finetune loops
 - real optimization export backends
+- real inference supervisor that boots the chosen runtime automatically
 - real evaluation runners
 
 Helpful local scripts:

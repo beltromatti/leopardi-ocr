@@ -78,6 +78,7 @@ The remaining implementation work is in the execution layers:
 - training loops
 - finetune loops
 - optimization export backends
+- inference supervisor
 - evaluation runners
 
 ## Promotion Philosophy

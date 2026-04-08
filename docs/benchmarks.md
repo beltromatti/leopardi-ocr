@@ -1,6 +1,6 @@
 # Leopardi Benchmarks
 
-Date locked: 2026-04-07
+Date locked: 2026-04-08
 
 This document defines the benchmark protocol that Leopardi must use to make research claims that are hard to dispute.
 
@@ -51,7 +51,9 @@ Every reported result must include:
 - precision
 - batch size
 - image resolution policy
+- runtime family
 - decode mode
+- structured-output backend
 - constrained-decoding mode if used
 - variant family: `bf16_reference`, optimized checkpoint, or runtime-only variant
 

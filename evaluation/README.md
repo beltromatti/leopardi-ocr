@@ -97,6 +97,7 @@ That means evaluation must normalize format variation without forgiving structur
 - `docs/research/leaderboard-2026-04.md` defines the current competitor frontier
 - `data_pipeline/` defines training data and split provenance
 - `optimization/` defines deployable artifact families and post-finetune variants
+- `inference/` defines the runtime, routing, validation, and launch plans that evaluation must reuse
 - `experiments/` defines run identity and promotion history
 
 `evaluation/` is the operational bridge between all of them.
