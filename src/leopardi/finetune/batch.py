@@ -12,6 +12,9 @@ class FinetuneBatch:
     decoder_input_ids: Tensor
     labels: Tensor
     label_mask: Tensor | None = None
+    sample_weights: Tensor | None = None
+    formula_label_mask: Tensor | None = None
+    table_label_mask: Tensor | None = None
     block_types: Tensor | None = None
     block_lengths: Tensor | None = None
     specialist_hints: Tensor | None = None
@@ -23,6 +26,7 @@ class FinetuneBatch:
     table_block_mask: Tensor | None = None
     table_span_targets: Tensor | None = None
     repair_mask: Tensor | None = None
+    reference_log_probs: Tensor | None = None
     reward_signals: dict[str, Tensor] | None = None
 
     @classmethod
@@ -47,6 +51,9 @@ class FinetuneBatch:
             decoder_input_ids=torch.randint(0, vocab_size, (batch_size, seq_len), device=device),
             labels=torch.randint(0, vocab_size, (batch_size, seq_len), device=device),
             label_mask=torch.ones(batch_size, seq_len, dtype=torch.bool, device=device),
+            sample_weights=torch.rand(batch_size, device=device) * 0.4 + 0.8,
+            formula_label_mask=torch.randint(0, 2, (batch_size, seq_len), device=device).float(),
+            table_label_mask=torch.randint(0, 2, (batch_size, seq_len), device=device).float(),
             block_types=torch.randint(0, num_block_types, (batch_size, planner_blocks), device=device),
             block_lengths=torch.randint(0, num_length_buckets, (batch_size, planner_blocks), device=device),
             specialist_hints=torch.randint(0, num_hints, (batch_size, planner_blocks), device=device),
@@ -58,11 +65,14 @@ class FinetuneBatch:
             table_block_mask=torch.randint(0, 2, (batch_size, planner_blocks), device=device).float(),
             table_span_targets=torch.rand(batch_size, planner_blocks, 4, device=device),
             repair_mask=torch.randint(0, 2, (batch_size, seq_len), device=device).bool(),
+            reference_log_probs=torch.randn(batch_size, seq_len, device=device).clamp(min=-8.0, max=0.0),
             reward_signals={
                 "markdown_validity": torch.rand(batch_size, device=device),
                 "latex_validity": torch.rand(batch_size, device=device),
                 "table_validity": torch.rand(batch_size, device=device),
                 "reading_order": torch.rand(batch_size, device=device),
+                "formula_exactness": torch.rand(batch_size, device=device),
+                "header_footer_suppression": torch.rand(batch_size, device=device),
                 "latency_penalty": torch.rand(batch_size, device=device),
             },
         )

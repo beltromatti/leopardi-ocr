@@ -30,20 +30,65 @@ class RuntimeConfig:
     log_every: int = 20
     eval_every: int = 1_000
     save_every: int = 1_000
+    seed: int = 1337
+
+
+@dataclass(slots=True)
+class SchedulerConfig:
+    name: str = "cosine"
+    warmup_ratio: float = 0.03
+    min_lr_ratio: float = 0.1
+
+
+@dataclass(slots=True)
+class DataMixConfig:
+    exact_pairs: float = 0.45
+    synthetic_exact: float = 0.20
+    structural_aux: float = 0.10
+    table_aux: float = 0.10
+    formula_aux: float = 0.10
+    long_tail_aux: float = 0.05
+    weak_label_discount: float = 0.35
+
+
+@dataclass(slots=True)
+class CurriculumConfig:
+    clean_phase_steps: int = 4_000
+    transition_phase_steps: int = 10_000
+    hard_phase_steps: int = 36_000
+    hard_example_boost: float = 1.25
+    pathological_boost: float = 1.5
+    refresh_failure_pool_every: int = 1_000
+    keep_easy_fraction: float = 0.15
+
+
+@dataclass(slots=True)
+class ModuleLrConfig:
+    visual_tokenizer: float = 0.7
+    latent_bottleneck: float = 1.0
+    planner: float = 1.15
+    writer: float = 1.25
+    auxiliary_heads: float = 1.1
+    no_decay_on_norms_and_bias: bool = True
 
 
 @dataclass(slots=True)
 class ObjectiveWeights:
     token_ce: float = 1.0
+    formula_ce: float = 0.15
+    table_ce: float = 0.15
     block_type: float = 0.2
     block_length: float = 0.1
     specialist_hint: float = 0.1
     block_box: float = 0.05
+    planner_confidence: float = 0.05
     rotation: float = 0.05
     handwriting: float = 0.05
     formula_tokens: float = 0.1
     table_blocks: float = 0.1
     table_spans: float = 0.05
+    label_smoothing: float = 0.0
+    sample_weight_floor: float = 0.25
 
 
 @dataclass(slots=True)
@@ -54,6 +99,10 @@ class PretrainStageConfig:
     visual_mode: str = "standard"
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
+    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
+    data_mix: DataMixConfig = field(default_factory=DataMixConfig)
+    curriculum: CurriculumConfig = field(default_factory=CurriculumConfig)
+    module_lr: ModuleLrConfig = field(default_factory=ModuleLrConfig)
     objective_weights: ObjectiveWeights = field(default_factory=ObjectiveWeights)
 
     @classmethod
@@ -78,7 +127,12 @@ class PretrainStageConfig:
                 log_every=runtime_root.get("log_every", 20),
                 eval_every=runtime_root.get("eval_every", 1_000),
                 save_every=runtime_root.get("save_every", 1_000),
+                seed=runtime_root.get("seed", payload.get("seed", 1337)),
             ),
+            scheduler=SchedulerConfig(**payload.get("scheduler", {})),
+            data_mix=DataMixConfig(**payload.get("data_mix", {})),
+            curriculum=CurriculumConfig(**payload.get("curriculum", {})),
+            module_lr=ModuleLrConfig(**payload.get("module_lr", {})),
             objective_weights=ObjectiveWeights(**objective),
         )
 

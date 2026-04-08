@@ -18,16 +18,30 @@ class LossReport:
 
 
 def _masked_cross_entropy(logits: Tensor, targets: Tensor, mask: Tensor | None = None) -> Tensor:
+    return _weighted_cross_entropy(logits, targets, mask=mask)
+
+
+def _weighted_cross_entropy(
+    logits: Tensor,
+    targets: Tensor,
+    mask: Tensor | None = None,
+    sample_weights: Tensor | None = None,
+    label_smoothing: float = 0.0,
+) -> Tensor:
     flat_loss = F.cross_entropy(
         logits.reshape(-1, logits.size(-1)),
         targets.reshape(-1),
         reduction="none",
+        label_smoothing=label_smoothing,
     ).reshape_as(targets)
-    if mask is None:
-        return flat_loss.mean()
-    masked = flat_loss * mask.float()
-    denom = mask.float().sum().clamp_min(1.0)
-    return masked.sum() / denom
+    weight_map = torch.ones_like(flat_loss)
+    if mask is not None:
+        weight_map = weight_map * mask.float()
+    if sample_weights is not None:
+        shape = (sample_weights.shape[0],) + (1,) * (flat_loss.dim() - 1)
+        weight_map = weight_map * sample_weights.view(shape)
+    denom = weight_map.sum().clamp_min(1.0)
+    return (flat_loss * weight_map).sum() / denom
 
 
 def compute_pretraining_losses(
@@ -37,9 +51,35 @@ def compute_pretraining_losses(
 ) -> LossReport:
     weights = stage_config.objective_weights
     terms: dict[str, Tensor] = {}
+    sample_weights = None
+    if batch.sample_weights is not None:
+        sample_weights = batch.sample_weights.clamp_min(weights.sample_weight_floor)
 
-    token_loss = _masked_cross_entropy(outputs.decoder_logits, batch.labels)
+    token_loss = _weighted_cross_entropy(
+        outputs.decoder_logits,
+        batch.labels,
+        mask=batch.label_mask,
+        sample_weights=sample_weights,
+        label_smoothing=weights.label_smoothing,
+    )
     terms["token_ce"] = token_loss * weights.token_ce
+
+    if batch.formula_label_mask is not None and weights.formula_ce > 0:
+        terms["formula_ce"] = _weighted_cross_entropy(
+            outputs.decoder_logits,
+            batch.labels,
+            mask=batch.formula_label_mask,
+            sample_weights=sample_weights,
+            label_smoothing=weights.label_smoothing,
+        ) * weights.formula_ce
+    if batch.table_label_mask is not None and weights.table_ce > 0:
+        terms["table_ce"] = _weighted_cross_entropy(
+            outputs.decoder_logits,
+            batch.labels,
+            mask=batch.table_label_mask,
+            sample_weights=sample_weights,
+            label_smoothing=weights.label_smoothing,
+        ) * weights.table_ce
 
     if batch.block_types is not None:
         terms["block_type"] = _masked_cross_entropy(
@@ -60,6 +100,12 @@ def compute_pretraining_losses(
         else:
             l1 = l1.mean()
         terms["block_box"] = l1 * weights.block_box
+    if batch.planner_confidence_targets is not None and weights.planner_confidence > 0:
+        confidence_loss = F.binary_cross_entropy_with_logits(
+            outputs.planner.confidence_logits,
+            batch.planner_confidence_targets,
+        )
+        terms["planner_confidence"] = confidence_loss * weights.planner_confidence
     if batch.rotation_labels is not None:
         terms["rotation"] = F.cross_entropy(
             outputs.auxiliary.rotation_logits, batch.rotation_labels

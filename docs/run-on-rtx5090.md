@@ -38,7 +38,9 @@ python3 -m leopardi.cli --help
 python3 -m leopardi.cli doctor
 python3 -m leopardi.cli model-summary configs/model/leopardi_s0.yaml
 python3 -m leopardi.cli pretrain-summary configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml
+python3 -m leopardi.cli pretrain-materialize leo-s0-p2-20260408-001 configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml configs/model/leopardi_s0.yaml --root runs
 python3 -m leopardi.cli finetune-summary configs/finetune/s0_f0_sft.yaml configs/runtime/finetune_rtx5090.yaml
+python3 -m leopardi.cli finetune-materialize leo-s0-f0-20260408-001 configs/finetune/s0_f0_sft.yaml configs/runtime/finetune_rtx5090.yaml configs/model/leopardi_s0.yaml --root runs
 python3 -m leopardi.cli optimization-summary configs/optimization/s0_o2_vllm_compressed.yaml configs/runtime/optimization_rtx5090.yaml
 python3 -m leopardi.cli inference-summary configs/inference/s0_i1_vllm_adaptive.yaml configs/runtime/inference_rtx5090.yaml
 python3 -m leopardi.cli evaluation-summary configs/eval/public_frontier.yaml configs/runtime/eval_rtx5090.yaml

@@ -87,6 +87,12 @@ Auxiliary objectives:
 - table topology prediction
 - formula span prediction
 
+Modern compact OCR-VLM results and repos also imply three practical rules for `S0`:
+
+- curriculum and sample weighting matter as much as raw data volume
+- formula and table spans need extra token pressure, not only page-level supervision
+- the writer and planner should usually move faster than the visual trunk on a single `RTX 5090`
+
 ### P3. Hard-Case Curriculum
 
 Once the model can parse clean born-digital pages, expose it aggressively to hard cases.
@@ -152,6 +158,7 @@ Recommended initial mixture:
 - `5%` handwriting, forms, and chart-heavy tasks
 
 This should be treated as the first strong prior, not as immutable truth.
+Weak or partially teacher-derived supervision should be discounted explicitly rather than mixed at full strength.
 
 ## Curriculum
 
@@ -190,6 +197,7 @@ Recommended first training shape:
 - page render DPI: mixed `144` and `192`
 - adaptive crop budget instead of always higher resolution
 - global batch via gradient accumulation
+- cosine decay with short warmup and module-wise learning-rate scaling
 
 Why this matters:
 
@@ -212,6 +220,10 @@ Use benchmark-style data, but do not collapse pretraining into benchmark imitati
 ### 4. Do not introduce MoE in the first training phase
 
 It obscures the architecture search.
+
+### 5. Do not use a flat token loss for all structures
+
+Formulas and complex tables dominate the frontier error surface and need explicit token-level emphasis.
 
 ## Scale-Up Path To `Leopardi-S1`
 

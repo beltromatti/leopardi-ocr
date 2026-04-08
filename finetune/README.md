@@ -52,7 +52,13 @@ Finetuning is where Leopardi wins:
 
 ## Current State
 
-The control plane, recipes, losses, and rewards are ready.
+The control plane, recipes, losses, rewards, optimizer grouping, and run materialization layer are ready.
+
+The repo can now materialize a finetune run on disk, including:
+
+- run manifest and heartbeat
+- stage plan with sampling, verifier, scheduler, and module-wise learning-rate policy
+- report stub and checkpoint publication target
 
 The missing execution layer is the actual finetune loop, checkpoint loading, and bundle-connected dataloader path.
 

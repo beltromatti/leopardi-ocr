@@ -11,6 +11,7 @@ This is the first serious recipe for `Leopardi-S0`.
 3. train the full model on exact page-to-Markdown parsing
 4. inject explicit structure pressure through auxiliary sources
 5. harden the model on synthetic and long-tail slices
+6. use module-wise learning rates and token-level structure emphasis so the small model spends capacity where the frontier actually breaks
 
 ## Stage Order
 
@@ -50,6 +51,7 @@ Data:
 Goal:
 
 - build the core page-to-canonical-target transduction behavior
+- establish stable curriculum, sample weighting, and module-LR behavior before harder stages
 
 ### `P3`
 
@@ -62,10 +64,12 @@ Data:
 Goal:
 
 - improve robustness without destroying the clean-core parse
+- mine and replay hard failures often enough that formulas, tables, rotation, and handwriting do not regress
 
 ## Recipe Discipline
 
 - do not skip `P1`
 - do not start with the hardest pages
 - do not let weak labels contaminate exact stages
+- do not use identical learning rates across the full backbone once `S0` is stable enough to benefit from asymmetric tuning
 - do not treat one long run as the goal; treat reproducible iteration as the goal

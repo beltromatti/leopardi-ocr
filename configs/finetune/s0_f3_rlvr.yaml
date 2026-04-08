@@ -24,8 +24,36 @@ optimizer:
   weight_decay: 0.0
   eps: 1.0e-8
   grad_clip_norm: 1.0
+scheduler:
+  name: cosine
+  warmup_ratio: 0.02
+  min_lr_ratio: 0.3
+sampling:
+  easy_ratio: 0.06
+  medium_ratio: 0.16
+  hard_ratio: 0.42
+  pathological_ratio: 0.36
+  failure_replay_ratio: 0.40
+  refresh_failure_buffer_every: 100
+  keep_clean_anchor_fraction: 0.06
+module_lr:
+  visual_tokenizer: 0.0
+  latent_bottleneck: 0.85
+  planner: 1.1
+  writer: 1.15
+  auxiliary_heads: 0.75
+verifier:
+  reward_clip: 2.5
+  normalize_rewards: true
+  min_reward_group_size: 4
+  informative_reward_floor: 0.01
+  target_latency_ms: 1200.0
+  target_output_tokens: 3072
+  kl_anchor_beta: 0.02
 loss_weights:
   token_ce: 0.4
+  formula_ce: 0.08
+  table_ce: 0.08
   repair_ce: 0.3
   block_type: 0.05
   block_length: 0.02
@@ -37,12 +65,18 @@ loss_weights:
   table_blocks: 0.03
   table_spans: 0.02
   reward_anchor: 1.0
+  kl_anchor: 0.05
+  label_smoothing: 0.0
+  sample_weight_floor: 0.25
 reward_weights:
   markdown_validity: 1.2
   latex_validity: 1.0
   table_validity: 1.0
   reading_order: 0.5
   edit_similarity: 1.2
+  formula_exactness: 1.0
+  header_footer_suppression: 0.6
+  chart_text: 0.4
   output_length_penalty: 0.1
   latency_penalty: 0.25
   repair_budget_penalty: 0.2

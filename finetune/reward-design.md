@@ -35,6 +35,8 @@ Prefer:
 - short rollout horizons
 - dynamic filtering of uninformative groups
 - explicit overlong penalties
+- clipped and normalized rewards before aggregation
+- KL anchoring when RL starts to drift away from the strongest SFT checkpoint
 
 These choices are aligned with recent open RL practice reflected in `verl` and recipes such as `DAPO`.
 

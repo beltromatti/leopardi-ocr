@@ -15,6 +15,9 @@ Why:
 - this is the product contract
 - small models benefit from being trained on the exact output form they must later emit
 
+This main objective should not remain uniform across all target tokens.
+Formula spans and table spans should carry explicit extra weight because they dominate the public frontier gap.
+
 ## Auxiliary Objectives
 
 ### Block type prediction
@@ -41,6 +44,13 @@ Why:
 Why:
 
 - creates a useful alignment pressure between visual structure and written structure
+
+### Planner confidence calibration
+
+Why:
+
+- makes later routing and repair decisions more trustworthy
+- helps the model expose where cheap decode is unsafe
 
 ### Rotation prediction
 
@@ -75,3 +85,10 @@ The initial weights live in:
 
 - `configs/pretraining/`
 - `src/leopardi/pretraining/losses.py`
+
+The current implementation also supports:
+
+- token-level formula weighting
+- token-level table weighting
+- sample weighting floors for weak or noisy supervision
+- label smoothing for syntax stabilization

@@ -50,6 +50,12 @@ For Leopardi it must maximize:
 
 ## Current State
 
-The control plane and loss-level implementation layers are ready.
+The control plane, curriculum config, optimizer grouping, loss-level implementation, and run materialization layer are ready.
+
+The repo can now materialize a pretraining run on disk, including:
+
+- run manifest and heartbeat
+- stage plan with scheduler, data mix, curriculum, and module-wise learning-rate policy
+- report stub and checkpoint publication target
 
 The missing execution layer is the actual training loop and dataloader integration against published bundles.

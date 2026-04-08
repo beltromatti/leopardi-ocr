@@ -6,6 +6,7 @@ Each finetune stage must save a compact but complete artifact package.
 
 ## Mandatory Artifacts
 
+- stage plan and command snapshot
 - checkpoint
 - stage config snapshot
 - runtime snapshot
@@ -30,6 +31,7 @@ Each finetune stage must save a compact but complete artifact package.
 
 A finetune result is not real until:
 
+- stage plan archived
 - checkpoint persisted
 - stage report archived
 - exact bundle identities recorded

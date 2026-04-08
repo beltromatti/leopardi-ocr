@@ -18,6 +18,18 @@ Why used:
 
 - recent open RL recipe emphasizing dynamic sampling, token-level loss aggregation, and overlong control
 
+### `GLM-OCR`
+
+Why used:
+
+- compact OCR-VLM reference that explicitly combines MTP-style efficiency ideas with stable full-task RL
+
+### `PaddleOCR-VL`
+
+Why used:
+
+- strongest current compact frontier target, useful for checking whether Leopardi is learning the right mixture of robustness and exactness rather than only one benchmark style
+
 ### `TorchAO`
 
 Why used:

@@ -18,6 +18,12 @@ This is the first serious finetuning recipe for `Leopardi-S0`.
 `F2` reduces expensive full re-decodes.
 `F3` is last because RL only helps if the model already writes coherent canonical outputs.
 
+Across all four stages, keep three invariants:
+
+- module-wise LR scaling instead of flat whole-model updates
+- explicit failure replay
+- latency-aware but verifier-heavy scoring
+
 ## Default Model-Update Policy
 
 ### `F0`
@@ -28,6 +34,7 @@ Why:
 
 - `S0` is small enough that full tuning is feasible on one `RTX 5090`
 - we want to move the whole model into the exact-output regime
+- the writer should still move slightly faster than the visual trunk
 
 ### `F1`
 
@@ -36,6 +43,7 @@ Why:
 Why:
 
 - specialist slices should reshape shared representations, not only add a thin adapter
+- hard cases should also get stronger sample weighting than easy anchor data
 
 ### `F2`
 
@@ -44,6 +52,7 @@ Why:
 Why:
 
 - repair quality depends on tight integration between planner, decoder, and auxiliary heads
+- KL anchoring should keep repair from drifting into verbose or hallucinatory rewrites
 
 ### `F3`
 
@@ -53,6 +62,7 @@ Why:
 
 - RL on one rented GPU benefits from lower memory pressure and faster branching
 - current open RL stacks such as `verl` explicitly support LoRA-style post-training
+- reward clipping, normalization, and informative-group filtering matter more than fancy preference modeling here
 
 ## Release Discipline
 

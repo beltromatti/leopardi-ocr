@@ -91,6 +91,11 @@ Primary bundle:
 
 - `f3_rlvr_v1`
 
+Current open compact parsers suggest two additional lessons:
+
+- specialist SFT does most of the heavy lifting on quality
+- RLVR is most useful as a sharpener for exactness and efficiency once syntax is already stable
+
 ## Reward Design
 
 Leopardi rewards should be mostly objective and automatically checkable.
@@ -136,6 +141,7 @@ Recommended rule:
 
 - keep `easy` examples present for stability
 - oversample `hard` and `pathological` examples enough to move failure slices
+- keep an explicit failure replay buffer so regressions do not disappear between rounds
 
 ## Distillation Policy
 
@@ -164,6 +170,12 @@ Before locking `Leopardi-S0`, run:
 - weight-only low-bit serving ablations
 - QAT experiments using `TorchAO`
 
+Also keep finetuning itself compression-aware through:
+
+- module-wise learning-rate scaling
+- KL anchoring in repair and RL stages
+- reward terms that punish unnecessary length and latency
+
 Why:
 
 - the first architecture should already know whether it survives compression
@@ -191,3 +203,10 @@ This mined set is one of the most valuable assets in the project.
 3. repair mode improves hard pages with modest latency tax
 4. RLVR improves exactness without destabilizing output format
 5. compressed serving variants preserve the quality ranking
+
+Operationally the compact-model path should behave like this:
+
+- `F0` stabilizes syntax and reading order
+- `F1` moves formulas, tables, handwriting, rotation, and charts
+- `F2` teaches cheap local repair
+- `F3` sharpens objective validity and latency tradeoffs without undoing the SFT gains

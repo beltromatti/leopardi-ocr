@@ -18,16 +18,30 @@ class FinetuneLossReport:
 
 
 def _masked_cross_entropy(logits: Tensor, targets: Tensor, mask: Tensor | None = None) -> Tensor:
+    return _weighted_cross_entropy(logits, targets, mask=mask)
+
+
+def _weighted_cross_entropy(
+    logits: Tensor,
+    targets: Tensor,
+    mask: Tensor | None = None,
+    sample_weights: Tensor | None = None,
+    label_smoothing: float = 0.0,
+) -> Tensor:
     flat_loss = F.cross_entropy(
         logits.reshape(-1, logits.size(-1)),
         targets.reshape(-1),
         reduction="none",
+        label_smoothing=label_smoothing,
     ).reshape_as(targets)
-    if mask is None:
-        return flat_loss.mean()
-    weighted = flat_loss * mask.float()
-    denom = mask.float().sum().clamp_min(1.0)
-    return weighted.sum() / denom
+    weight_map = torch.ones_like(flat_loss)
+    if mask is not None:
+        weight_map = weight_map * mask.float()
+    if sample_weights is not None:
+        shape = (sample_weights.shape[0],) + (1,) * (flat_loss.dim() - 1)
+        weight_map = weight_map * sample_weights.view(shape)
+    denom = weight_map.sum().clamp_min(1.0)
+    return (flat_loss * weight_map).sum() / denom
 
 
 def compute_finetune_losses(
@@ -37,14 +51,42 @@ def compute_finetune_losses(
 ) -> FinetuneLossReport:
     weights = stage_config.loss_weights
     terms: dict[str, Tensor] = {}
+    sample_weights = None
+    if batch.sample_weights is not None:
+        sample_weights = batch.sample_weights.clamp_min(weights.sample_weight_floor)
 
-    terms["token_ce"] = _masked_cross_entropy(
-        outputs.decoder_logits, batch.labels, batch.label_mask
+    terms["token_ce"] = _weighted_cross_entropy(
+        outputs.decoder_logits,
+        batch.labels,
+        batch.label_mask,
+        sample_weights=sample_weights,
+        label_smoothing=weights.label_smoothing,
     ) * weights.token_ce
 
+    if batch.formula_label_mask is not None and weights.formula_ce > 0:
+        terms["formula_ce"] = _weighted_cross_entropy(
+            outputs.decoder_logits,
+            batch.labels,
+            batch.formula_label_mask,
+            sample_weights=sample_weights,
+            label_smoothing=weights.label_smoothing,
+        ) * weights.formula_ce
+    if batch.table_label_mask is not None and weights.table_ce > 0:
+        terms["table_ce"] = _weighted_cross_entropy(
+            outputs.decoder_logits,
+            batch.labels,
+            batch.table_label_mask,
+            sample_weights=sample_weights,
+            label_smoothing=weights.label_smoothing,
+        ) * weights.table_ce
+
     if batch.repair_mask is not None and weights.repair_ce > 0:
-        terms["repair_ce"] = _masked_cross_entropy(
-            outputs.decoder_logits, batch.labels, batch.repair_mask
+        terms["repair_ce"] = _weighted_cross_entropy(
+            outputs.decoder_logits,
+            batch.labels,
+            batch.repair_mask,
+            sample_weights=sample_weights,
+            label_smoothing=weights.label_smoothing,
         ) * weights.repair_ce
     if batch.block_types is not None:
         terms["block_type"] = _masked_cross_entropy(
@@ -90,6 +132,15 @@ def compute_finetune_losses(
             len(batch.reward_signals), 1
         )
         terms["reward_anchor"] = (-anchor) * weights.reward_anchor
+    if batch.reference_log_probs is not None and weights.kl_anchor > 0:
+        log_probs = F.log_softmax(outputs.decoder_logits, dim=-1)
+        current_log_probs = torch.gather(log_probs, dim=-1, index=batch.labels.unsqueeze(-1)).squeeze(-1)
+        kl_proxy = (current_log_probs - batch.reference_log_probs).pow(2)
+        if batch.label_mask is not None:
+            kl_proxy = (kl_proxy * batch.label_mask.float()).sum() / batch.label_mask.float().sum().clamp_min(1.0)
+        else:
+            kl_proxy = kl_proxy.mean()
+        terms["kl_anchor"] = kl_proxy * weights.kl_anchor
 
     total = torch.stack([value for value in terms.values()]).sum()
     return FinetuneLossReport(

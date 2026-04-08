@@ -4,6 +4,7 @@ from leopardi.model import LeopardiS0, LeopardiS0Config
 from leopardi.pretraining.batch import PretrainBatch
 from leopardi.pretraining.config import PretrainStageConfig
 from leopardi.pretraining.losses import compute_pretraining_losses
+from leopardi.pretraining.runtime import build_optimizer, materialize_pretraining_stage, optimizer_group_summary
 
 
 def test_leopardi_s0_tiny_forward_shapes() -> None:
@@ -61,3 +62,25 @@ def test_pretraining_loss_report_smoke() -> None:
 
     assert report.total_loss.item() > 0.0
     assert "token_ce" in report.loss_terms
+    assert "formula_ce" in report.loss_terms
+
+
+def test_pretraining_optimizer_groups_and_materialization(tmp_path) -> None:
+    config = LeopardiS0Config.tiny()
+    model = LeopardiS0(config)
+    stage = PretrainStageConfig(stage="p2_multimodal_core", visual_mode="standard")
+    optimizer = build_optimizer(model, stage)
+
+    assert len(optimizer.param_groups) >= 2
+    assert optimizer_group_summary(model, stage)
+
+    payload = materialize_pretraining_stage(
+        experiment_id="leo-s0-p2-test",
+        stage=stage,
+        model_config_path="configs/model/leopardi_s0.yaml",
+        root=tmp_path / "runs",
+    )
+    assert payload["plan"]["stage"] == "p2_multimodal_core"
+    assert (
+        tmp_path / "runs" / "leo-s0-p2-test" / "artifacts" / "pretraining" / "p2_multimodal_core" / "training-plan.json"
+    ).exists()

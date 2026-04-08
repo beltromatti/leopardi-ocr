@@ -9,7 +9,7 @@ This file defines when not to use it.
 ## Default Policy
 
 - `F0` to `F2`: full finetune
-- `F3`: LoRA-style RL updates by default
+- `F3`: parameter-efficient targeted RL updates by default, with LoRA-style intent and module targeting
 
 ## Why Full Finetune First
 
@@ -17,12 +17,15 @@ This file defines when not to use it.
 - full tuning is realistic on one `RTX 5090`
 - exact output behavior often needs distributed changes across the whole model
 
-## Why LoRA For RL By Default
+## Why Parameter-Efficient RL By Default
 
 - RL iteration is expensive and unstable
 - adapter updates reduce memory pressure
 - current open RL stacks explicitly support LoRA pathways
 - LoRA RL makes branching experiments cheaper
+
+In the current repo scaffold, this is implemented as targeted updates on the most relevant modules.
+Low-rank adapter injection itself remains a later execution-layer step.
 
 ## When To Use LoRA Earlier
 

@@ -17,7 +17,13 @@ from leopardi.evaluation import (
 from leopardi.finetune.batch import FinetuneBatch
 from leopardi.finetune.config import FinetuneStageConfig
 from leopardi.finetune.losses import compute_finetune_losses
+from leopardi.finetune.recipes import finetune_stage_recipe_dict
 from leopardi.finetune.rewards import compute_reward_breakdown
+from leopardi.finetune.runtime import (
+    build_finetune_execution_plan,
+    materialize_finetune_stage,
+    optimizer_group_summary as finetune_optimizer_group_summary,
+)
 from leopardi.inference import (
     DocumentPage,
     InferenceStageConfig,
@@ -54,6 +60,12 @@ from leopardi.ops import (
 from leopardi.pretraining.batch import PretrainBatch
 from leopardi.pretraining.config import PretrainStageConfig
 from leopardi.pretraining.losses import compute_pretraining_losses
+from leopardi.pretraining.recipes import stage_recipe_dict
+from leopardi.pretraining.runtime import (
+    build_pretraining_execution_plan,
+    materialize_pretraining_stage,
+    optimizer_group_summary as pretraining_optimizer_group_summary,
+)
 from leopardi.schemas.output import ParsedPage
 
 app = typer.Typer(help="Leopardi OCR developer CLI.")
@@ -109,6 +121,57 @@ def pretrain_summary(
 
 
 @app.command()
+def pretrain_recipes() -> None:
+    console.print(
+        {
+            recipe: stage_recipe_dict(recipe)
+            for recipe in ("p1_text_warmup", "p2_multimodal_core", "p3_hard_curriculum")
+        }
+    )
+
+
+@app.command()
+def pretrain_plan(
+    stage_config: Path = typer.Argument(Path("configs/pretraining/s0_p2_multimodal_core.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/train_rtx5090.yaml")),
+    model_config: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
+) -> None:
+    stage = PretrainStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        asdict(
+            build_pretraining_execution_plan(
+                experiment_id="pretrain-plan-preview",
+                stage=stage,
+                model_config_path=str(model_config),
+                stage_config_path=str(stage_config),
+                runtime_config_path=str(runtime_config),
+            )
+        )
+    )
+
+
+@app.command()
+def pretrain_materialize(
+    experiment_id: str = typer.Argument("leo-s0-p2-pretrain-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/pretraining/s0_p2_multimodal_core.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/train_rtx5090.yaml")),
+    model_config: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    stage = PretrainStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        materialize_pretraining_stage(
+            experiment_id=experiment_id,
+            stage=stage,
+            model_config_path=str(model_config),
+            stage_config_path=str(stage_config),
+            runtime_config_path=str(runtime_config),
+            root=root,
+        )
+    )
+
+
+@app.command()
 def smoke_train_step(
     model_config: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
     stage_config: Path = typer.Argument(Path("configs/pretraining/s0_p2_multimodal_core.yaml")),
@@ -138,6 +201,7 @@ def smoke_train_step(
             "model": model.summary(),
             "loss_report": report.loss_terms,
             "total": float(report.total_loss.detach()),
+            "optimizer_groups": pretraining_optimizer_group_summary(model, stage),
         }
     )
 
@@ -149,6 +213,57 @@ def finetune_summary(
 ) -> None:
     stage = FinetuneStageConfig.from_yaml(stage_config, runtime_config)
     console.print(stage)
+
+
+@app.command()
+def finetune_recipes() -> None:
+    console.print(
+        {
+            recipe: finetune_stage_recipe_dict(recipe)
+            for recipe in ("f0_general_sft", "f1_specialist_sft", "f2_repair_sft", "f3_rlvr")
+        }
+    )
+
+
+@app.command()
+def finetune_plan(
+    stage_config: Path = typer.Argument(Path("configs/finetune/s0_f0_sft.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/finetune_rtx5090.yaml")),
+    model_config: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
+) -> None:
+    stage = FinetuneStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        asdict(
+            build_finetune_execution_plan(
+                experiment_id="finetune-plan-preview",
+                stage=stage,
+                model_config_path=str(model_config),
+                stage_config_path=str(stage_config),
+                runtime_config_path=str(runtime_config),
+            )
+        )
+    )
+
+
+@app.command()
+def finetune_materialize(
+    experiment_id: str = typer.Argument("leo-s0-f0-finetune-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/finetune/s0_f0_sft.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/finetune_rtx5090.yaml")),
+    model_config: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    stage = FinetuneStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        materialize_finetune_stage(
+            experiment_id=experiment_id,
+            stage=stage,
+            model_config_path=str(model_config),
+            stage_config_path=str(stage_config),
+            runtime_config_path=str(runtime_config),
+            root=root,
+        )
+    )
 
 
 @app.command()
@@ -185,6 +300,7 @@ def smoke_finetune_step(
             "total_loss": float(loss_report.total_loss.detach()),
             "reward_report": reward_report.reward_terms,
             "total_reward": float(reward_report.total_reward.detach()),
+            "optimizer_groups": finetune_optimizer_group_summary(model, stage),
         }
     )
 

@@ -6,6 +6,7 @@ Each pretraining stage should emit a small set of mandatory artifacts.
 
 ## Required Artifacts
 
+- stage plan and command snapshot
 - checkpoint
 - optimizer and scheduler state when resume matters
 - stage config snapshot
@@ -25,6 +26,7 @@ Each pretraining stage should emit a small set of mandatory artifacts.
 
 A stage result is not a real Leopardi result until:
 
+- the stage plan is archived
 - the checkpoint is safely persisted
 - the stage config is frozen
 - the validation summary is archived

@@ -14,14 +14,45 @@ optimizer:
   weight_decay: 0.1
   eps: 1.0e-8
   grad_clip_norm: 1.0
+scheduler:
+  name: cosine
+  warmup_ratio: 0.03
+  min_lr_ratio: 0.12
+data_mix:
+  exact_pairs: 0.45
+  synthetic_exact: 0.20
+  structural_aux: 0.10
+  table_aux: 0.10
+  formula_aux: 0.10
+  long_tail_aux: 0.05
+  weak_label_discount: 0.35
+curriculum:
+  clean_phase_steps: 4000
+  transition_phase_steps: 10000
+  hard_phase_steps: 36000
+  hard_example_boost: 1.25
+  pathological_boost: 1.5
+  refresh_failure_pool_every: 1000
+  keep_easy_fraction: 0.15
+module_lr:
+  visual_tokenizer: 0.7
+  latent_bottleneck: 1.0
+  planner: 1.15
+  writer: 1.25
+  auxiliary_heads: 1.1
 objective_weights:
   token_ce: 1.0
+  formula_ce: 0.15
+  table_ce: 0.15
   block_type: 0.2
   block_length: 0.1
   specialist_hint: 0.1
   block_box: 0.05
+  planner_confidence: 0.05
   rotation: 0.05
   handwriting: 0.05
   formula_tokens: 0.1
   table_blocks: 0.1
   table_spans: 0.05
+  label_smoothing: 0.01
+  sample_weight_floor: 0.25

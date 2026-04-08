@@ -30,6 +30,14 @@ class FinetuneRuntimeConfig:
     log_every: int = 10
     eval_every: int = 250
     save_every: int = 250
+    seed: int = 1337
+
+
+@dataclass(slots=True)
+class SchedulerConfig:
+    name: str = "cosine"
+    warmup_ratio: float = 0.05
+    min_lr_ratio: float = 0.1
 
 
 @dataclass(slots=True)
@@ -42,12 +50,47 @@ class AdapterConfig:
 
 
 @dataclass(slots=True)
+class SamplingConfig:
+    easy_ratio: float = 0.20
+    medium_ratio: float = 0.30
+    hard_ratio: float = 0.35
+    pathological_ratio: float = 0.15
+    failure_replay_ratio: float = 0.20
+    refresh_failure_buffer_every: int = 250
+    keep_clean_anchor_fraction: float = 0.10
+
+
+@dataclass(slots=True)
+class ModuleLrConfig:
+    visual_tokenizer: float = 0.5
+    latent_bottleneck: float = 0.8
+    planner: float = 1.1
+    writer: float = 1.25
+    auxiliary_heads: float = 1.0
+    no_decay_on_norms_and_bias: bool = True
+
+
+@dataclass(slots=True)
+class VerifierConfig:
+    reward_clip: float = 2.5
+    normalize_rewards: bool = True
+    min_reward_group_size: int = 4
+    informative_reward_floor: float = 0.02
+    target_latency_ms: float = 1200.0
+    target_output_tokens: int = 3072
+    kl_anchor_beta: float = 0.02
+
+
+@dataclass(slots=True)
 class RewardWeights:
     markdown_validity: float = 1.0
     latex_validity: float = 0.8
     table_validity: float = 0.8
     reading_order: float = 0.4
     edit_similarity: float = 1.2
+    formula_exactness: float = 0.8
+    header_footer_suppression: float = 0.4
+    chart_text: float = 0.4
     output_length_penalty: float = 0.1
     latency_penalty: float = 0.2
     repair_budget_penalty: float = 0.15
@@ -56,6 +99,8 @@ class RewardWeights:
 @dataclass(slots=True)
 class FinetuneLossWeights:
     token_ce: float = 1.0
+    formula_ce: float = 0.15
+    table_ce: float = 0.15
     repair_ce: float = 0.5
     block_type: float = 0.15
     block_length: float = 0.05
@@ -67,6 +112,9 @@ class FinetuneLossWeights:
     table_blocks: float = 0.1
     table_spans: float = 0.05
     reward_anchor: float = 0.0
+    kl_anchor: float = 0.0
+    label_smoothing: float = 0.0
+    sample_weight_floor: float = 0.25
 
 
 @dataclass(slots=True)
@@ -78,6 +126,10 @@ class FinetuneStageConfig:
     adapter: AdapterConfig = field(default_factory=AdapterConfig)
     optimizer: FinetuneOptimizerConfig = field(default_factory=FinetuneOptimizerConfig)
     runtime: FinetuneRuntimeConfig = field(default_factory=FinetuneRuntimeConfig)
+    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
+    sampling: SamplingConfig = field(default_factory=SamplingConfig)
+    module_lr: ModuleLrConfig = field(default_factory=ModuleLrConfig)
+    verifier: VerifierConfig = field(default_factory=VerifierConfig)
     loss_weights: FinetuneLossWeights = field(default_factory=FinetuneLossWeights)
     reward_weights: RewardWeights = field(default_factory=RewardWeights)
 
@@ -114,7 +166,12 @@ class FinetuneStageConfig:
                 log_every=runtime_root.get("log_every", 10),
                 eval_every=runtime_root.get("eval_every", 250),
                 save_every=runtime_root.get("save_every", 250),
+                seed=runtime_root.get("seed", payload.get("seed", 1337)),
             ),
+            scheduler=SchedulerConfig(**payload.get("scheduler", {})),
+            sampling=SamplingConfig(**payload.get("sampling", {})),
+            module_lr=ModuleLrConfig(**payload.get("module_lr", {})),
+            verifier=VerifierConfig(**payload.get("verifier", {})),
             loss_weights=FinetuneLossWeights(**payload.get("loss_weights", {})),
             reward_weights=RewardWeights(**payload.get("reward_weights", {})),
         )
