@@ -37,6 +37,8 @@ _FRONT_MATTER_COMMANDS = (
     "author",
 )
 
+_INLINE_MATH_PATTERN = r"\$(?:[^\s$\n]|[^\s$\n][^$\n]*?[^\s$\n])\$"
+
 
 def normalize_target_text(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -64,6 +66,37 @@ def normalize_target_text(text: str) -> str:
     while normalized_lines and normalized_lines[-1] == "":
         normalized_lines.pop()
     return "\n".join(normalized_lines)
+
+
+def _normalize_markdown_math_boundaries(text: str) -> str:
+    lines = text.split("\n")
+    normalized_lines: list[str] = []
+    in_fence = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            normalized_lines.append(line)
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            normalized_lines.append(line)
+            continue
+        updated = line
+        updated = re.sub(rf"([A-Za-z0-9)])({_INLINE_MATH_PATTERN})", r"\1 \2", updated)
+        updated = re.sub(rf"({_INLINE_MATH_PATTERN})([A-Za-z0-9(])", r"\1 \2", updated)
+        updated = re.sub(r"(?<=\S)(\$\$)", r" \1", updated)
+        updated = re.sub(r"(\$\$)(?=\S)", r"\1 ", updated)
+        normalized_lines.append(updated)
+    return "\n".join(normalized_lines)
+
+
+def _normalize_inline_math_content(text: str) -> str:
+    value = text.strip()
+    value = re.sub(r"\(\s+", "(", value)
+    value = re.sub(r"\[\s+", "[", value)
+    value = re.sub(r"\s+([,;:.!?])", r"\1", value)
+    value = re.sub(r"\s+([)\]])", r"\1", value)
+    return value
 
 
 def _strip_tex_comments(tex: str) -> str:
@@ -142,7 +175,7 @@ def _extract_simple_tex_macros(content: str) -> dict[str, str]:
         if len(name) < 3:
             continue
         value, _ = _extract_braced_from_index(content, match.end() - 1)
-        cleaned = _strip_tex_wrappers(value)
+        cleaned = _strip_tex_wrappers(value).strip()
         if cleaned and cleaned != "\\":
             macros[name] = cleaned
     def_pattern = re.compile(r"\\def\\([A-Za-z@]+)\s*\{", flags=re.DOTALL)
@@ -151,7 +184,7 @@ def _extract_simple_tex_macros(content: str) -> dict[str, str]:
         if len(name) < 3:
             continue
         value, _ = _extract_braced_from_index(content, match.end() - 1)
-        cleaned = _strip_tex_wrappers(value)
+        cleaned = _strip_tex_wrappers(value).strip()
         if cleaned and cleaned != "\\":
             macros[name] = cleaned
     return macros
@@ -440,7 +473,12 @@ def tex_to_markdown(tex: str) -> str:
     if front_matter:
         payload = normalize_target_text("\n\n".join((*front_matter, payload)))
     payload = re.sub(r"^\{([^{}\n]+)\}$", r"\1", payload, flags=re.MULTILINE)
-    payload = re.sub(r"\$\s+([^$]+?)\s*\$", lambda match: f"${match.group(1).strip()}$", payload)
+    payload = re.sub(
+        r"\$\s*([^$\n]+?)\s*\$",
+        lambda match: f"${_normalize_inline_math_content(match.group(1))}$",
+        payload,
+    )
+    payload = _normalize_markdown_math_boundaries(payload)
     return payload
 
 

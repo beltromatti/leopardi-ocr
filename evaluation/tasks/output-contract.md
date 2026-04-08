@@ -9,15 +9,17 @@ Date locked: 2026-04-08
 Expected output:
 
 - Leopardi canonical Markdown
-- LaTeX for formulas
+- math LaTeX for formulas, embedded inside Markdown with `$...$` or `$$...$$`
 - canonical complex-table fenced blocks when needed
 - preserved figure captions and handwritten page structure when source-visible
+- never full TeX document source, preamble commands, package declarations, or document-level wrappers
 
 ### Formula recognition
 
 Expected output:
 
-- LaTeX only
+- math LaTeX only
+- no standalone TeX document syntax
 
 ### Table structure
 

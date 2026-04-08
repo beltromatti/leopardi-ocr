@@ -21,7 +21,14 @@ The data plan is built around one rule:
 ### 1. Exact paired document supervision is the highest-value data
 
 The most important data for Leopardi is not generic OCR crops.
-It is page or document supervision where the target can be canonically converted to Markdown plus LaTeX.
+It is page or document supervision where the target can be canonically converted to Markdown plus math LaTeX.
+
+Here `LaTeX` means only the math notation used inside Markdown output:
+
+- inline math: `$...$`
+- display math: `$$...$$`
+
+It does not mean full TeX document syntax with preamble, packages, theorem setup, bibliography commands, or other source-level scaffolding.
 
 ### 2. Small models need cleaner data than large models
 

@@ -328,3 +328,28 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
     )
     assert plotqa.target_type == "chart_serialization"
     assert "```chart" in plotqa.canonical_target
+
+
+def test_tex_canonicalizer_preserves_spaces_around_inline_math() -> None:
+    tex = r"""
+    \documentclass{article}
+    \def\algname{{\sf RandGraph}}
+    \begin{document}
+    \ABSTRACT{For any constant $k$, $\algname$ generates a graph with $n$ vertices, $m$ edges, and no cycle of length at most $k$.}
+    \end{document}
+    """
+    markdown = tex_to_markdown(tex)
+    assert "$RandGraph$ generates" in markdown
+    assert "$n$ vertices, $m$ edges" in markdown
+    assert "at most $k$." in markdown
+
+
+def test_tex_canonicalizer_trims_inline_math_punctuation_spacing() -> None:
+    tex = r"""
+    \documentclass{article}
+    \begin{document}
+    \ABSTRACT{We have $m=O(n^{1+1/[2k(k+3)]}\, )$.}
+    \end{document}
+    """
+    markdown = tex_to_markdown(tex)
+    assert r"$m=O(n^{1+1/[2k(k+3)]}\,)$" in markdown
