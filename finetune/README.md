@@ -15,6 +15,7 @@ Finetuning is where Leopardi wins:
 - strong specialist behavior on tables, handwriting, rotation, receipts, and charts
 - cheaper and more reliable local repair
 - RL improvements that do not destroy format stability
+- compression-aware behavior strong enough to survive the later `optimization/` stage
 
 ## Files
 
@@ -53,3 +54,8 @@ Finetuning is where Leopardi wins:
 The control plane, recipes, losses, and rewards are ready.
 
 The missing execution layer is the actual finetune loop, checkpoint loading, and bundle-connected dataloader path.
+
+The deployable artifact selection and export logic now lives in:
+
+- `optimization/`
+- `src/leopardi/optimization/`

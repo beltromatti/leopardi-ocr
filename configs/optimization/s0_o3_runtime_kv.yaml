@@ -1,0 +1,45 @@
+stage: o3_runtime_kv
+track: s0-runtime
+base_stage: o2_vllm_compressed
+base_checkpoint_tag: candidate
+calibration:
+  bundle_id: o_calibration_docmix_v1
+  max_samples: 256
+  max_seq_len: 2048
+  page_mix:
+    - easy
+    - medium
+    - hard
+goal:
+  target_frontier: quality_speed_memory
+  quality_floor: 0.94
+  markdown_validity_floor: 0.995
+  latex_validity_floor: 0.99
+  max_relative_quality_drop: 0.01
+  min_latency_gain: 0.05
+  max_memory_gb: 18.0
+variants:
+  - variant_id: vllm_fp8_kv
+    method: runtime_kv_quant
+    export_format: runtime_only
+    weight_dtype: inherit
+    activation_dtype: inherit
+    kv_cache_dtype: fp8
+    runtime_targets: [vllm]
+    structured_output_backend: auto
+    requires_calibration: false
+    expected_latency_gain: 0.08
+    expected_memory_gain: 0.15
+    quality_risk: low
+  - variant_id: sglang_fp8_kv
+    method: runtime_kv_quant
+    export_format: runtime_only
+    weight_dtype: inherit
+    activation_dtype: inherit
+    kv_cache_dtype: fp8
+    runtime_targets: [sglang]
+    structured_output_backend: auto
+    requires_calibration: false
+    expected_latency_gain: 0.08
+    expected_memory_gain: 0.15
+    quality_risk: low

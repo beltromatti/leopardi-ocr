@@ -84,13 +84,14 @@ Must answer:
 1. decode-time constraints, repair-time constraints, or hybrid?
 2. how much latency tax buys how much exactness?
 
-## Phase 5. RLVR and Compression
+## Phase 5. RLVR and Optimization
 
 Deliverables:
 
 - `verl` training path
 - objective reward suite
 - compression-aware serving variants
+- post-finetune optimization stage and artifact family
 
 Must answer:
 
@@ -161,5 +162,7 @@ The next engineering step after this blueprint is:
 
 1. implement `arXiv` and `PMC OA` data builders and publish the first canonical bundles
 2. implement the first end-to-end pretraining loop against those bundles
-3. implement the first evaluation runners for `public_frontier_v1` and `internal_holdout_v1`
-4. launch the first real `Leopardi-S0` baseline on `RTX 5090`
+3. implement the first end-to-end finetune loop against promoted checkpoints
+4. implement the first optimization export backends and reference artifact flow
+5. implement the first evaluation runners for `public_frontier_v1` and `internal_holdout_v1`
+6. launch the first real `Leopardi-S0` baseline on `RTX 5090`

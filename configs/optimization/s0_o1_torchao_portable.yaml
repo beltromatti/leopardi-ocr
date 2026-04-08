@@ -1,0 +1,43 @@
+stage: o1_torchao_portable
+track: s0-runtime
+base_stage: f1_specialist_sft
+base_checkpoint_tag: candidate
+calibration:
+  bundle_id: o_calibration_docmix_v1
+  max_samples: 256
+  max_seq_len: 2048
+  page_mix:
+    - easy
+    - medium
+    - hard
+goal:
+  target_frontier: quality_speed_memory
+  quality_floor: 0.93
+  markdown_validity_floor: 0.995
+  latex_validity_floor: 0.99
+  max_relative_quality_drop: 0.015
+  min_latency_gain: 0.1
+  max_memory_gb: 18.0
+variants:
+  - variant_id: torchao_int4_weight_only
+    method: torchao_ptq
+    export_format: hf_torchao
+    weight_dtype: int4
+    activation_dtype: bf16
+    kv_cache_dtype: bf16
+    runtime_targets: [hf, vllm]
+    requires_calibration: false
+    expected_latency_gain: 0.18
+    expected_memory_gain: 0.42
+    quality_risk: medium
+  - variant_id: torchao_fp8_dynamic
+    method: torchao_ptq
+    export_format: hf_torchao
+    weight_dtype: fp8
+    activation_dtype: fp8_dynamic
+    kv_cache_dtype: bf16
+    runtime_targets: [hf, vllm]
+    requires_calibration: false
+    expected_latency_gain: 0.12
+    expected_memory_gain: 0.25
+    quality_risk: low

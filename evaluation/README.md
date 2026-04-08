@@ -96,6 +96,7 @@ That means evaluation must normalize format variation without forgiving structur
 - `docs/research/unified-metrics.md` defines the research-layer metric synthesis
 - `docs/research/leaderboard-2026-04.md` defines the current competitor frontier
 - `data_pipeline/` defines training data and split provenance
+- `optimization/` defines deployable artifact families and post-finetune variants
 - `experiments/` defines run identity and promotion history
 
 `evaluation/` is the operational bridge between all of them.

@@ -1,0 +1,34 @@
+stage: o0_reference_export
+track: s0-runtime
+base_stage: f3_rlvr
+base_checkpoint_tag: candidate
+calibration:
+  bundle_id: o_calibration_docmix_v1
+  max_samples: 128
+  max_seq_len: 2048
+  page_mix:
+    - easy
+    - medium
+goal:
+  target_frontier: quality_speed_memory
+  quality_floor: 0.94
+  markdown_validity_floor: 0.995
+  latex_validity_floor: 0.99
+  max_relative_quality_drop: 0.005
+  min_latency_gain: 0.0
+  max_memory_gb: 24.0
+variants:
+  - variant_id: bf16_reference
+    method: reference_export
+    export_format: hf
+    weight_dtype: bf16
+    activation_dtype: bf16
+    kv_cache_dtype: bf16
+    runtime_targets: [hf, vllm, sglang]
+    structured_output_backend: auto
+    requires_calibration: false
+    expected_latency_gain: 0.0
+    expected_memory_gain: 0.0
+    quality_risk: minimal
+    notes:
+      - canonical reference artifact for all later optimization comparisons

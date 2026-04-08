@@ -1,0 +1,33 @@
+stage: o4_qat_export
+track: s0-runtime
+base_stage: f1_specialist_sft
+base_checkpoint_tag: qat_candidate
+calibration:
+  bundle_id: o_calibration_docmix_v1
+  max_samples: 256
+  max_seq_len: 2048
+  page_mix:
+    - easy
+    - medium
+    - hard
+goal:
+  target_frontier: quality_speed_memory
+  quality_floor: 0.94
+  markdown_validity_floor: 0.995
+  latex_validity_floor: 0.99
+  max_relative_quality_drop: 0.01
+  min_latency_gain: 0.1
+  max_memory_gb: 18.0
+variants:
+  - variant_id: qat_int4_export
+    method: torchao_qat_convert
+    export_format: hf_torchao
+    weight_dtype: int4
+    activation_dtype: int8_dynamic
+    kv_cache_dtype: bf16
+    runtime_targets: [hf, vllm]
+    structured_output_backend: auto
+    requires_calibration: false
+    expected_latency_gain: 0.22
+    expected_memory_gain: 0.45
+    quality_risk: low

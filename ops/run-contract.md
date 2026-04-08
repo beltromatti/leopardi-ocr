@@ -81,8 +81,12 @@ Must include:
 
 - unit: stage run
 
+### Optimization
+
+- unit: variant planning run or export run
+
 ### Evaluation
 
 - unit: protocol run
 
-The layout stays the same across all three.
+The layout stays the same across all four.

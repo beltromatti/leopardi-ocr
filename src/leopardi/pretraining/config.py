@@ -58,7 +58,7 @@ class PretrainStageConfig:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any], runtime_payload: dict[str, Any] | None = None) -> "PretrainStageConfig":
-        runtime_root = runtime_payload.get("runtime", runtime_payload or {})
+        runtime_root = (runtime_payload or {}).get("runtime", runtime_payload or {})
         objective = payload.get("objective_weights", payload.get("loss_weights", {}))
         return cls(
             stage=payload["stage"],

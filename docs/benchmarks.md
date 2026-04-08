@@ -53,6 +53,17 @@ Every reported result must include:
 - image resolution policy
 - decode mode
 - constrained-decoding mode if used
+- variant family: `bf16_reference`, optimized checkpoint, or runtime-only variant
+
+## Variant Rule
+
+Leopardi should report two result classes separately:
+
+- `reference` results from the canonical `bf16` artifact
+- `optimized` results from promoted post-finetune variants produced by `optimization/`
+
+This separation is mandatory.
+Otherwise quality and deployment claims get mixed together.
 
 ## Output Protocol
 

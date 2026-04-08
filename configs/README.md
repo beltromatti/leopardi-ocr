@@ -12,7 +12,7 @@ Recommended config stack order:
 
 1. `model/`
 2. `data/`
-3. `pretraining/` or `finetune/`
+3. `pretraining/`, `finetune/`, or `optimization/`
 4. `eval/`
 5. `runtime/`
 6. `overrides/`
@@ -23,6 +23,7 @@ Recommended config stack order:
 - `data/`: dataset mixtures, split versions, and canonical target settings
 - `pretraining/`: stage configs `p0` to `p3`
 - `finetune/`: stage configs `f0` to `f3`
+- `optimization/`: post-finetune optimization stages `o0` to `o4`
 - `eval/`: benchmark protocol presets
 - `runtime/`: training and serving environment presets
 - `overrides/`: temporary ablation overrides, never long-lived defaults

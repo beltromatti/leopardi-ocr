@@ -1,0 +1,45 @@
+stage: o2_vllm_compressed
+track: s0-runtime
+base_stage: f3_rlvr
+base_checkpoint_tag: candidate
+calibration:
+  bundle_id: o_calibration_docmix_v1
+  max_samples: 768
+  max_seq_len: 2048
+  page_mix:
+    - medium
+    - hard
+goal:
+  target_frontier: quality_speed_memory
+  quality_floor: 0.93
+  markdown_validity_floor: 0.995
+  latex_validity_floor: 0.99
+  max_relative_quality_drop: 0.015
+  min_latency_gain: 0.15
+  max_memory_gb: 18.0
+variants:
+  - variant_id: llmcompressor_fp8_dynamic
+    method: llmcompressor_fp8
+    export_format: compressed_tensors
+    weight_dtype: fp8_block
+    activation_dtype: fp8_dynamic
+    kv_cache_dtype: bf16
+    runtime_targets: [vllm]
+    structured_output_backend: auto
+    requires_calibration: false
+    expected_latency_gain: 0.2
+    expected_memory_gain: 0.28
+    quality_risk: low
+  - variant_id: llmcompressor_w4a16_awq
+    method: llmcompressor_awq
+    export_format: compressed_tensors
+    weight_dtype: int4
+    activation_dtype: bf16
+    kv_cache_dtype: bf16
+    runtime_targets: [vllm]
+    structured_output_backend: auto
+    requires_calibration: true
+    calibration_samples: 768
+    expected_latency_gain: 0.3
+    expected_memory_gain: 0.5
+    quality_risk: medium

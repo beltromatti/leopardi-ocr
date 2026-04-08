@@ -167,6 +167,7 @@ Before locking `Leopardi-S0`, run:
 Why:
 
 - the first architecture should already know whether it survives compression
+- but the deployable artifact selection and export policy belong to the dedicated `optimization/` stage, not to finetune itself
 
 ## Failure-Driven Finetuning
 

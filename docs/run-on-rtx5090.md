@@ -8,10 +8,10 @@ This file is the single operator entry point for moving Leopardi onto a rented e
 
 The repo is ready as a research and operations control plane:
 
-- architecture, data, pretraining, finetuning, evaluation, and runtime strategy are locked in docs
-- model, pretraining, finetune, and shared ops layers are importable and tested
+- architecture, data, pretraining, finetuning, optimization, evaluation, and runtime strategy are locked in docs
+- model, pretraining, finetune, optimization, and shared ops layers are importable and tested
 - run layout, heartbeat, event logging, control files, and persistence targets are defined
-- phase-specific runtime presets exist for data build, pretraining, finetuning, evaluation, and serving
+- phase-specific runtime presets exist for data build, pretraining, finetuning, optimization, evaluation, and serving
 
 ## What Is Not Implemented Yet
 
@@ -22,6 +22,7 @@ Missing execution layers:
 - real data builders that ingest sources and publish canonical bundles
 - end-to-end training loop connected to published bundles
 - end-to-end finetuning loop connected to published bundles and checkpoints
+- optimization export backends that materialize deployable low-bit artifacts
 - evaluation runners that execute full benchmark protocols and materialize reports
 
 This means the repo is ready for active engineering work on the rented machine, not yet for a final long training campaign.
@@ -37,6 +38,7 @@ python3 -m leopardi.cli doctor
 python3 -m leopardi.cli model-summary configs/model/leopardi_s0.yaml
 python3 -m leopardi.cli pretrain-summary configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml
 python3 -m leopardi.cli finetune-summary configs/finetune/s0_f0_sft.yaml configs/runtime/finetune_rtx5090.yaml
+python3 -m leopardi.cli optimization-summary configs/optimization/s0_o2_vllm_compressed.yaml configs/runtime/optimization_rtx5090.yaml
 python3 -m leopardi.cli materialize-run-example --root runs
 ```
 
@@ -49,6 +51,7 @@ python3 -m leopardi.cli materialize-run-example --root runs
 - `data_pipeline/README.md`
 - `pretraining/README.md`
 - `finetune/README.md`
+- `optimization/README.md`
 - `evaluation/README.md`
 
 ## Recommended First Engineering Sequence
@@ -56,7 +59,8 @@ python3 -m leopardi.cli materialize-run-example --root runs
 1. Implement `data_pipeline` builders for `arXiv` and `PMC OA`.
 2. Implement the pretraining loop against published bundles.
 3. Implement the finetune loop for `F0` and `F1`.
-4. Implement evaluation runners for `public_frontier_v1` and `internal_holdout_v1`.
+4. Implement the optimization export backends and variant validation loop.
+5. Implement evaluation runners for `public_frontier_v1` and `internal_holdout_v1`.
 
 ## Rule For The Rented Machine
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from pathlib import Path
 
 import typer
@@ -10,6 +11,17 @@ from leopardi.finetune.config import FinetuneStageConfig
 from leopardi.finetune.losses import compute_finetune_losses
 from leopardi.finetune.rewards import compute_reward_breakdown
 from leopardi.model import LeopardiS0
+from leopardi.optimization import (
+    OptimizationGoalConfig,
+    OptimizationStageConfig,
+    VariantMeasurement,
+    build_variant_runtime_plan,
+    build_variant_summary,
+    materialize_optimization_stage,
+    optimization_stage_recipe_dict,
+    pareto_frontier,
+    rank_candidates,
+)
 from leopardi.ops import (
     RunHeartbeat,
     RunManifest,
@@ -257,6 +269,136 @@ def materialize_run_example(
         payload={"track": manifest.track, "hardware_tag": manifest.hardware_tag},
     )
     console.print(layout.as_dict())
+
+
+@app.command()
+def optimization_summary(
+    stage_config: Path = typer.Argument(Path("configs/optimization/s0_o2_vllm_compressed.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/optimization_rtx5090.yaml")),
+) -> None:
+    stage = OptimizationStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(build_variant_summary(stage))
+
+
+@app.command()
+def optimization_recipes() -> None:
+    console.print(
+        {
+            recipe: optimization_stage_recipe_dict(recipe)
+            for recipe in (
+                "o0_reference_export",
+                "o1_torchao_portable",
+                "o2_vllm_compressed",
+                "o3_runtime_kv",
+                "o4_qat_export",
+            )
+        }
+    )
+
+
+@app.command()
+def optimization_rank_example() -> None:
+    goal = OptimizationGoalConfig()
+    reference = VariantMeasurement(
+        variant_id="bf16_reference",
+        overall_score=0.945,
+        markdown_validity=0.998,
+        latex_validity=0.994,
+        table_score=0.928,
+        formula_score=0.941,
+        latency_ms=1200.0,
+        peak_memory_gb=22.0,
+        throughput_pages_per_second=0.83,
+    )
+    candidates = [
+        VariantMeasurement(
+            variant_id="llmcompressor_fp8_dynamic",
+            overall_score=0.941,
+            markdown_validity=0.997,
+            latex_validity=0.992,
+            table_score=0.925,
+            formula_score=0.938,
+            latency_ms=930.0,
+            peak_memory_gb=16.5,
+            throughput_pages_per_second=1.08,
+        ),
+        VariantMeasurement(
+            variant_id="torchao_int4_weight_only",
+            overall_score=0.934,
+            markdown_validity=0.996,
+            latex_validity=0.99,
+            table_score=0.919,
+            formula_score=0.931,
+            latency_ms=760.0,
+            peak_memory_gb=12.0,
+            throughput_pages_per_second=1.31,
+        ),
+        VariantMeasurement(
+            variant_id="vllm_fp8_kv",
+            overall_score=0.943,
+            markdown_validity=0.997,
+            latex_validity=0.993,
+            table_score=0.927,
+            formula_score=0.939,
+            latency_ms=1080.0,
+            peak_memory_gb=18.0,
+            throughput_pages_per_second=0.93,
+        ),
+    ]
+    console.print(
+        {
+            "ranked": [asdict(item) for item in rank_candidates(reference, candidates, goal)],
+            "pareto_frontier": [asdict(item) for item in pareto_frontier([reference, *candidates])],
+        }
+    )
+
+
+@app.command()
+def optimization_plan(
+    stage_config: Path = typer.Argument(Path("configs/optimization/s0_o2_vllm_compressed.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/optimization_rtx5090.yaml")),
+    base_checkpoint_uri: str = typer.Argument("hf://leopardi-ocr-checkpoints/leo-s0-f3-candidate"),
+) -> None:
+    stage = OptimizationStageConfig.from_yaml(stage_config, runtime_config)
+    plans = []
+    for variant in stage.variants:
+        plan, _ = build_variant_runtime_plan(
+            experiment_id="optimization-plan-preview",
+            stage=stage,
+            variant=variant,
+            artifacts_root="runs/optimization-plan-preview/artifacts",
+            persistent_root="hf://leopardi-ocr-checkpoints",
+            base_checkpoint_uri=base_checkpoint_uri,
+        )
+        plans.append(asdict(plan))
+    console.print(
+        {
+            "stage": stage.stage,
+            "base_checkpoint_uri": base_checkpoint_uri,
+            "plans": plans,
+        }
+    )
+
+
+@app.command()
+def optimization_materialize(
+    experiment_id: str = typer.Argument("leo-s0-o2-opt-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/optimization/s0_o2_vllm_compressed.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/optimization_rtx5090.yaml")),
+    base_checkpoint_uri: str = typer.Argument("hf://leopardi-ocr-checkpoints/leo-s0-f3-candidate"),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    stage = OptimizationStageConfig.from_yaml(stage_config, runtime_config)
+    console.print(
+        materialize_optimization_stage(
+            experiment_id=experiment_id,
+            stage=stage,
+            base_checkpoint_uri=base_checkpoint_uri,
+            stage_config_path=str(stage_config),
+            runtime_config_path=str(runtime_config),
+            root=root,
+        )
+    )
 
 
 if __name__ == "__main__":

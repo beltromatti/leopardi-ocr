@@ -29,7 +29,7 @@ class RunHeartbeat(BaseModel):
 
 class RunManifest(BaseModel):
     experiment_id: str
-    phase: Literal["data_pipeline", "pretraining", "finetune", "evaluation", "serve"]
+    phase: Literal["data_pipeline", "pretraining", "finetune", "optimization", "evaluation", "serve"]
     stage: str
     track: str
     hardware_tag: str

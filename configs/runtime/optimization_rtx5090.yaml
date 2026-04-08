@@ -1,0 +1,37 @@
+runtime:
+  purpose: single_gpu_optimization
+  hardware_tag: rtx5090
+  precision: bf16
+  primary_runtime: vllm
+  alternate_runtime: sglang
+  calibration_workers: 4
+  export_workers: 2
+  max_calibration_samples: 768
+  log_every: 10
+  eval_every: 1
+  save_every: 1
+  priority:
+    - quality_retention
+    - deployed_latency
+    - memory_reduction
+  implementation_notes:
+    - always produce a bf16 reference export before any compressed variant
+    - treat each runtime-specific export as a distinct artifact family
+    - validate structured-output behavior again after quantization
+  logging:
+    console_log: console.log
+    structured_events: events.ndjson
+    heartbeat: heartbeat.json
+    heartbeat_seconds: 30
+    low_level_logs_local_only: true
+  control:
+    stop_file: control/STOP
+    reload_file: control/RELOAD
+    note_file: control/NOTE.txt
+  persistence:
+    local_run_root: runs
+    checkpoint_target: hf://leopardi-ocr-checkpoints
+    report_target: hf://leopardi-ocr-reports
+    metadata_target: hf://leopardi-ocr-metadata
+    summary_sync_policy: milestone_and_final
+    export_sync_policy: variant_boundary_and_final

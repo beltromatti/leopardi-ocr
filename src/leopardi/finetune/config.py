@@ -87,7 +87,7 @@ class FinetuneStageConfig:
         payload: dict[str, Any],
         runtime_payload: dict[str, Any] | None = None,
     ) -> "FinetuneStageConfig":
-        runtime_root = runtime_payload.get("runtime", runtime_payload or {})
+        runtime_root = (runtime_payload or {}).get("runtime", runtime_payload or {})
         adapter_payload = payload.get("adapter", {})
         return cls(
             stage=payload["stage"],

@@ -16,6 +16,7 @@ This protocol defines the minimum evidence required before a checkpoint is promo
 6. latency card on `RTX 5090` exists
 7. report artifacts are archived
 8. experiment registry entry is complete
+9. if the claim uses an optimized artifact, the matching `bf16_reference` report also exists
 
 ## Required Report Artifacts
 
@@ -25,3 +26,4 @@ This protocol defines the minimum evidence required before a checkpoint is promo
 - latency card
 - failure-slice summary
 - promotion recommendation
+- optimized-vs-reference comparison card when applicable

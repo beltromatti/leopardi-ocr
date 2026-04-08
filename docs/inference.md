@@ -4,6 +4,8 @@ Date locked: 2026-04-07
 
 This document defines the serving and decoding blueprint for Leopardi.
 
+It consumes artifacts promoted by the dedicated `optimization/` stage.
+
 The inference goal is not only low latency.
 It is low latency without giving away exactness on the hard slices that matter.
 
@@ -201,6 +203,9 @@ Tooling:
 
 - `TorchAO`
 - `llm-compressor`
+
+Those tools belong to the optimization layer first and the serving layer second.
+Inference should consume promoted artifacts, not invent compression settings ad hoc.
 
 ## Latency Targets
 
