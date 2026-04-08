@@ -27,9 +27,11 @@ Family constraints:
 - no MoE in the first research phase
 - explicit page canonicalization
 - adaptive visual tokenization
+- explicit layout-side memory tokens
 - structural latent bottleneck
 - block planner
 - Markdown-first writer decoder
+- native multi-token-prediction path
 - auxiliary supervision for rotation, handwriting, formulas, and tables
 
 ## `Leopardi-S1`

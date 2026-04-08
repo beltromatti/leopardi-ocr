@@ -33,6 +33,9 @@ def test_leopardi_s0_tiny_forward_shapes() -> None:
     )
     assert outputs.planner.block_type_logits.shape[:2] == (2, config.planner.num_blocks)
     assert outputs.visual_tokens.shape[1] == 25
+    assert outputs.layout_tokens.shape[1] == 4
+    assert outputs.mtp_logits is not None
+    assert len(outputs.mtp_logits) == config.multi_token_prediction.horizon
     assert model.num_parameters() > 0
 
 
@@ -62,6 +65,7 @@ def test_pretraining_loss_report_smoke() -> None:
 
     assert report.total_loss.item() > 0.0
     assert "token_ce" in report.loss_terms
+    assert "mtp_ce" in report.loss_terms
     assert "formula_ce" in report.loss_terms
 
 

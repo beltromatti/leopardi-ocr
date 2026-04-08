@@ -44,6 +44,37 @@ def _weighted_cross_entropy(
     return (flat_loss * weight_map).sum() / denom
 
 
+def _multi_token_prediction_loss(
+    mtp_logits: tuple[Tensor, ...] | None,
+    targets: Tensor,
+    mask: Tensor | None = None,
+    sample_weights: Tensor | None = None,
+    label_smoothing: float = 0.0,
+) -> Tensor | None:
+    if not mtp_logits:
+        return None
+
+    losses: list[Tensor] = []
+    for step, future_logits in enumerate(mtp_logits, start=1):
+        if future_logits.size(1) <= step or targets.size(1) <= step:
+            continue
+        future_targets = targets[:, step:]
+        aligned_logits = future_logits[:, :-step, :]
+        future_mask = mask[:, step:] if mask is not None else None
+        losses.append(
+            _weighted_cross_entropy(
+                aligned_logits,
+                future_targets,
+                mask=future_mask,
+                sample_weights=sample_weights,
+                label_smoothing=label_smoothing,
+            )
+        )
+    if not losses:
+        return None
+    return torch.stack(losses).mean()
+
+
 def compute_finetune_losses(
     outputs: LeopardiS0Output,
     batch: FinetuneBatch,
@@ -62,6 +93,15 @@ def compute_finetune_losses(
         sample_weights=sample_weights,
         label_smoothing=weights.label_smoothing,
     ) * weights.token_ce
+    mtp_loss = _multi_token_prediction_loss(
+        outputs.mtp_logits,
+        batch.labels,
+        mask=batch.label_mask,
+        sample_weights=sample_weights,
+        label_smoothing=weights.label_smoothing,
+    )
+    if mtp_loss is not None and weights.mtp_ce > 0:
+        terms["mtp_ce"] = mtp_loss * weights.mtp_ce
 
     if batch.formula_label_mask is not None and weights.formula_ce > 0:
         terms["formula_ce"] = _weighted_cross_entropy(

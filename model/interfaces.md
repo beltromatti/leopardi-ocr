@@ -36,12 +36,16 @@ Its stable groups are:
   - normalized image plus lightweight page maps
 - `visual_tokens`
   - adaptive page token sequence
+- `layout_tokens`
+  - compact tokens distilled from deterministic side maps
 - `structural_latents`
   - bottleneck latents used by planner and writer
 - `planner`
   - ordered block planning signals
 - `decoder_logits`
   - token logits for Markdown plus LaTeX generation
+- `mtp_logits`
+  - future-token heads for MTP/speculative-friendly training
 - `auxiliary`
   - rotation, handwriting, formula, and table supervision heads
 
@@ -52,6 +56,7 @@ Its stable groups are:
 May depend on:
 
 - `decoder_logits`
+- `mtp_logits`
 - planner logits
 - auxiliary heads
 - visual mode selection

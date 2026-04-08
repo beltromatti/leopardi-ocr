@@ -38,6 +38,7 @@ sampling:
   keep_clean_anchor_fraction: 0.06
 module_lr:
   visual_tokenizer: 0.0
+  layout_side_encoder: 0.0
   latent_bottleneck: 0.85
   planner: 1.1
   writer: 1.15
@@ -52,6 +53,7 @@ verifier:
   kl_anchor_beta: 0.02
 loss_weights:
   token_ce: 0.4
+  mtp_ce: 0.03
   formula_ce: 0.08
   table_ce: 0.08
   repair_ce: 0.3

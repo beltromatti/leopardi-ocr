@@ -36,6 +36,7 @@ def test_finetune_smoke_loss_and_reward() -> None:
 
     assert loss_report.total_loss.item() > 0.0
     assert "token_ce" in loss_report.loss_terms
+    assert "mtp_ce" in loss_report.loss_terms
     assert "formula_ce" in loss_report.loss_terms
     assert isinstance(reward_report.reward_terms, dict)
     assert "formula_exactness" in reward_report.reward_terms

@@ -31,6 +31,14 @@ class VisualTokenizerConfig:
 
 
 @dataclass(slots=True)
+class LayoutSideEncoderConfig:
+    stem_dim: int = 48
+    hidden_size: int = 384
+    pool_grid: tuple[int, int] = (3, 4)
+    dropout: float = 0.0
+
+
+@dataclass(slots=True)
 class LatentBottleneckConfig:
     hidden_size: int = 384
     num_latents: int = 192
@@ -76,6 +84,13 @@ class WriterDecoderConfig:
 
 
 @dataclass(slots=True)
+class MultiTokenPredictionConfig:
+    enabled: bool = True
+    horizon: int = 2
+    dropout: float = 0.0
+
+
+@dataclass(slots=True)
 class AuxiliaryHeadsConfig:
     rotation_classes: int = 4
     handwriting_classes: int = 4
@@ -89,14 +104,17 @@ class LeopardiS0Config:
     hidden_size: int = 384
     page_canonicalizer: PageCanonicalizerConfig = field(default_factory=PageCanonicalizerConfig)
     visual_tokenizer: VisualTokenizerConfig = field(default_factory=VisualTokenizerConfig)
+    layout_side_encoder: LayoutSideEncoderConfig = field(default_factory=LayoutSideEncoderConfig)
     latent_bottleneck: LatentBottleneckConfig = field(default_factory=LatentBottleneckConfig)
     planner: PlannerConfig = field(default_factory=PlannerConfig)
     writer_decoder: WriterDecoderConfig = field(default_factory=WriterDecoderConfig)
+    multi_token_prediction: MultiTokenPredictionConfig = field(default_factory=MultiTokenPredictionConfig)
     auxiliary_heads: AuxiliaryHeadsConfig = field(default_factory=AuxiliaryHeadsConfig)
 
     def __post_init__(self) -> None:
         expected = (
             self.visual_tokenizer.hidden_size,
+            self.layout_side_encoder.hidden_size,
             self.latent_bottleneck.hidden_size,
             self.planner.hidden_size,
             self.writer_decoder.hidden_size,
@@ -116,9 +134,11 @@ class LeopardiS0Config:
                 **model.get("page_canonicalizer", {})
             ),
             visual_tokenizer=VisualTokenizerConfig(**model.get("visual_tokenizer", {})),
+            layout_side_encoder=LayoutSideEncoderConfig(**model.get("layout_side_encoder", {})),
             latent_bottleneck=LatentBottleneckConfig(**model.get("latent_bottleneck", {})),
             planner=PlannerConfig(**model.get("planner", {})),
             writer_decoder=WriterDecoderConfig(**model.get("writer_decoder", {})),
+            multi_token_prediction=MultiTokenPredictionConfig(**model.get("multi_token_prediction", {})),
             auxiliary_heads=AuxiliaryHeadsConfig(**model.get("auxiliary_heads", {})),
         )
 
@@ -140,6 +160,11 @@ class LeopardiS0Config:
                 hidden_size=128,
                 pool_layouts={"fast": [[2, 2], [3, 3]], "standard": [[3, 3], [4, 4]], "hard": [[4, 4], [5, 5]]},
             ),
+            layout_side_encoder=LayoutSideEncoderConfig(
+                stem_dim=24,
+                hidden_size=128,
+                pool_grid=(2, 2),
+            ),
             latent_bottleneck=LatentBottleneckConfig(
                 hidden_size=128,
                 num_latents=32,
@@ -159,6 +184,10 @@ class LeopardiS0Config:
                 num_layers=2,
                 num_heads=4,
                 max_seq_len=128,
+            ),
+            multi_token_prediction=MultiTokenPredictionConfig(
+                enabled=True,
+                horizon=2,
             ),
             auxiliary_heads=AuxiliaryHeadsConfig(
                 rotation_classes=4,

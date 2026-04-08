@@ -1,6 +1,6 @@
 # Leopardi Architecture
 
-Date locked: 2026-04-07
+Date locked: 2026-04-08
 
 This document defines the final research blueprint for Leopardi.
 
@@ -44,6 +44,7 @@ That means:
 - dense compact backbone first
 - dynamic visual token budgeting
 - blockwise decoding instead of unconstrained page-long autoregression
+- explicit reuse of cheap layout side maps inside the model memory path
 - localized repair instead of full re-decode
 
 ### 3. The model should write a structured document, not transcribe a flat string
@@ -176,7 +177,6 @@ Responsibilities:
 - remove heavy margins and page borders when safe
 - produce lightweight side maps:
   - line density map
-  - connected-component map
   - probable text-direction map
 
 Why it matters:
@@ -195,12 +195,31 @@ Blueprint:
 - hierarchical ViT-style encoder with patch merging
 - variable patch density based on page complexity
 - optional crop refinement for dense local regions
+- side-map reuse for layout priors without a second heavy encoder
 
 Why this design:
 
 - better local inductive bias than a plain ViT at this size
 - lower token count than naive high-resolution patching
 - better fit for document pages than generic image classification backbones
+
+### 2b. Layout Side-Map Encoder
+
+The canonicalizer already computes cheap structural hints.
+`Leopardi-S0` should convert those hints into trainable memory, not discard them.
+
+Blueprint:
+
+- ingest line-density and text-direction maps
+- encode them with a lightweight convolutional side branch
+- pool them into a small fixed grid of layout tokens
+- feed those tokens into the latent bottleneck and writer memory
+
+Why it matters:
+
+- adds layout awareness without paying for a second large vision tower
+- improves robustness on rotated, multi-column, handwritten, and irregular pages
+- increases intelligence per parameter by turning deterministic geometry into reusable context
 
 ### 3. Structural Latent Bottleneck
 
@@ -262,6 +281,7 @@ Why it matters:
 The writer is a compact autoregressive decoder conditioned on:
 
 - structural latents
+- layout-side tokens
 - current block descriptor
 - block-local crop features when needed
 - previously emitted blocks
@@ -273,6 +293,9 @@ Why an autoregressive writer remains the right choice:
 - output is heterogeneous and hierarchical
 - formulas and tables benefit from exact sequence control
 - structured decoding and repair can be applied at block level
+
+To keep this efficient at serving time, the writer should also expose native multi-token-prediction heads.
+This keeps the family compatible with speculative-serving and draft-style acceleration paths used by modern runtimes.
 
 ### 6. Specialist Adapters and Heads
 
@@ -359,6 +382,7 @@ The model must support the following training signals from day one:
 - table structure supervision
 - formula span supervision
 - line-orientation supervision
+- multi-token prediction on canonical targets
 - text-only continuation on canonical Markdown outputs
 
 This is deliberate.
@@ -392,6 +416,7 @@ The `500M` model should not be a redesign.
 Scale the same ingredients:
 
 - deeper and wider visual encoder
+- richer layout-side memory
 - more structural latents
 - stronger writer decoder
 - larger block planner

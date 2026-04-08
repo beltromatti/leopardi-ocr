@@ -54,6 +54,11 @@ Finetuning is where Leopardi wins:
 
 The control plane, recipes, losses, rewards, optimizer grouping, and run materialization layer are ready.
 
+The current finetune surface assumes the model still exposes:
+
+- layout-side memory tokens for hard-document robustness
+- `MTP` heads so efficiency-oriented serving variants survive later optimization
+
 The repo can now materialize a finetune run on disk, including:
 
 - run manifest and heartbeat

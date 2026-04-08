@@ -1,6 +1,6 @@
 # Leopardi Finetuning Plan
 
-Date locked: 2026-04-07
+Date locked: 2026-04-08
 
 This document defines the post-pretraining path for turning a good compact parser into a frontier parser.
 
@@ -95,6 +95,7 @@ Current open compact parsers suggest two additional lessons:
 
 - specialist SFT does most of the heavy lifting on quality
 - RLVR is most useful as a sharpener for exactness and efficiency once syntax is already stable
+- compact parsers benefit if layout-side memory and MTP heads stay active through finetuning instead of being treated as pretrain-only tricks
 
 ## Reward Design
 
@@ -175,6 +176,7 @@ Also keep finetuning itself compression-aware through:
 - module-wise learning-rate scaling
 - KL anchoring in repair and RL stages
 - reward terms that punish unnecessary length and latency
+- light MTP retention so optimized serving variants do not lose their draftability
 
 Why:
 

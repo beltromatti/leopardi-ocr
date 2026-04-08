@@ -52,6 +52,11 @@ For Leopardi it must maximize:
 
 The control plane, curriculum config, optimizer grouping, loss-level implementation, and run materialization layer are ready.
 
+The current pretraining surface already assumes:
+
+- layout-side tokens derived from canonicalizer maps are part of the trainable memory path
+- `MTP` loss is part of the compact-decoder recipe, not a late add-on
+
 The repo can now materialize a pretraining run on disk, including:
 
 - run manifest and heartbeat

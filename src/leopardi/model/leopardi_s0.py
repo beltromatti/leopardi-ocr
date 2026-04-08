@@ -44,9 +44,11 @@ class AuxiliaryOutputs:
 class LeopardiS0Output:
     canonicalized: CanonicalizedPage
     visual_tokens: Tensor
+    layout_tokens: Tensor
     structural_latents: Tensor
     planner: PlannerOutputs
     decoder_logits: Tensor
+    mtp_logits: tuple[Tensor, ...] | None
     auxiliary: AuxiliaryOutputs
 
 
@@ -106,6 +108,37 @@ class AdaptiveVisualTokenizer(nn.Module):
         return visual_tokens, page_summary
 
 
+class LayoutSideMapEncoder(nn.Module):
+    def __init__(self, config: LeopardiS0Config) -> None:
+        super().__init__()
+        layout_cfg = config.layout_side_encoder
+        self.pool_grid = layout_cfg.pool_grid
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, layout_cfg.stem_dim, kernel_size=3, padding=1),
+            nn.GELU(),
+            nn.Conv2d(layout_cfg.stem_dim, layout_cfg.hidden_size, kernel_size=3, padding=1),
+            nn.GELU(),
+            nn.Dropout(layout_cfg.dropout),
+        )
+        self.norm = nn.LayerNorm(layout_cfg.hidden_size)
+
+    def forward(self, canonicalized: CanonicalizedPage) -> tuple[Tensor, Tensor]:
+        line_density = canonicalized.line_density_map
+        direction = F.interpolate(
+            canonicalized.text_direction_map,
+            size=line_density.shape[-2:],
+            mode="bilinear",
+            align_corners=False,
+        )
+        layout_maps = torch.cat((line_density, direction), dim=1)
+        encoded = self.encoder(layout_maps)
+        pooled = F.adaptive_avg_pool2d(encoded, output_size=self.pool_grid)
+        tokens = pooled.flatten(2).transpose(1, 2)
+        tokens = self.norm(tokens)
+        summary = tokens.mean(dim=1)
+        return tokens, summary
+
+
 class StructuralLatentBottleneck(nn.Module):
     def __init__(self, config: LeopardiS0Config) -> None:
         super().__init__()
@@ -123,10 +156,10 @@ class StructuralLatentBottleneck(nn.Module):
             ]
         )
 
-    def forward(self, visual_tokens: Tensor) -> Tensor:
-        latents = self.latents.unsqueeze(0).expand(visual_tokens.size(0), -1, -1)
+    def forward(self, context_tokens: Tensor) -> Tensor:
+        latents = self.latents.unsqueeze(0).expand(context_tokens.size(0), -1, -1)
         for block in self.blocks:
-            latents = block(latents, visual_tokens)
+            latents = block(latents, context_tokens)
         return latents
 
 
@@ -189,8 +222,22 @@ class WriterDecoder(nn.Module):
         self.tie_embeddings = decoder_cfg.tie_embeddings
         if not self.tie_embeddings:
             self.output_projection = nn.Linear(decoder_cfg.hidden_size, decoder_cfg.vocab_size)
+        mtp_cfg = config.multi_token_prediction
+        self.mtp_enabled = mtp_cfg.enabled and mtp_cfg.horizon > 0
+        self.mtp_horizon = mtp_cfg.horizon if self.mtp_enabled else 0
+        if self.mtp_enabled:
+            self.mtp_norm = nn.LayerNorm(decoder_cfg.hidden_size)
+            self.mtp_dropout = nn.Dropout(mtp_cfg.dropout)
+            self.mtp_heads = nn.ModuleList(
+                [nn.Linear(decoder_cfg.hidden_size, decoder_cfg.hidden_size) for _ in range(self.mtp_horizon)]
+            )
 
-    def forward(self, input_ids: Tensor, memory: Tensor) -> Tensor:
+    def _project_vocab(self, hidden_states: Tensor) -> Tensor:
+        if self.tie_embeddings:
+            return F.linear(hidden_states, self.token_embedding.weight)
+        return self.output_projection(hidden_states)
+
+    def forward(self, input_ids: Tensor, memory: Tensor) -> tuple[Tensor, tuple[Tensor, ...] | None]:
         batch, seq_len = input_ids.shape
         positions = torch.arange(seq_len, device=input_ids.device).unsqueeze(0).expand(batch, -1)
         x = self.token_embedding(input_ids) + self.position_embedding(positions)
@@ -199,9 +246,13 @@ class WriterDecoder(nn.Module):
         for block in self.blocks:
             x = block(x, memory, causal_mask=causal_mask)
         x = self.norm(x)
-        if self.tie_embeddings:
-            return F.linear(x, self.token_embedding.weight)
-        return self.output_projection(x)
+        decoder_logits = self._project_vocab(x)
+
+        mtp_logits: tuple[Tensor, ...] | None = None
+        if self.mtp_enabled:
+            future_hidden = self.mtp_dropout(self.mtp_norm(x))
+            mtp_logits = tuple(self._project_vocab(head(future_hidden)) for head in self.mtp_heads)
+        return decoder_logits, mtp_logits
 
 
 class LeopardiS0(nn.Module):
@@ -213,6 +264,7 @@ class LeopardiS0(nn.Module):
             contrast_eps=config.page_canonicalizer.contrast_eps,
         )
         self.visual_tokenizer = AdaptiveVisualTokenizer(config)
+        self.layout_side_encoder = LayoutSideMapEncoder(config)
         self.latent_bottleneck = StructuralLatentBottleneck(config)
         self.planner = BlockPlanner(config)
         self.writer = WriterDecoder(config)
@@ -236,10 +288,12 @@ class LeopardiS0(nn.Module):
     ) -> LeopardiS0Output:
         canonicalized = self.canonicalizer(image)
         visual_tokens, page_summary = self.visual_tokenizer(canonicalized.image, visual_mode)
-        structural_latents = self.latent_bottleneck(visual_tokens)
+        layout_tokens, layout_summary = self.layout_side_encoder(canonicalized)
+        structural_latents = self.latent_bottleneck(torch.cat((visual_tokens, layout_tokens), dim=1))
         planner_outputs = self.planner(structural_latents)
-        memory = torch.cat((structural_latents, planner_outputs.states), dim=1)
-        decoder_logits = self.writer(decoder_input_ids, memory)
+        memory = torch.cat((structural_latents, layout_tokens, planner_outputs.states), dim=1)
+        decoder_logits, mtp_logits = self.writer(decoder_input_ids, memory)
+        page_summary = 0.5 * (page_summary + layout_summary)
 
         auxiliary = AuxiliaryOutputs(
             rotation_logits=self.rotation_head(page_summary),
@@ -251,9 +305,11 @@ class LeopardiS0(nn.Module):
         return LeopardiS0Output(
             canonicalized=canonicalized,
             visual_tokens=visual_tokens,
+            layout_tokens=layout_tokens,
             structural_latents=structural_latents,
             planner=planner_outputs,
             decoder_logits=decoder_logits,
+            mtp_logits=mtp_logits,
             auxiliary=auxiliary,
         )
 
@@ -268,8 +324,10 @@ class LeopardiS0(nn.Module):
             "target_params_m": self.config.target_params_m,
             "actual_params_m": round(total_params / 1_000_000, 2),
             "hidden_size": self.config.hidden_size,
+            "layout_tokens": self.config.layout_side_encoder.pool_grid[0] * self.config.layout_side_encoder.pool_grid[1],
             "num_latents": self.config.latent_bottleneck.num_latents,
             "num_planner_blocks": self.config.planner.num_blocks,
             "decoder_layers": self.config.writer_decoder.num_layers,
+            "mtp_horizon": self.config.multi_token_prediction.horizon if self.config.multi_token_prediction.enabled else 0,
             "vocab_size": self.config.writer_decoder.vocab_size,
         }

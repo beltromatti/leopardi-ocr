@@ -31,9 +31,11 @@ Main internal components:
 
 - page canonicalizer
 - adaptive visual tokenizer
+- layout-side encoder
 - structural latent bottleneck
 - block planner
 - writer decoder
+- multi-token prediction heads
 - auxiliary heads
 
 ## Preset Ownership

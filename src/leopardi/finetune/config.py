@@ -63,6 +63,7 @@ class SamplingConfig:
 @dataclass(slots=True)
 class ModuleLrConfig:
     visual_tokenizer: float = 0.5
+    layout_side_encoder: float = 0.6
     latent_bottleneck: float = 0.8
     planner: float = 1.1
     writer: float = 1.25
@@ -99,6 +100,7 @@ class RewardWeights:
 @dataclass(slots=True)
 class FinetuneLossWeights:
     token_ce: float = 1.0
+    mtp_ce: float = 0.1
     formula_ce: float = 0.15
     table_ce: float = 0.15
     repair_ce: float = 0.5

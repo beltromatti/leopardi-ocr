@@ -35,12 +35,14 @@ curriculum:
   keep_easy_fraction: 1.0
 module_lr:
   visual_tokenizer: 0.0
+  layout_side_encoder: 0.0
   latent_bottleneck: 0.8
   planner: 1.0
   writer: 1.25
   auxiliary_heads: 0.5
 objective_weights:
   token_ce: 1.0
+  mtp_ce: 0.2
   formula_ce: 0.2
   table_ce: 0.1
   block_type: 0.0

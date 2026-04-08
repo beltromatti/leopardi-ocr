@@ -1,6 +1,6 @@
 # Leopardi Pretraining Plan
 
-Date locked: 2026-04-07
+Date locked: 2026-04-08
 
 This document defines the pretraining plan for `Leopardi-S0` and the scale-up path to `Leopardi-S1`.
 
@@ -92,6 +92,8 @@ Modern compact OCR-VLM results and repos also imply three practical rules for `S
 - curriculum and sample weighting matter as much as raw data volume
 - formula and table spans need extra token pressure, not only page-level supervision
 - the writer and planner should usually move faster than the visual trunk on a single `RTX 5090`
+- cheap layout side maps should be turned into training-visible memory, not treated as preprocessing only
+- MTP-style future-token supervision is worth carrying early because it sharpens compact decoders and keeps serving options open
 
 ### P3. Hard-Case Curriculum
 
@@ -113,6 +115,15 @@ Goal:
 ### Main seq2seq loss
 
 Use autoregressive next-token loss over canonical Markdown output.
+
+### MTP loss
+
+Use a small future-token objective on the same canonical targets.
+
+Why:
+
+- compact decoders benefit from stronger local lookahead pressure
+- later speculative-serving or draft-style inference paths need the family to already support this behavior
 
 ### Planner loss
 

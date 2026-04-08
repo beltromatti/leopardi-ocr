@@ -65,6 +65,7 @@ class CurriculumConfig:
 @dataclass(slots=True)
 class ModuleLrConfig:
     visual_tokenizer: float = 0.7
+    layout_side_encoder: float = 0.8
     latent_bottleneck: float = 1.0
     planner: float = 1.15
     writer: float = 1.25
@@ -75,6 +76,7 @@ class ModuleLrConfig:
 @dataclass(slots=True)
 class ObjectiveWeights:
     token_ce: float = 1.0
+    mtp_ce: float = 0.15
     formula_ce: float = 0.15
     table_ce: float = 0.15
     block_type: float = 0.2

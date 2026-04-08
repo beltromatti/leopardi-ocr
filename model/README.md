@@ -65,6 +65,8 @@ The current research vehicle is:
 
 - `Leopardi-S0`
   - dense compact parser in the low-`90M` range
+  - explicit layout-side memory fused into the latent/planner/writer path
+  - native `MTP`-ready decoding heads for later speculative-serving experiments
   - optimized for rapid iteration on a rented `RTX 5090`
 
 The next model family after the recipe is locked is:

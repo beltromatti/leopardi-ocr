@@ -52,6 +52,8 @@ def _module_scale_for_name(name: str, stage_config: PretrainStageConfig) -> floa
     scales = stage_config.module_lr
     if name.startswith("visual_tokenizer"):
         return scales.visual_tokenizer
+    if name.startswith("layout_side_encoder"):
+        return scales.layout_side_encoder
     if name.startswith("latent_bottleneck"):
         return scales.latent_bottleneck
     if name.startswith("planner"):

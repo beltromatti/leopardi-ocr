@@ -9,6 +9,8 @@ model:
     backbone_regime: dense_compact
     planner_writer_split: true
     dynamic_visual_budget: true
+    layout_side_memory: true
+    mtp_ready_decode: true
     localized_repair: true
   page_canonicalizer:
     line_density_pool: 16
@@ -30,6 +32,11 @@ model:
       hard:
         - [8, 8]
         - [10, 10]
+  layout_side_encoder:
+    stem_dim: 64
+    hidden_size: 448
+    pool_grid: [3, 4]
+    dropout: 0.0
   latent_bottleneck:
     hidden_size: 448
     num_latents: 256
@@ -70,6 +77,10 @@ model:
     max_seq_len: 2048
     dropout: 0.1
     tie_embeddings: true
+  multi_token_prediction:
+    enabled: true
+    horizon: 2
+    dropout: 0.05
   auxiliary_heads:
     rotation_classes: 4
     handwriting_classes: 4
