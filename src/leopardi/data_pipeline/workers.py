@@ -602,6 +602,53 @@ def _ocr_lines_markdown(title: str, words: list[Any], bboxes: list[Any]) -> str:
     return normalize_target_text("\n".join(payload))
 
 
+_FUNSD_NER_LABELS = {
+    0: "other",
+    1: "header",
+    2: "header",
+    3: "question",
+    4: "question",
+    5: "answer",
+    6: "answer",
+}
+
+
+def _funsd_fields_markdown(words: list[Any], ner_tags: list[Any]) -> str:
+    if not isinstance(words, list) or not isinstance(ner_tags, list) or len(words) != len(ner_tags):
+        return ""
+    grouped: list[tuple[str, str]] = []
+    current_label = ""
+    current_tokens: list[str] = []
+    for word, raw_tag in zip(words, ner_tags):
+        try:
+            tag = int(raw_tag)
+        except (TypeError, ValueError):
+            tag = 0
+        label = _FUNSD_NER_LABELS.get(tag, "other")
+        token = normalize_target_text(str(word))
+        if not token:
+            continue
+        if label == "other":
+            if current_tokens and current_label:
+                grouped.append((current_label, normalize_target_text(" ".join(current_tokens))))
+            current_label = ""
+            current_tokens = []
+            continue
+        if label != current_label and current_tokens and current_label:
+            grouped.append((current_label, normalize_target_text(" ".join(current_tokens))))
+            current_tokens = []
+        current_label = label
+        current_tokens.append(token)
+    if current_tokens and current_label:
+        grouped.append((current_label, normalize_target_text(" ".join(current_tokens))))
+    if not grouped:
+        return ""
+    lines = ["## Form Fields"]
+    for label, text in grouped:
+        lines.append(f"- {label}: {text}")
+    return normalize_target_text("\n".join(lines))
+
+
 def _fintabnet_table_markdown(row: dict[str, Any]) -> str:
     cells = row.get("cells")
     if not isinstance(cells, list) or not cells:
@@ -639,7 +686,21 @@ def _plotqa_markdown(text: str) -> str:
         return normalize_target_text(text)
     lines = ["```chart"]
     for name, value in fields:
-        normalized = normalize_target_text(value.replace("<sep/>", " | "))
+        if name == "bboxes":
+            bbox_entries = [item for item in value.split("<sep/>") if item.strip()]
+            rendered_boxes: list[str] = []
+            for entry in bbox_entries:
+                coords = {
+                    match.group(1): normalize_target_text(match.group(2))
+                    for match in re.finditer(r"<s_([^>]+)>(.*?)</s_\1>", entry, flags=re.DOTALL)
+                }
+                if coords:
+                    rendered_boxes.append(
+                        f"(x={coords.get('x','')}, y={coords.get('y','')}, w={coords.get('w','')}, h={coords.get('h','')})"
+                    )
+            normalized = " | ".join(rendered_boxes)
+        else:
+            normalized = normalize_target_text(value.replace("<sep/>", " | "))
         lines.append(f"{name}: {normalized}")
     lines.append("```")
     return "\n".join(lines)
@@ -743,8 +804,15 @@ def _hf_row_to_sample(
         else:
             words = row.get("words")
             bboxes = row.get("bboxes")
+            ner_tags = row.get("ner_tags")
+            blocks: list[str] = []
+            if isinstance(words, list) and isinstance(ner_tags, list):
+                fields = _funsd_fields_markdown(words, ner_tags)
+                if fields:
+                    blocks.append(fields)
             if isinstance(words, list) and isinstance(bboxes, list):
-                target = _ocr_lines_markdown("Form OCR", words, bboxes)
+                blocks.append(_ocr_lines_markdown("Form OCR", words, bboxes))
+            target = normalize_target_text("\n\n".join(block for block in blocks if block))
         if not target:
             target = _json_target(row)
         return CanonicalSample(

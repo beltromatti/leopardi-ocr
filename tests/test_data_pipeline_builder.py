@@ -361,8 +361,26 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
     assert "## Receipt Fields" in sroie.canonical_target
     assert "## Receipt OCR" in sroie.canonical_target
 
+    funsd_row = {
+        "words": ["Total", "Amount", "42.00"],
+        "bboxes": [[0, 0, 10, 10], [12, 0, 30, 10], [35, 0, 50, 10]],
+        "ner_tags": [3, 4, 6],
+        "image": {"bytes": _PNG_1X1, "path": "form.png"},
+    }
+    funsd = _hf_row_to_sample(
+        source_id="funsd",
+        bundle_id="preview",
+        row=funsd_row,
+        row_index=0,
+    )
+    assert funsd.target_type == "page_markdown_projection"
+    assert "## Form Fields" in funsd.canonical_target
+    assert "- question: Total Amount" in funsd.canonical_target
+    assert "- answer: 42.00" in funsd.canonical_target
+    assert "## Form OCR" in funsd.canonical_target
+
     plotqa_row = {
-        "text": "<s_y>1<sep/>2</s_y><s_x>a<sep/>b</s_x>",
+        "text": "<s_y>1<sep/>2</s_y><s_x>a<sep/>b</s_x><s_bboxes><s_y>10</s_y><s_x>11</s_x><s_w>12</s_w><s_h>13</s_h><sep/><s_y>20</s_y><s_x>21</s_x><s_w>22</s_w><s_h>23</s_h></s_bboxes>",
         "image": {"bytes": _PNG_1X1, "path": "plot.png"},
     }
     plotqa = _hf_row_to_sample(
@@ -373,6 +391,7 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
     )
     assert plotqa.target_type == "chart_serialization"
     assert "```chart" in plotqa.canonical_target
+    assert "(x=11, y=10, w=12, h=13)" in plotqa.canonical_target
 
     crohme_row = {
         "label": r"\frac{a}{b}",
