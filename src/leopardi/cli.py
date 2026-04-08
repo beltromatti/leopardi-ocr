@@ -10,6 +10,7 @@ from leopardi.data_pipeline import (
     audit_data_pipeline,
     DataBuildStageConfig,
     build_data_build_execution_plan,
+    build_data_pipeline_stage,
     materialize_data_build_stage,
     probe_sources,
     registry_summary as data_pipeline_registry_summary,
@@ -163,6 +164,42 @@ def data_pipeline_materialize(
             root=root,
         )
     )
+
+
+@app.command()
+def data_pipeline_build(
+    experiment_id: str = typer.Argument("leo-s0-data-build-20260408-001"),
+    stage_config: Path = typer.Argument(Path("configs/data/s0_exact_core_build.yaml")),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+    publish: bool = typer.Option(False, "--publish/--no-publish"),
+    keep_raw: bool = typer.Option(False, "--keep-raw/--purge-raw"),
+    manual_source_root: Path | None = typer.Option(None, "--manual-source-root"),
+    limit_per_source: int | None = typer.Option(None, "--limit-per-source"),
+) -> None:
+    stage = DataBuildStageConfig.from_yaml(stage_config, runtime_config)
+    source_limits = None
+    if limit_per_source is not None:
+        plan = build_data_build_execution_plan(
+            experiment_id=f"{experiment_id}-preview",
+            stage=stage,
+            stage_config_path=str(stage_config),
+            runtime_config_path=str(runtime_config),
+            root=root,
+        )
+        source_limits = {source_id: limit_per_source for source_id in plan.source_ids}
+    result = build_data_pipeline_stage(
+        experiment_id=experiment_id,
+        stage=stage,
+        stage_config_path=str(stage_config),
+        runtime_config_path=str(runtime_config),
+        root=root,
+        publish=publish,
+        keep_raw=keep_raw,
+        manual_source_root=manual_source_root,
+        source_limits=source_limits,
+    )
+    console.print(asdict(result))
 
 
 @app.command()

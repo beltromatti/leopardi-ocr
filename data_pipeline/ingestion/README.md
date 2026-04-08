@@ -42,10 +42,12 @@ Priority order is strict for `Leopardi-S0`.
 
 ### Priority C: optional extensions after verification
 
-- FinTabNet family
 - MonkeyDoc and other newly released public corpora
 - CHURRO-DS and related historical-text extensions
 - layout-rich corpora referenced by competitors but requiring license or schema review
+
+FinTabNet family has now been promoted out of this bucket and pinned to a
+public aligned parquet release for automated ingestion.
 
 ## Files
 

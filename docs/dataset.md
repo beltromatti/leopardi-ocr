@@ -154,9 +154,10 @@ Role:
 
 - optional high-value table extension
 
-Condition:
+Current ingestion stance:
 
-- ingest only after license and split hygiene are verified
+- promoted to automated ingestion through a public aligned parquet release
+- keep the original IBM-hosted lineage only as provenance, not as the live fetch path
 
 ## Formula Supervision
 

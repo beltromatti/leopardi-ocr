@@ -30,10 +30,15 @@ from leopardi.data_pipeline.probes import (
     probe_sources,
 )
 from leopardi.data_pipeline.runtime import materialize_data_build_stage
+from leopardi.data_pipeline.executor import (
+    DataBuildResult,
+    build_data_pipeline_stage,
+)
 
 __all__ = [
     "BuildProfileEntry",
     "SourceEndpointEntry",
+    "DataBuildResult",
     "BundleBuildSpec",
     "BundleRegistryEntry",
     "AuditFinding",
@@ -47,6 +52,7 @@ __all__ = [
     "SourceWave",
     "audit_data_pipeline",
     "build_data_build_execution_plan",
+    "build_data_pipeline_stage",
     "load_build_profiles",
     "load_bundle_registry",
     "load_source_endpoints",

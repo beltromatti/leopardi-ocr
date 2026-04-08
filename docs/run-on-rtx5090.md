@@ -33,7 +33,6 @@ The repo is not yet ready for a full frontier run.
 
 Missing execution layers:
 
-- source-specific data builders that ingest raw sources and transform them into the already-defined canonical bundle contract
 - end-to-end training loop connected to published bundles
 - end-to-end finetuning loop connected to published bundles and checkpoints
 - optimization export backends that materialize deployable low-bit artifacts
@@ -53,6 +52,7 @@ python3 -m leopardi.cli --help
 python3 -m leopardi.cli doctor
 python3 -m leopardi.cli data-pipeline-summary configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml
 python3 -m leopardi.cli data-pipeline-materialize leo-s0-data-exact-20260408-001 configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml --root runs
+python3 -m leopardi.cli data-pipeline-build leo-s0-data-exact-20260408-001 configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml --root runs --publish
 python3 -m leopardi.cli model-summary configs/model/leopardi_s0.yaml
 python3 -m leopardi.cli pretrain-summary configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml
 python3 -m leopardi.cli pretrain-materialize leo-s0-p2-20260408-001 configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml configs/model/leopardi_s0.yaml --root runs
@@ -81,12 +81,13 @@ python3 -m leopardi.cli materialize-run-example --root runs
 
 ## Recommended First Engineering Sequence
 
-1. Implement source workers for `arXiv` and `PMC OA` against the existing `data_pipeline` plan and publish ledger.
-2. Implement the pretraining loop against published bundles.
-3. Implement the finetune loop for `F0` and `F1`.
-4. Implement the optimization export backends and variant validation loop.
-5. Implement the inference supervisor and runtime measurement loop.
-6. Implement dataset adapters and automated supervisors for `public_frontier_v1` and `internal_holdout_v1`.
+1. Run `data-pipeline-build` for `exact_core_only` and publish the promoted bundles.
+2. Seed the manual-source root for conditional datasets that still require curated local manifests.
+3. Implement the pretraining loop against published bundles.
+4. Implement the finetune loop for `F0` and `F1`.
+5. Implement the optimization export backends and variant validation loop.
+6. Implement the inference supervisor and runtime measurement loop.
+7. Implement dataset adapters and automated supervisors for `public_frontier_v1` and `internal_holdout_v1`.
 
 ## Rule For The Rented Machine
 

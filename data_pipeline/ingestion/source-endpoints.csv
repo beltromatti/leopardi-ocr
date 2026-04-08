@@ -1,22 +1,22 @@
 source_id,probe_policy,probe_method,probe_url,remote_fetchable,build_surface,notes
 arxiv_source_pdf,automated,get,https://export.arxiv.org/oai2?verb=Identify,yes,official_api,official metadata endpoint for exact-pair discovery
 pmc_oa_pdf_xml,automated,get,https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_bulk/,yes,official_ftp,official PMC OA bulk listing root
-publaynet,automated,get,https://github.com/ibm-aur-nlp/PubLayNet,yes,github_repo,public upstream repository used for availability checks
+publaynet,automated,get,https://huggingface.co/datasets/jordanparker6/publaynet,yes,hf_dataset_repo,verified public HF mirror used for automated parquet ingestion
 doclaynet,automated,get,https://huggingface.co/datasets/ds4sd/DocLayNet,yes,hf_dataset_repo,public dataset landing page confirmed by upstream repo
 pubtables_1m,automated,get,https://huggingface.co/datasets/bsmock/pubtables-1m,yes,hf_dataset_repo,public dataset landing page for availability checks
-scitsr,automated,get,https://github.com/Academic-Hammer/SciTSR,yes,github_repo,public upstream repository for dataset access
-fintabnet_family,manual,, ,conditional,manual_access,license and split review required before ingestion
+scitsr,automated,get,https://drive.google.com/file/d/1qXaJblBg9sbPN0xknWsYls1aGGtlp4ZN/view?usp=sharing,yes,google_drive_release,pinned public release archive from official project README
+fintabnet_family,automated,get,https://huggingface.co/datasets/docling-project/FinTabNet_OTSL,yes,hf_dataset_repo,promoted to automated ingestion via public aligned FinTabNet-family parquet release
 crohme,manual,get,https://www.isical.ac.in/~crohme/CROHME_data.html,yes,manual_access,competition dataset access varies by edition and release terms
 mathwriting,automated,get,https://huggingface.co/datasets/deepcopy/MathWriting-human,yes,hf_dataset_repo,public HF dataset page for availability checks
-im2latex_100k,manual,get,https://github.com/harvardnlp/im2markup,yes,github_repo,stable public mirrors vary and require explicit mirror selection
+im2latex_100k,automated,get,https://huggingface.co/datasets/yuntian-deng/im2latex-100k,yes,hf_dataset_repo,verified public HF mirror pinned for automated parquet ingestion
 iam,manual,get,https://fki.tic.heia-fr.ch/databases/iam-handwriting-database,yes,manual_access,registration and manual approval flow expected
-bentham,manual,get,https://transkribus.eu/r/bentham-collection/,yes,manual_access,manual archive acquisition path expected
-read_2016,manual,get,https://read.transkribus.eu/,yes,manual_access,manual competition/archive retrieval expected
+bentham,manual,get,https://tc11.cvc.uab.es/datasets/HTR%20Competition%202015_1,yes,manual_access,official TC11 metadata is public but package acquisition remains manual until a reproducible fetch path is pinned
+read_2016,manual,get,https://tc11.cvc.uab.es/datasets/HTR%20Competition%202016_1,yes,manual_access,official TC11 metadata is public but package acquisition remains manual until a reproducible fetch path is pinned
 funsd,automated,get,https://huggingface.co/datasets/nielsr/funsd,yes,hf_dataset_repo,public dataset landing page used for availability checks
 cord,automated,get,https://huggingface.co/datasets/naver-clova-ix/cord-v2,yes,hf_dataset_repo,public dataset landing page used for availability checks
-sroie,manual,get,https://rrc.cvc.uab.es/?ch=13,yes,manual_access,release mirrors vary and should be pinned manually
+sroie,automated,get,https://huggingface.co/datasets/jsdnrs/ICDAR2019-SROIE,yes,hf_dataset_repo,promoted to automated ingestion via public CC-BY-4.0 mirror because official RRC downloads require registration
 chartqa,automated,get,https://huggingface.co/datasets/HuggingFaceM4/ChartQA,yes,hf_dataset_repo,public dataset landing page used for availability checks
-plotqa,automated,get,https://github.com/NiteshMethani/PlotQA,yes,github_repo,public upstream repository used for availability checks
+plotqa,automated,get,https://huggingface.co/datasets/achang/plot_qa,yes,hf_dataset_repo,verified public HF mirror pinned for automated parquet ingestion
 approved_exact_full_page_targets,internal,, ,no,internal_generated,derived from exact-core canonicalization output
 synthetic_from_exact,internal,, ,no,internal_generated,derived from exact canonical samples via deterministic transforms
 model_failures_plus_exact_truth,internal,, ,no,internal_generated,derived after benchmark and evaluation failure mining

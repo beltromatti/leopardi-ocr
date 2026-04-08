@@ -74,7 +74,6 @@ The shared experiment control plane is ready.
 
 The remaining implementation work is in the execution layers:
 
-- data builders
 - training loops
 - finetune loops
 - optimization export backends

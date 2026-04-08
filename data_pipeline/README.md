@@ -225,5 +225,43 @@ The current code surface covers:
 - local cache and upload-staging layout
 - publish-ledger materialization
 - artifact plans aligned with HF dataset publication and later remote-first reuse
+- canonical target normalization for TeX and JATS exact sources
+- tar-shard writing and Parquet manifest emission
+- real source workers for arXiv, PMC OA, DocLayNet, PubTables-1M, SciTSR, and selected HF parquet datasets
+- strict manual-manifest import workers for sources that still require human-approved access or curated local mirrors
+- bundle-level HF publication with verification and post-publish raw purge
 
-The remaining execution layer is the source-specific acquisition and transformation worker code.
+At the current source-verification boundary, `sroie` and `fintabnet_family`
+have been promoted to automated ingestion. `iam`, `bentham`, `read_2016`, and
+`crohme` remain manual for rigor.
+
+## Manual Source Contract
+
+Sources that remain manual must be seeded under a local root passed with `--manual-source-root`.
+
+Current manual-only external sources:
+
+- `crohme`
+- `iam`
+- `bentham`
+- `read_2016`
+
+Expected layout:
+
+- `<manual_root>/<source_id>/samples.jsonl`
+- or `<manual_root>/<source_id>/samples.parquet`
+
+Each row must contain:
+
+- `sample_id`
+- `canonical_target`
+- `target_type`
+- `task_family`
+- optional `doc_id`
+- optional `page_id`
+- optional `asset_paths`
+- optional `slice_tags`
+- optional `metadata`
+- optional `source_license`
+
+`asset_paths` are resolved relative to `<manual_root>/<source_id>/`.

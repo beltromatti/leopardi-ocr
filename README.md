@@ -100,11 +100,27 @@ That means:
 
 What is still missing before the first full training campaign:
 
-- source-specific data acquisition and transformation workers
 - real end-to-end train and finetune loops
 - real optimization export backends
 - real inference supervisor that boots the chosen runtime automatically
 - real benchmark-specific dataset adapters and automated evaluation supervisors
+
+The data pipeline now includes executable workers for:
+
+- arXiv exact-pair acquisition
+- PMC OA exact-pair acquisition
+- HF parquet-backed sources such as PubLayNet mirror, MathWriting, Im2LaTeX-100K, FUNSD, CORD, SROIE, FinTabNet-family parquet, ChartQA, and PlotQA
+- DocLayNet direct ZIP ingestion
+- PubTables-1M structure archives
+- SciTSR archive ingestion from the pinned public release
+
+Manual or conditional sources still use a strict local-manifest import contract:
+
+- CROHME
+- IAM
+- Bentham
+- READ 2016
+- derived internal bundles when they are promoted from prior runs
 
 Helpful local scripts:
 
