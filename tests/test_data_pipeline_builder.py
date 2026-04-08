@@ -22,6 +22,8 @@ from leopardi.data_pipeline.workers import (
     HFParquetWorker,
     HFSplitAwareParquetWorker,
     SourceBuildContext,
+    _is_valid_cached_download,
+    _infer_hf_split_from_filename,
     _hf_row_to_sample,
     _pagexml_to_markdown,
     build_worker_registry,
@@ -68,6 +70,15 @@ def _write_tar_archive(path: Path, members: dict[str, bytes]) -> None:
             info = tarfile.TarInfo(name=name)
             info.size = len(payload)
             archive.addfile(info, fileobj=io.BytesIO(payload))
+
+
+def _write_zip_archive(path: Path, members: dict[str, bytes]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    import zipfile
+
+    with zipfile.ZipFile(path, "w") as archive:
+        for name, payload in members.items():
+            archive.writestr(name, payload)
 
 
 def test_tex_and_jats_canonicalizers() -> None:
@@ -183,6 +194,22 @@ def test_page_projection_preserves_order() -> None:
     assert len(projected) == 2
     assert "alpha beta gamma" in projected[0]
     assert "delta epsilon zeta" in projected[1]
+
+
+def test_page_projection_skips_noisy_page_headers() -> None:
+    markdown = (
+        "# Title\n\n"
+        "intro words alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu\n\n"
+        "## Section\n\n"
+        "continued discussion with more content and a final theorem statement here"
+    )
+    pages = [
+        "1 University header and author block\nintro words alpha beta gamma delta epsilon zeta eta theta iota",
+        "2 footer noise and page number\ncontinued discussion with more content and a final theorem statement here",
+    ]
+    projected = project_markdown_to_pages(markdown, pages)
+    assert "intro words alpha beta gamma" in projected[0]
+    assert "discussion with more content and a final theorem statement here" in projected[1]
 
 
 def test_parse_hf_uri() -> None:
@@ -400,6 +427,43 @@ def test_tex_canonicalizer_trims_inline_math_punctuation_spacing() -> None:
     assert r"$m=O(n^{1+1/[2k(k+3)]}\,)$" in markdown
 
 
+def test_tex_canonicalizer_preserves_complex_math_commands() -> None:
+    tex = r"""
+    \documentclass{article}
+    \begin{document}
+    \section{Core}
+    Here is inline math $\P_{\alg}(G)=\frac{1}{Z(G_t)}$ and
+    \[
+    E_k(G_t,ij)\equiv\sum_{r=3}^k\sum_{\ell=0}^{r-2}N_{r,\ell}^{G_t,ij}q_t^{r-1-\ell}\,.
+    \]
+    \end{document}
+    """
+    markdown = tex_to_markdown(tex)
+    assert r"$\P_{\alg}(G)=\frac{1}{Z(G_t)}$" in markdown
+    assert r"\sum_{r=3}^k" in markdown
+    assert r"N_{r,\ell}^{G_t,ij}" in markdown
+
+
+def test_clean_tex_text_preserves_nxml_payloads() -> None:
+    stage = _manual_stage()
+    context = SourceBuildContext(
+        stage=stage,
+        experiment_id="pmc-test",
+        bundle_id="p2_exact_core_v1",
+        bundle_class="exact_pair",
+        raw_cache_dir=Path("tmp/source_probe_raw"),
+        work_cache_dir=Path("tmp/source_probe_work"),
+        render_pdf_pages=True,
+        keep_raw=True,
+        source_limits={"pmc_oa_pdf_xml": 1},
+        max_pages_per_document={"pmc_oa_pdf_xml": 1},
+    )
+    sample = next(iter(build_worker_registry()["pmc_oa_pdf_xml"].iter_samples(context)))
+    assert sample.sample_id.startswith("pmc_oa_pdf_xml-")
+    assert sample.target_type == "page_markdown_projection"
+    assert "## Abstract" in sample.canonical_target
+
+
 def test_pagexml_to_markdown_preserves_reading_order() -> None:
     xml = """
     <PcGts xmlns="http://schema.primaresearch.org/PAGE/gts/pagecontent/2013-07-15">
@@ -417,6 +481,12 @@ def test_pagexml_to_markdown_preserves_reading_order() -> None:
     markdown = _pagexml_to_markdown(xml)
     assert "Line one\nLine two" in markdown
     assert "\n\nLine three" in markdown
+
+
+def test_hf_split_inference_marks_crohme_benchmark_years_as_test() -> None:
+    assert _infer_hf_split_from_filename("data/train-00000-of-00002.parquet", source_id="crohme") == "train"
+    assert _infer_hf_split_from_filename("data/2016-00000-of-00001.parquet", source_id="crohme") == "test"
+    assert _infer_hf_split_from_filename("data/validation.parquet", source_id="iam") == "validation"
 
 
 def test_archive_pair_workers_read_and_bentham_from_local_archives(tmp_path: Path) -> None:
@@ -468,3 +538,21 @@ def test_archive_pair_workers_read_and_bentham_from_local_archives(tmp_path: Pat
     bentham_sample = next(iter(registry["bentham"].iter_samples(context)))
     assert bentham_sample.source_id == "bentham"
     assert "Archivio due" in bentham_sample.canonical_target
+
+
+def test_cached_download_validator_rejects_truncated_archives(tmp_path: Path) -> None:
+    good_zip = tmp_path / "good.zip"
+    _write_zip_archive(good_zip, {"demo.txt": b"ok"})
+    assert _is_valid_cached_download(good_zip) is True
+
+    bad_zip = tmp_path / "bad.zip"
+    bad_zip.write_bytes(good_zip.read_bytes()[:8])
+    assert _is_valid_cached_download(bad_zip) is False
+
+    good_tar = tmp_path / "good.tgz"
+    _write_tar_archive(good_tar, {"demo.txt": b"ok"})
+    assert _is_valid_cached_download(good_tar) is True
+
+    bad_tar = tmp_path / "bad.tgz"
+    bad_tar.write_bytes(b"not-a-real-tar")
+    assert _is_valid_cached_download(bad_tar) is False

@@ -99,6 +99,61 @@ def _normalize_inline_math_content(text: str) -> str:
     return value
 
 
+def _normalize_display_math_content(text: str) -> str:
+    lines = [re.sub(r"[ \t]+", " ", line.strip()) for line in text.strip().splitlines()]
+    lines = [line for line in lines if line]
+    return "\n".join(lines)
+
+
+def _convert_tex_math_delimiters(text: str) -> str:
+    text = re.sub(
+        r"\\\[(.*?)\\\]",
+        lambda match: f"\n$$\n{match.group(1).strip()}\n$$\n",
+        text,
+        flags=re.DOTALL,
+    )
+    text = re.sub(
+        r"\\\((.*?)\\\)",
+        lambda match: f"${_normalize_inline_math_content(match.group(1))}$",
+        text,
+        flags=re.DOTALL,
+    )
+    return text
+
+
+def _protect_math_segments(text: str) -> tuple[str, dict[str, str]]:
+    placeholders: dict[str, str] = {}
+    counter = 0
+
+    def _token(prefix: str) -> str:
+        nonlocal counter
+        key = f"__LEOPARDI_{prefix}_{counter}__"
+        counter += 1
+        return key
+
+    def _display(match: re.Match[str]) -> str:
+        key = _token("DISPLAY_MATH")
+        placeholders[key] = f"$$\n{_normalize_display_math_content(match.group(1))}\n$$"
+        return key
+
+    text = re.sub(r"\$\$(.+?)\$\$", _display, text, flags=re.DOTALL)
+
+    def _inline(match: re.Match[str]) -> str:
+        key = _token("INLINE_MATH")
+        placeholders[key] = f"${_normalize_inline_math_content(match.group(1))}$"
+        return key
+
+    text = re.sub(r"(?<!\$)\$(?!\$)([^\n]+?)(?<!\\)\$(?!\$)", _inline, text)
+    return text, placeholders
+
+
+def _restore_math_segments(text: str, placeholders: dict[str, str]) -> str:
+    restored = text
+    for key, value in placeholders.items():
+        restored = restored.replace(key, value)
+    return restored
+
+
 def _strip_tex_comments(tex: str) -> str:
     stripped_lines: list[str] = []
     for line in tex.splitlines():
@@ -271,25 +326,29 @@ def _unwrap_tex_command(content: str, command: str) -> str:
 
 
 def _strip_tex_wrappers(text: str) -> str:
-    value = text.strip()
+    value = _convert_tex_math_delimiters(text.strip())
+    value, placeholders = _protect_math_segments(value)
     for command in _TEXT_UNWRAP_COMMANDS:
         value = _unwrap_tex_command(value, command)
     value = re.sub(r"\\label\{[^{}]+\}", "", value)
-    value = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "[CITE]", value)
-    value = re.sub(r"\\ref\{[^{}]+\}", "[REF]", value)
+    value = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "", value)
+    value = re.sub(r"\\ref\{[^{}]+\}", "", value)
     value = re.sub(r"\\[a-zA-Z@]+\*?(?:\[[^\]]*\])?", "", value)
     value = value.replace("{", "").replace("}", "")
+    value = _restore_math_segments(value, placeholders)
     return normalize_target_text(value)
 
 
 def _clean_tex_text_preserve_math(text: str) -> str:
-    value = text.strip()
+    value = _convert_tex_math_delimiters(text.strip())
+    value, placeholders = _protect_math_segments(value)
     for command in _TEXT_UNWRAP_COMMANDS:
         value = _unwrap_tex_command(value, command)
     value = re.sub(r"\\label\{[^{}]+\}", "", value)
-    value = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "[CITE]", value)
-    value = re.sub(r"\\ref\{[^{}]+\}", "[REF]", value)
+    value = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "", value)
+    value = re.sub(r"\\ref\{[^{}]+\}", "", value)
     value = re.sub(r"\\[a-zA-Z@]+\*?(?:\[[^\]]*\])?", "", value)
+    value = _restore_math_segments(value, placeholders)
     return normalize_target_text(value)
 
 
@@ -427,8 +486,8 @@ def tex_to_markdown(tex: str) -> str:
     content = re.sub(r"\\(?:definecolor|hypersetup)\*?(?:\[[^\]]*\])?\s*\{[^{}]*\}", "", content)
     content = re.sub(r"\\(?:TheoremsNumberedThrough|TheoremsNumberedByChapter|ECRepeatTheorems|EquationsNumberedThrough|EquationsNumberedBySection)\b", "", content)
     content = re.sub(r"\\label\{[^{}]+\}", "", content)
-    content = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "[CITE]", content)
-    content = re.sub(r"\\ref\{[^{}]+\}", "[REF]", content)
+    content = re.sub(r"\\cite[t|p]?\{[^{}]+\}", "", content)
+    content = re.sub(r"\\ref\{[^{}]+\}", "", content)
     content = re.sub(r"\\maketitle", "", content)
     content = re.sub(r"\\tableofcontents", "", content)
     content = _strip_tex_named_commands(content, _FRONT_MATTER_COMMANDS)
@@ -464,11 +523,14 @@ def tex_to_markdown(tex: str) -> str:
             flags=re.DOTALL,
         )
 
+    content = _convert_tex_math_delimiters(content)
     content = _extract_tex_figures(content)
     content = _extract_tex_tables(content)
     content = re.sub(r"\\begin\{document\}", "", content)
     content = re.sub(r"\\end\{document\}", "", content)
+    content, placeholders = _protect_math_segments(content)
     content = re.sub(r"\\[a-zA-Z@]+(\[[^\]]*\])?", "", content)
+    content = _restore_math_segments(content, placeholders)
     payload = normalize_target_text(content)
     if front_matter:
         payload = normalize_target_text("\n\n".join((*front_matter, payload)))
@@ -646,14 +708,25 @@ def project_markdown_to_pages(markdown: str, page_texts: list[str]) -> list[str]
         return [normalize_target_text(markdown)] * len(page_texts)
 
     page_norms = [normalize_alignment_text(page_text)[0] for page_text in page_texts]
+
+    def _find_page_anchor(page_norm: str, search_start: int) -> int:
+        candidates: list[int] = []
+        for offset in range(0, min(len(page_norm), 800), 40):
+            anchor = page_norm[offset : offset + 120].strip()
+            if len(anchor) < 60:
+                continue
+            match = normalized_markdown.find(anchor, search_start)
+            if match != -1:
+                candidates.append(match)
+        return min(candidates) if candidates else -1
+
     starts: list[int] = [0]
     cursor = 0
     for page_norm in page_norms[1:]:
-        anchor = page_norm[:120].strip()
-        if not anchor:
+        if not page_norm:
             starts.append(cursor)
             continue
-        match = normalized_markdown.find(anchor, cursor)
+        match = _find_page_anchor(page_norm, cursor)
         if match == -1:
             proportional = int(len(normalized_markdown) * (len(starts) / max(len(page_texts), 1)))
             starts.append(max(cursor, proportional))

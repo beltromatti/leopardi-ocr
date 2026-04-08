@@ -94,8 +94,16 @@ def _download_bytes(url: str) -> bytes:
 def _download_to_path(url: str, target: Path) -> Path:
     opener = _build_opener()
     target.parent.mkdir(parents=True, exist_ok=True)
-    with opener.open(_request(url), timeout=120) as response, target.open("wb") as handle:
+    temp_target = target.with_name(f"{target.name}.part")
+    if temp_target.exists():
+        temp_target.unlink()
+    with opener.open(_request(url), timeout=120) as response, temp_target.open("wb") as handle:
         shutil.copyfileobj(response, handle)
+        expected_size = response.headers.get("Content-Length")
+    if expected_size is not None and temp_target.stat().st_size != int(expected_size):
+        temp_target.unlink(missing_ok=True)
+        raise RuntimeError(f"Downloaded size mismatch for {url}")
+    temp_target.replace(target)
     return target
 
 
@@ -118,6 +126,17 @@ def _download_google_drive_file(file_id: str, target: Path) -> Path:
     confirm = confirm_match.group(1)
     confirmed_url = f"https://drive.google.com/uc?export=download&confirm={confirm}&id={file_id}"
     return _download_to_path(confirmed_url, target)
+
+
+def _is_valid_cached_download(path: Path) -> bool:
+    if not path.exists() or path.stat().st_size == 0:
+        return False
+    lowered = path.name.lower()
+    if lowered.endswith(".zip"):
+        return zipfile.is_zipfile(path)
+    if lowered.endswith((".tar", ".tar.gz", ".tgz", ".tbz", ".tar.bz2")):
+        return tarfile.is_tarfile(path)
+    return True
 
 
 def _render_pdf_pages(pdf_path: Path, *, max_pages: int) -> list[CanonicalAsset]:
@@ -353,7 +372,8 @@ class PMCSourceWorker(SourceWorker):
             doc_root = source_root / pmcid
             package_path = doc_root / f"{pmcid}.tar.gz"
             extract_root = doc_root / "package"
-            if not package_path.exists():
+            if not _is_valid_cached_download(package_path):
+                package_path.unlink(missing_ok=True)
                 with opener.open(
                     _request(f"https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi?id={pmcid}"),
                     timeout=120,
@@ -366,7 +386,7 @@ class PMCSourceWorker(SourceWorker):
                 _download_to_path(href, package_path)
             if not extract_root.exists():
                 _safe_extract_tar(package_path, extract_root)
-            xml_files = list(extract_root.rglob("*.xml"))
+            xml_files = list(extract_root.rglob("*.xml")) + list(extract_root.rglob("*.nxml"))
             pdf_files = list(extract_root.rglob("*.pdf"))
             if not xml_files or not pdf_files:
                 continue
@@ -432,18 +452,29 @@ def _iter_hf_parquet_rows(repo_id: str) -> Iterator[dict[str, Any]]:
                 yield row
 
 
-def _iter_hf_parquet_rows_with_split(repo_id: str) -> Iterator[tuple[str, dict[str, Any]]]:
+def _infer_hf_split_from_filename(filename: str, *, source_id: str | None = None) -> str:
+    lowered = filename.lower()
+    if "validation" in lowered or "/val" in lowered or lowered.endswith("val.parquet"):
+        return "validation"
+    if "test" in lowered:
+        return "test"
+    if source_id == "crohme":
+        if any(token in lowered for token in ("/2014", "2014-", "/2016", "2016-", "/2019", "2019-", "/2023", "2023-")):
+            return "test"
+    return "train"
+
+
+def _iter_hf_parquet_rows_with_split(
+    repo_id: str,
+    *,
+    source_id: str | None = None,
+) -> Iterator[tuple[str, dict[str, Any]]]:
     from huggingface_hub import hf_hub_download, list_repo_files
     import pyarrow.parquet as pq
 
     files = [item for item in list_repo_files(repo_id, repo_type="dataset") if item.endswith(".parquet")]
     for filename in sorted(files):
-        lowered = filename.lower()
-        split = "train"
-        if "validation" in lowered or "/val" in lowered or lowered.endswith("val.parquet"):
-            split = "validation"
-        elif "test" in lowered:
-            split = "test"
+        split = _infer_hf_split_from_filename(filename, source_id=source_id)
         parquet_path = hf_hub_download(repo_id=repo_id, repo_type="dataset", filename=filename)
         parquet_file = pq.ParquetFile(parquet_path)
         for row_group_index in range(parquet_file.num_row_groups):
@@ -783,7 +814,9 @@ class HFSplitAwareParquetWorker(SourceWorker):
 
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         limit = context.source_limit(self.source_id, 20000)
-        for row_index, (split_assignment, row) in enumerate(_iter_hf_parquet_rows_with_split(self.repo_id)):
+        for row_index, (split_assignment, row) in enumerate(
+            _iter_hf_parquet_rows_with_split(self.repo_id, source_id=self.source_id)
+        ):
             if row_index >= limit:
                 break
             sample = _hf_row_to_sample(
@@ -803,7 +836,8 @@ class DocLayNetWorker(SourceWorker):
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         limit = context.source_limit(self.source_id, 15000)
         zip_path = context.raw_cache_dir / self.source_id / "DocLayNet_core.zip"
-        if not zip_path.exists():
+        if not _is_valid_cached_download(zip_path):
+            zip_path.unlink(missing_ok=True)
             _download_to_path(self.zip_url, zip_path)
         with zipfile.ZipFile(zip_path) as archive:
             annotation_files = [name for name in archive.namelist() if name.endswith(".json")]
@@ -974,7 +1008,8 @@ class ArchivePairWorker(SourceWorker):
 
     def _archive_path(self, context: SourceBuildContext, filename: str) -> Path:
         archive_path = context.raw_cache_dir / self.source_id / filename
-        if not archive_path.exists():
+        if not _is_valid_cached_download(archive_path):
+            archive_path.unlink(missing_ok=True)
             url = dict(self.archives)[filename]
             _download_to_path(url, archive_path)
         return archive_path
@@ -1139,7 +1174,8 @@ class SciTSRWorker(SourceWorker):
         limit = context.source_limit(self.source_id, 15000)
         archive_path = context.raw_cache_dir / self.source_id / "SciTSR.tar.gz"
         extract_root = context.work_cache_dir / self.source_id / "SciTSR"
-        if not archive_path.exists():
+        if not _is_valid_cached_download(archive_path):
+            archive_path.unlink(missing_ok=True)
             _download_google_drive_file(self.file_id, archive_path)
         if not extract_root.exists():
             _safe_extract_tar(archive_path, extract_root.parent)
