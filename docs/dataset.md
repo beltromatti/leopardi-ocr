@@ -234,7 +234,7 @@ Role:
 
 Current ingestion stance:
 
-- official download page is reproducible, but archive fetch still redirects to login without an authenticated IAM session
+- automated via the `Teklia/IAM-line` mirror with clean train/validation/test line-level splits; official IAM archives remain the provenance reference but are still login-gated
 
 ### 13. Bentham
 

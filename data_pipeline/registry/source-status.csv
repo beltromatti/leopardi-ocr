@@ -9,7 +9,7 @@ fintabnet_family,optional_table_extension,approved,prioritize_build,promoted to 
 crohme,formula_specialist,approved,prioritize_build,promoted to automated ingestion via complete public HF mirror aligned to CROHME train and benchmark splits
 mathwriting,formula_specialist,approved,prioritize_build,critical handwritten math diversity source
 im2latex_100k,formula_specialist,approved,prioritize_build,critical printed math source
-iam,handwriting_specialist,approved,prioritize_build,official IAM download endpoints redirect to login so user registration and authenticated acquisition are still required
+iam,handwriting_specialist,approved,prioritize_build,promoted to automated ingestion via Teklia line-level mirror; official IAM archives remain the provenance reference
 bentham,handwriting_extension,approved,ingest_after_core_handwriting,promoted to automated ingestion via official Zenodo R0 archives with paired image and GT packages
 read_2016,handwriting_layout,approved,prioritize_build,promoted to automated ingestion via official Zenodo PublicData archive with PAGE-XML supervision
 funsd,noisy_business_docs,approved,ingest_for_hardcases,forms source

@@ -9,7 +9,7 @@ fintabnet_family,automated,get,https://huggingface.co/datasets/docling-project/F
 crohme,automated,get,https://huggingface.co/datasets/Neeze/CROHME-full,yes,hf_dataset_repo,public complete mirror with train plus 2014/2016/2019 splits; official ISICAL package remains a provenance reference
 mathwriting,automated,get,https://huggingface.co/datasets/deepcopy/MathWriting-human,yes,hf_dataset_repo,public HF dataset page for availability checks
 im2latex_100k,automated,get,https://huggingface.co/datasets/yuntian-deng/im2latex-100k,yes,hf_dataset_repo,verified public HF mirror pinned for automated parquet ingestion
-iam,manual,get,https://fki.tic.heia-fr.ch/databases/download-the-iam-handwriting-database,yes,manual_access,official download page exposes archive URLs but the files redirect to login without an authenticated session
+iam,automated,get,https://huggingface.co/datasets/Teklia/IAM-line,yes,hf_dataset_repo,public line-level mirror with train-validation-test splits; official IAM site remains the provenance reference but direct archive fetch is login-gated
 bentham,automated,get,https://zenodo.org/api/records/44519,yes,official_zenodo,official Bentham Dataset R0 record with paired image and GT archives under CC-BY-4.0
 read_2016,automated,get,https://zenodo.org/api/records/218236,yes,official_zenodo,official READ dataset Bozen record with PublicData.tgz and PAGE-XML page supervision
 funsd,automated,get,https://huggingface.co/datasets/nielsr/funsd,yes,hf_dataset_repo,public dataset landing page used for availability checks

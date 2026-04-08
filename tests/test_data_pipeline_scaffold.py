@@ -69,7 +69,7 @@ def test_data_pipeline_materialization(tmp_path) -> None:
 
 
 def test_data_pipeline_probe_mixed_policies_local_only() -> None:
-    results = probe_sources(selected_source_ids={"iam", "synthetic_from_exact"})
+    results = probe_sources(selected_source_ids={"approved_exact_full_page_targets", "synthetic_from_exact"})
     by_id = {item.source_id: item for item in results}
-    assert by_id["iam"].status == "manual"
+    assert by_id["approved_exact_full_page_targets"].status == "skipped"
     assert by_id["synthetic_from_exact"].status == "skipped"

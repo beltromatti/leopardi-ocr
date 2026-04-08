@@ -432,6 +432,26 @@ def _iter_hf_parquet_rows(repo_id: str) -> Iterator[dict[str, Any]]:
                 yield row
 
 
+def _iter_hf_parquet_rows_with_split(repo_id: str) -> Iterator[tuple[str, dict[str, Any]]]:
+    from huggingface_hub import hf_hub_download, list_repo_files
+    import pyarrow.parquet as pq
+
+    files = [item for item in list_repo_files(repo_id, repo_type="dataset") if item.endswith(".parquet")]
+    for filename in sorted(files):
+        lowered = filename.lower()
+        split = "train"
+        if "validation" in lowered or "/val" in lowered or lowered.endswith("val.parquet"):
+            split = "validation"
+        elif "test" in lowered:
+            split = "test"
+        parquet_path = hf_hub_download(repo_id=repo_id, repo_type="dataset", filename=filename)
+        parquet_file = pq.ParquetFile(parquet_path)
+        for row_group_index in range(parquet_file.num_row_groups):
+            table = parquet_file.read_row_group(row_group_index)
+            for row in table.to_pylist():
+                yield split, row
+
+
 def _extract_image_asset(row: dict[str, Any]) -> CanonicalAsset | None:
     image = row.get("image")
     if isinstance(image, dict) and image.get("bytes"):
@@ -625,6 +645,23 @@ def _hf_row_to_sample(
             metadata={key: value for key, value in row.items() if key != "image"},
             assets=(image_asset,) if image_asset else (),
         )
+    if source_id == "iam":
+        target = str(row.get("text") or row.get("transcription") or "").strip()
+        if not target:
+            target = _json_target(row)
+        return CanonicalSample(
+            sample_id=f"{source_id}-{doc_id}",
+            source_id=source_id,
+            bundle_id=bundle_id,
+            doc_id=doc_id,
+            data_class="trusted_aux",
+            task_family="handwriting",
+            target_type="text_line",
+            canonical_target=normalize_target_text(target),
+            slice_tags=("handwriting", "english", "line_level"),
+            metadata={key: value for key, value in row.items() if key != "image"},
+            assets=(image_asset,) if image_asset else (),
+        )
     if source_id in {"chartqa", "plotqa"}:
         if source_id == "chartqa":
             question = str(row.get("question") or row.get("query") or "").strip()
@@ -737,6 +774,26 @@ class HFParquetWorker(SourceWorker):
                 row=row,
                 row_index=row_index,
             )
+
+
+class HFSplitAwareParquetWorker(SourceWorker):
+    def __init__(self, source_id: str, repo_id: str) -> None:
+        self.source_id = source_id
+        self.repo_id = repo_id
+
+    def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
+        limit = context.source_limit(self.source_id, 20000)
+        for row_index, (split_assignment, row) in enumerate(_iter_hf_parquet_rows_with_split(self.repo_id)):
+            if row_index >= limit:
+                break
+            sample = _hf_row_to_sample(
+                source_id=self.source_id,
+                bundle_id=context.bundle_id,
+                row=row,
+                row_index=row_index,
+            )
+            sample.split_assignment = split_assignment
+            yield sample
 
 
 class DocLayNetWorker(SourceWorker):
@@ -1200,7 +1257,7 @@ def build_worker_registry() -> dict[str, SourceWorker]:
         "scitsr": SciTSRWorker(),
         "mathwriting": HFParquetWorker("mathwriting", "deepcopy/MathWriting-human"),
         "im2latex_100k": HFParquetWorker("im2latex_100k", "yuntian-deng/im2latex-100k"),
-        "crohme": HFParquetWorker("crohme", "Neeze/CROHME-full"),
+        "crohme": HFSplitAwareParquetWorker("crohme", "Neeze/CROHME-full"),
         "bentham": ArchivePairWorker(
             source_id="bentham",
             archives=(
@@ -1239,7 +1296,7 @@ def build_worker_registry() -> dict[str, SourceWorker]:
         "fintabnet_family": HFParquetWorker(
             "fintabnet_family", "docling-project/FinTabNet_OTSL"
         ),
-        "iam": ManualManifestWorker("iam"),
+        "iam": HFSplitAwareParquetWorker("iam", "Teklia/IAM-line"),
         "approved_exact_full_page_targets": ManualManifestWorker("approved_exact_full_page_targets"),
         "synthetic_from_exact": ManualManifestWorker("synthetic_from_exact"),
         "model_failures_plus_exact_truth": ManualManifestWorker("model_failures_plus_exact_truth"),

@@ -82,7 +82,7 @@ python3 -m leopardi.cli materialize-run-example --root runs
 ## Recommended First Engineering Sequence
 
 1. Run `data-pipeline-build` for `exact_core_only` and publish the promoted bundles.
-2. Seed the manual-source root only for IAM, unless you have already completed an authenticated official download and pinned the resulting archives.
+2. Seed the manual-source root only for any derived internal bundles that are not yet built and published.
 3. Implement the pretraining loop against published bundles.
 4. Implement the finetune loop for `F0` and `F1`.
 5. Implement the optimization export backends and variant validation loop.

@@ -114,10 +114,7 @@ The data pipeline now includes executable workers for:
 - PubTables-1M structure archives
 - SciTSR archive ingestion from the pinned public release
 
-Manual or conditional sources still use a strict local-manifest import contract:
-
-- IAM
-- derived internal bundles when they are promoted from prior runs
+Manual or conditional sources still use a strict local-manifest import contract only for derived internal bundles when they are promoted from prior runs.
 
 Helpful local scripts:
 

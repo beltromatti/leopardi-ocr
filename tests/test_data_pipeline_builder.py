@@ -20,7 +20,7 @@ from leopardi.data_pipeline.schemas import CanonicalSample
 from leopardi.data_pipeline.workers import (
     ArchivePairWorker,
     HFParquetWorker,
-    ManualManifestWorker,
+    HFSplitAwareParquetWorker,
     SourceBuildContext,
     _hf_row_to_sample,
     _pagexml_to_markdown,
@@ -38,9 +38,9 @@ def _manual_stage() -> DataBuildStageConfig:
         {
             "data_build": {
                 "stage": "manual_handwriting_build",
-                "profile_id": "handwriting_only",
-                "bundle_ids": ["p3_hardcases_v1"],
-                "source_ids": ["iam"],
+                "profile_id": "full_frontier",
+                "bundle_ids": ["sft_core_v1"],
+                "source_ids": ["approved_exact_full_page_targets"],
                 "target_model_family": "leopardi_s0",
                 "target_param_budget_m": 100,
                 "strict_disk_guard": True,
@@ -194,7 +194,7 @@ def test_parse_hf_uri() -> None:
 
 def test_data_pipeline_build_manual_source(tmp_path: Path) -> None:
     manual_root = tmp_path / "manual"
-    source_root = manual_root / "iam"
+    source_root = manual_root / "approved_exact_full_page_targets"
     source_root.mkdir(parents=True)
     image_path = source_root / "line.png"
     image_path.write_bytes(_PNG_1X1)
@@ -239,7 +239,7 @@ def test_data_pipeline_build_manual_source(tmp_path: Path) -> None:
         / "data_pipeline"
         / "manual_handwriting_build"
         / "manifests"
-        / "p3_hardcases_v1"
+        / "sft_core_v1"
         / "samples.parquet"
     )
     assert manifest.exists()
@@ -254,7 +254,7 @@ def test_data_pipeline_build_manual_source(tmp_path: Path) -> None:
         / "data_pipeline"
         / "manual_handwriting_build"
         / "bundles"
-        / "p3_hardcases_v1"
+        / "sft_core_v1"
         / "shards"
         / "shard-000000.tar"
     )
@@ -269,10 +269,10 @@ def test_worker_registry_promotions_for_verified_sources() -> None:
     registry = build_worker_registry()
     assert isinstance(registry["sroie"], HFParquetWorker)
     assert isinstance(registry["fintabnet_family"], HFParquetWorker)
-    assert isinstance(registry["crohme"], HFParquetWorker)
+    assert isinstance(registry["crohme"], HFSplitAwareParquetWorker)
     assert isinstance(registry["bentham"], ArchivePairWorker)
     assert isinstance(registry["read_2016"], ArchivePairWorker)
-    assert isinstance(registry["iam"], ManualManifestWorker)
+    assert isinstance(registry["iam"], HFSplitAwareParquetWorker)
 
 
 def test_manifest_record_infers_canonical_features() -> None:
@@ -359,6 +359,20 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
     )
     assert crohme.target_type == "latex_formula"
     assert crohme.canonical_target == r"\frac{a}{b}"
+
+    iam_row = {
+        "text": "put down a resolution on the subject",
+        "image": {"bytes": _PNG_1X1, "path": "line.jpg"},
+    }
+    iam = _hf_row_to_sample(
+        source_id="iam",
+        bundle_id="preview",
+        row=iam_row,
+        row_index=0,
+    )
+    assert iam.target_type == "text_line"
+    assert iam.task_family == "handwriting"
+    assert iam.canonical_target == "put down a resolution on the subject"
 
 
 def test_tex_canonicalizer_preserves_spaces_around_inline_math() -> None:

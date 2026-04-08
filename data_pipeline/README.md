@@ -233,9 +233,9 @@ The current code surface covers:
 - bundle-level HF publication with verification and post-publish raw purge
 
 At the current source-verification boundary, `sroie`, `fintabnet_family`,
-`crohme`, `bentham`, and `read_2016` have been promoted to automated ingestion.
-`iam` remains manual because the official archive URLs redirect to login without
-an authenticated session.
+`crohme`, `bentham`, `read_2016`, and `iam` have been promoted to automated ingestion.
+For `iam`, the automated route is the clean `Teklia/IAM-line` mirror; the official
+IAM site still matters as provenance, but its direct archive downloads remain login-gated.
 
 ## Manual Source Contract
 
@@ -243,7 +243,7 @@ Sources that remain manual must be seeded under a local root passed with `--manu
 
 Current manual-only external sources:
 
-- `iam`
+- none
 
 Expected layout:
 
