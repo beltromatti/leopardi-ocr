@@ -5,7 +5,6 @@ visual_mode: standard
 data_bundle_ids:
   - p2_exact_core_v1
   - p2_structural_aux_v1
-  - p3_hardcases_v1
 objective:
   page_to_markdown: true
   planner_supervision: true
@@ -23,21 +22,21 @@ scheduler:
   warmup_ratio: 0.03
   min_lr_ratio: 0.12
 data_mix:
-  exact_pairs: 0.45
-  synthetic_exact: 0.20
-  structural_aux: 0.10
-  table_aux: 0.10
+  exact_pairs: 0.58
+  synthetic_exact: 0.08
+  structural_aux: 0.08
+  table_aux: 0.12
   formula_aux: 0.10
-  long_tail_aux: 0.05
-  weak_label_discount: 0.35
+  long_tail_aux: 0.04
+  weak_label_discount: 0.25
 curriculum:
   clean_phase_steps: 4000
-  transition_phase_steps: 10000
-  hard_phase_steps: 36000
-  hard_example_boost: 1.25
-  pathological_boost: 1.5
+  transition_phase_steps: 12000
+  hard_phase_steps: 20000
+  hard_example_boost: 1.2
+  pathological_boost: 1.35
   refresh_failure_pool_every: 1000
-  keep_easy_fraction: 0.15
+  keep_easy_fraction: 0.18
 module_lr:
   visual_tokenizer: 0.7
   layout_side_encoder: 0.8

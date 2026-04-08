@@ -2,6 +2,10 @@ stage: p3_hard_curriculum
 track: s0-core
 text_only: false
 visual_mode: hard
+data_bundle_ids:
+  - p2_exact_core_v1
+  - p2_structural_aux_v1
+  - p3_hardcases_v1
 objective:
   synthetic_hardening: true
   arbitrary_rotation: true
@@ -18,12 +22,12 @@ scheduler:
   warmup_ratio: 0.02
   min_lr_ratio: 0.2
 data_mix:
-  exact_pairs: 0.30
-  synthetic_exact: 0.25
-  structural_aux: 0.10
-  table_aux: 0.12
-  formula_aux: 0.13
-  long_tail_aux: 0.10
+  exact_pairs: 0.32
+  synthetic_exact: 0.30
+  structural_aux: 0.08
+  table_aux: 0.11
+  formula_aux: 0.11
+  long_tail_aux: 0.08
   weak_label_discount: 0.30
 curriculum:
   clean_phase_steps: 1000

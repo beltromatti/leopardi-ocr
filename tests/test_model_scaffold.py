@@ -4,6 +4,7 @@ from leopardi.model import LeopardiS0, LeopardiS0Config
 from leopardi.pretraining.batch import PretrainBatch
 from leopardi.pretraining.config import PretrainStageConfig
 from leopardi.pretraining.losses import compute_pretraining_losses
+from leopardi.pretraining.recipes import stage_recipe
 from leopardi.pretraining.runtime import build_optimizer, materialize_pretraining_stage, optimizer_group_summary
 
 
@@ -88,3 +89,15 @@ def test_pretraining_optimizer_groups_and_materialization(tmp_path) -> None:
     assert (
         tmp_path / "runs" / "leo-s0-p2-test" / "artifacts" / "pretraining" / "p2_multimodal_core" / "training-plan.json"
     ).exists()
+
+
+def test_pretraining_stage_recipes_expose_explicit_bundle_flow() -> None:
+    p1 = stage_recipe("p1_text_warmup")
+    p2 = stage_recipe("p2_multimodal_core")
+    p3 = stage_recipe("p3_hard_curriculum")
+
+    assert p1.data_bundle_ids == ("tokenizer_v1", "p1_text_warmup_v1")
+    assert p2.data_bundle_ids == ("p2_exact_core_v1", "p2_structural_aux_v1")
+    assert p3.data_bundle_ids == ("p2_exact_core_v1", "p2_structural_aux_v1", "p3_hardcases_v1")
+    assert p2.data_mix.exact_pairs > p2.data_mix.synthetic_exact
+    assert p3.data_mix.synthetic_exact >= 0.30

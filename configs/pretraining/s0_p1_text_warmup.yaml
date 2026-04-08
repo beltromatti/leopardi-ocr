@@ -2,6 +2,9 @@ stage: p1_text_warmup
 track: s0-core
 text_only: true
 visual_mode: fast
+data_bundle_ids:
+  - tokenizer_v1
+  - p1_text_warmup_v1
 objective:
   markdown_language_prior: true
   latex_language_prior: true

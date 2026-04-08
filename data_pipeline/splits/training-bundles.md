@@ -43,6 +43,11 @@ Oversample:
 - pages with both formulas and rotation-augmented views
 - pages with tables plus nearby captions or prose explanation
 
+Small-model rule:
+
+- for `Leopardi-S0 ~100M`, this bundle remains the dominant anchor through `P2`
+- hard-case and specialist pressure must not dilute exact-pair supervision too early
+
 ## Bundle: `p2_structural_aux_v1`
 
 Composition:
@@ -59,6 +64,7 @@ Composition:
 Why:
 
 - inject explicit structure pressure where exact core data is still sparse
+- reinforce table and formula exactness without turning `P2` into an auxiliary-data stage
 
 ## Bundle: `p3_hardcases_v1`
 
@@ -76,6 +82,11 @@ Why:
 
 - this is where Leopardi must separate from cleaner born-digital parsers
 - this is where compact models learn to preserve structure instead of only text under distortion
+
+Small-model rule:
+
+- `P3` is where synthetic and long-tail pressure becomes dominant
+- `P2` stays exact-first; `P3` is where robustness is allowed to rise sharply
 
 ## Bundle: `sft_core_v1`
 
@@ -98,6 +109,7 @@ Composition:
 Why:
 
 - create a clean exact-output tuning pool for `F0`
+- keep the model anchored to high-confidence canonical page targets before specialist overfitting pressure
 
 ## Bundle: `f1_specialist_sft_v1`
 
@@ -115,6 +127,7 @@ Composition:
 Why:
 
 - move the product-visible long tail that public parsers still mishandle
+- but keep `sft_core_v1` as an exact anchor during sampling so a `100M` model does not drift from canonical Markdown behavior
 
 ## Bundle: `sft_repair_v1`
 

@@ -3,6 +3,7 @@ track: s0-core
 visual_mode: hard
 text_only: false
 data_bundle_ids:
+  - sft_core_v1
   - f1_specialist_sft_v1
 adapter:
   mode: full
@@ -30,13 +31,13 @@ scheduler:
   warmup_ratio: 0.04
   min_lr_ratio: 0.18
 sampling:
-  easy_ratio: 0.12
-  medium_ratio: 0.22
-  hard_ratio: 0.42
-  pathological_ratio: 0.24
-  failure_replay_ratio: 0.25
+  easy_ratio: 0.14
+  medium_ratio: 0.24
+  hard_ratio: 0.40
+  pathological_ratio: 0.22
+  failure_replay_ratio: 0.22
   refresh_failure_buffer_every: 250
-  keep_clean_anchor_fraction: 0.12
+  keep_clean_anchor_fraction: 0.18
 module_lr:
   visual_tokenizer: 0.55
   layout_side_encoder: 0.65

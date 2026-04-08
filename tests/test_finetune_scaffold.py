@@ -3,6 +3,7 @@ from __future__ import annotations
 from leopardi.finetune.batch import FinetuneBatch
 from leopardi.finetune.config import FinetuneStageConfig
 from leopardi.finetune.losses import compute_finetune_losses
+from leopardi.finetune.recipes import finetune_stage_recipe
 from leopardi.finetune.rewards import compute_reward_breakdown
 from leopardi.finetune.runtime import (
     build_finetune_optimizer,
@@ -61,3 +62,14 @@ def test_finetune_optimizer_groups_and_materialization(tmp_path) -> None:
     assert (
         tmp_path / "runs" / "leo-s0-f3-test" / "artifacts" / "finetune" / "f3_rlvr" / "finetune-plan.json"
     ).exists()
+
+
+def test_finetune_stage_recipes_keep_exact_anchors() -> None:
+    f0 = finetune_stage_recipe("f0_general_sft")
+    f1 = finetune_stage_recipe("f1_specialist_sft")
+    f2 = finetune_stage_recipe("f2_repair_sft")
+
+    assert f0.data_bundle_ids == ("sft_core_v1", "f0_general_sft_v1")
+    assert f1.data_bundle_ids == ("sft_core_v1", "f1_specialist_sft_v1")
+    assert f2.data_bundle_ids == ("sft_repair_v1", "f2_repair_sft_v1")
+    assert f1.sampling.keep_clean_anchor_fraction >= 0.18

@@ -34,6 +34,12 @@ It does not mean full TeX document syntax with preamble, packages, theorem setup
 
 For `~100M`, curation quality matters more than raw scale.
 
+Operational implication:
+
+- exact page or document pairs stay dominant through `P2`
+- specialist and synthetic sources are staged in, not dumped in uniformly from the beginning
+- `F0` and `F1` both retain exact anchors during finetuning
+
 ### 3. Benchmark test sets are never training data
 
 Public benchmark test sets are evaluation only.
@@ -41,6 +47,22 @@ Public benchmark test sets are evaluation only.
 ### 4. Synthetic data is required, but the source corpus must stay explicit
 
 We will synthesize data from public sources, not from undocumented prompts and ad hoc outputs.
+
+## Evidence-Based Competitive Position
+
+Current evidence supports the following claim:
+
+- this data plan is strong enough to make `Leopardi-S0 ~100M` highly competitive in the compact-parser regime
+- it is not scientifically defensible to promise that a `100M` model will automatically beat every `~0.9B` frontier parser on every benchmark before training and evaluation happen
+
+The strongest reasons the plan is still worth pursuing are:
+
+- the exact-pair core is cleaner and more Markdown-native than many competitor stacks
+- table, formula, handwriting, receipt, and chart specialists are explicitly separated instead of being left implicit in generic OCR mixtures
+- the pipeline now preserves a compact-model-friendly curriculum where exact supervision dominates before robustness pressure rises
+
+The strongest remaining structural disadvantage versus a model like `PaddleOCR-VL-1.5` is multilingual breadth.
+That is a real risk and must remain explicit until a stronger multilingual document source family is promoted.
 
 ## Canonical Target Sources
 

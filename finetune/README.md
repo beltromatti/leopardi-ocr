@@ -59,6 +59,22 @@ The current finetune surface assumes the model still exposes:
 - layout-side memory tokens for hard-document robustness
 - `MTP` heads so efficiency-oriented serving variants survive later optimization
 
+## Final `S0` Position
+
+For `Leopardi-S0 ~100M`, finetuning now keeps an explicit exact anchor at every specialist stage.
+
+Operational consequence:
+
+- `F0` uses `sft_core_v1` plus `f0_general_sft_v1`
+- `F1` uses `sft_core_v1` plus `f1_specialist_sft_v1`
+- `F2` uses `sft_repair_v1` plus `f2_repair_sft_v1`
+- `F3` stays compact and reward-driven through `f3_rlvr_v1`
+
+This is the evidence-based choice for a compact parser:
+
+- specialist data is necessary to attack tables, formulas, handwriting, receipts, and charts
+- but exact canonical page targets must remain present or a small model drifts into brittle format behavior faster than larger competitors
+
 The repo can now materialize a finetune run on disk, including:
 
 - run manifest and heartbeat

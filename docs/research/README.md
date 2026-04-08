@@ -23,6 +23,7 @@ This directory is the competitive-intelligence and benchmarking knowledge base f
 - `compression-and-efficiency-frontier-2026-04.md`: quantization, compactness, and deployment-oriented compression landscape.
 - `final-refinement-2026-04.md`: last gap analysis and design correction pass before the final blueprint.
 - `leopardi-blueprint-inputs-2026-04.md`: distilled design implications for the final Leopardi blueprint.
+- `s0-competitive-readiness-2026-04.md`: evidence-based assessment of what the current `100M` plan can and cannot reasonably claim against the frontier.
 - `sources-frontier-2026-04.md`: verified source registry for the broader frontier pass.
 
 ## Data Tables
