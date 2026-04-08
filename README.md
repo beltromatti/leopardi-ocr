@@ -40,6 +40,7 @@ Open-source competitor repos are vendored as submodules under [external/competit
 ## Repository Layout
 
 - `experiments/`: experiment registry, templates, track definitions, and promotion rules.
+- `model/`: model-family control plane, preset policy, interfaces, and artifact rules.
 - `data_pipeline/`: ingestion, synthesis, curation, and manifests for large-scale pretraining and finetuning data.
 - `evaluation/`: unified evaluation system including datasets, protocols, runners, metrics, baselines, and reports.
 - `pretraining/`: curriculum and objectives for large-scale synthetic + paired document pretraining.
@@ -59,6 +60,7 @@ Start here:
 
 - [docs/experimentation.md](./docs/experimentation.md)
 - [docs/run-on-rtx5090.md](./docs/run-on-rtx5090.md)
+- [model/README.md](./model/README.md)
 - [experiments/README.md](./experiments/README.md)
 - [configs/README.md](./configs/README.md)
 

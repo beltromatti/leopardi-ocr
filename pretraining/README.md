@@ -33,6 +33,8 @@ For Leopardi it must maximize:
 
 ## Code And Config Entry Points
 
+- `model/`
+  - model-family control plane and preset policy
 - `src/leopardi/model/`
   - model architecture implementation
 - `src/leopardi/pretraining/`

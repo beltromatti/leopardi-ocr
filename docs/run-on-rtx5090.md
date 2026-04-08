@@ -51,6 +51,7 @@ python3 -m leopardi.cli materialize-run-example --root runs
 - `README.md`
 - `docs/roadmap.md`
 - `docs/experimentation.md`
+- `model/README.md`
 - `ops/run-contract.md`
 - `data_pipeline/README.md`
 - `pretraining/README.md`

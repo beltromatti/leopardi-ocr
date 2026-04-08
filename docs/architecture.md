@@ -6,6 +6,7 @@ This document defines the final research blueprint for Leopardi.
 
 The current implementation surface for this blueprint lives in:
 
+- `model/`
 - `src/leopardi/model/`
 - `configs/model/leopardi_s0.yaml`
 
