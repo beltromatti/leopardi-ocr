@@ -4,6 +4,21 @@ Date locked: 2026-04-08
 
 This file is the single operator entry point for moving Leopardi onto a rented ephemeral machine.
 
+## Disk Envelope For The Full S0 Data Build
+
+For the current `s0_full_frontier_build` implementation:
+
+- minimum realistic free disk: about `300 GB`
+- recommended free disk: about `400 GB`
+- comfortable headroom: `450-500 GB`
+
+This budget assumes the current optimized builder:
+
+- streams parquet-backed HF sources
+- processes each source once and dispatches samples into every dependent bundle
+- purges source raw/work cache immediately after canonicalization
+- publishes completed bundles and drops their local shard copies after verification
+
 ## GPU Runtime Packages
 
 The dev machine does not need GPU-serving packages.

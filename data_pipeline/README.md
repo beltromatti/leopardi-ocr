@@ -36,6 +36,13 @@ The default operating model is:
 6. verify checksums and counts
 7. purge raw transient data that is no longer needed
 
+The current executor makes that concrete in four ways:
+
+- source-centric dispatch
+- streaming reads for parquet-backed Hugging Face sources
+- source-local purge immediately after canonicalization
+- publish-and-drop of completed bundle shards on the rented machine
+
 This is mandatory because the intended first full run happens on a rented `RTX 5090` machine with finite local storage.
 
 ## What Must Be Persistent
@@ -115,6 +122,21 @@ It is a training-ready sample package that already contains:
 Once a source item has been converted into a verified canonical sample and published to persistent storage, the local raw copy should be eligible for deletion unless retained for an active build window.
 
 Published bundles should be consumable by streaming loaders so that later pretraining and finetuning runs can avoid full local materialization on rented machines.
+
+## Current S0 Storage Envelope
+
+For the `Leopardi-S0 ~100M` full external build on the intended rented machine, the operational disk target is now:
+
+- minimum realistic free space: about `300 GB`
+- recommended free space: about `400 GB`
+- comfortable headroom: `450-500 GB`
+
+This lower budget is possible because the builder no longer:
+
+- reprocesses the same source once per bundle
+- downloads full HF parquet repos for capped sources
+- duplicates completed bundle shards into a second local upload staging tree
+- retains source raw caches until the very end of the full stage
 
 For sources that require one-time manual approval or mirror pinning, the persistent Leopardi bundle becomes the durable handoff.
 The rented training machine should never be the place where those access negotiations happen.

@@ -3,16 +3,17 @@ runtime:
   hardware_tag: rtx5090
   cpu_workers: 12
   io_workers: 16
-  local_disk_budget_gb: 900
+  local_disk_budget_gb: 400
   max_active_sources: 2
   priority:
     - resumability
     - bounded_disk_usage
     - publish_then_purge
   implementation_notes:
-    - publish every completed bundle before starting the next large acquisition wave
-    - prefer metadata-first selection and shard-first materialization
-    - use upload-large-folder style publication for large bundle pushes
+    - process each source once and dispatch canonical samples into every dependent bundle
+    - stream parquet-backed HF datasets instead of downloading full repos when the source supports it
+    - purge source-local raw and work cache as soon as the source has been canonicalized
+    - publish every completed bundle before continuing and drop the local bundle copy after verification
     - enable high-performance Xet transfers only when network and CPU headroom are available
   logging:
     console_log: console.log

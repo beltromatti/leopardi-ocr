@@ -114,6 +114,9 @@ The data pipeline now includes executable workers for:
 - PubTables-1M structure archives
 - SciTSR archive ingestion from the pinned public release
 
+For the current `Leopardi-S0` full external data build on a rented machine, plan for about `400 GB` free disk.
+The optimized builder now streams parquet-backed HF sources, processes each source once, and drops local raw plus verified bundle copies as soon as they are no longer needed.
+
 Manual or conditional sources still use a strict local-manifest import contract only for derived internal bundles when they are promoted from prior runs.
 
 Helpful local scripts:

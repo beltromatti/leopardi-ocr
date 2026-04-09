@@ -124,7 +124,7 @@ def _resolve_selected_sources(
     profile: BuildProfileEntry,
     sources: list[SourceRegistryEntry],
     statuses: list[SourceStatusEntry],
-    bundles: list[BundleRegistryEntry],
+    bundles: tuple[BundleRegistryEntry, ...],
 ) -> tuple[str, ...]:
     source_index = {entry.source_id: entry for entry in sources}
     status_index = {entry.source_id: entry for entry in statuses}
@@ -160,7 +160,16 @@ def _resolve_selected_sources(
         selected,
         key=lambda source_id: _priority_rank(status_index[source_id], source_index[source_id]),
     )
-    return tuple(ranked)
+    bundle_order: list[str] = []
+    selected_set = set(selected)
+    for bundle in bundles:
+        for source_id in bundle.primary_sources:
+            if source_id in selected_set and source_id not in bundle_order:
+                bundle_order.append(source_id)
+    for source_id in ranked:
+        if source_id not in bundle_order:
+            bundle_order.append(source_id)
+    return tuple(bundle_order)
 
 
 def _resolve_selected_bundles(
@@ -195,8 +204,8 @@ def build_data_build_execution_plan(
     publish_entries = load_publish_registry()
 
     profile = _resolve_profile(stage.profile_id, profiles)
-    selected_sources = _resolve_selected_sources(stage, profile, sources, statuses, bundles)
     selected_bundles = _resolve_selected_bundles(stage, profile, bundles)
+    selected_sources = _resolve_selected_sources(stage, profile, sources, statuses, selected_bundles)
     endpoint_index = {entry.source_id: entry for entry in endpoints}
     fetchable_sources = tuple(
         source_id

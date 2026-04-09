@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 import shutil
 
@@ -54,13 +54,23 @@ class DataBuildResult:
     publish_ledger_path: str
 
 
-def _bundle_upload_root(bundle_dir: Path, bundle_id: str) -> Path:
-    root = bundle_dir / "publish-staging"
-    target = root / bundle_id
-    if target.exists():
-        shutil.rmtree(target)
-    target.mkdir(parents=True, exist_ok=True)
-    return root
+@dataclass(slots=True)
+class _BundleRuntimeState:
+    bundle_id: str
+    source_ids: tuple[str, ...]
+    bundle_class: str
+    retention_mode: str
+    bundle_dir: Path
+    bundle_repo_root: Path
+    repo_manifests_dir: Path
+    manifests_dir: Path
+    cards_dir: Path
+    shard_writer: TarShardWriter
+    manifest_rows: list[dict[str, object]]
+    unique_docs: set[str]
+    page_count: int = 0
+    asset_bytes: int = 0
+    remaining_sources: int = 0
 
 
 def _write_publish_ledger(ledger_path: Path, bundle_stats: list[BundleBuildStats]) -> None:
@@ -70,6 +80,12 @@ def _write_publish_ledger(ledger_path: Path, bundle_stats: list[BundleBuildStats
             "bundles": [asdict(item) for item in bundle_stats],
         },
     )
+
+
+def _purge_source_cache(*, source_id: str, raw_cache_dir: Path, work_cache_dir: Path) -> None:
+    for base_dir in (raw_cache_dir / source_id, work_cache_dir / source_id):
+        if base_dir.exists():
+            shutil.rmtree(base_dir)
 
 
 def build_data_pipeline_stage(
@@ -115,6 +131,39 @@ def build_data_pipeline_stage(
     default_source_limits = DEFAULT_SOURCE_LIMITS_S0 if stage.target_param_budget_m <= 100 else {}
     effective_limits = {**default_source_limits, **(source_limits or {})}
     bundle_stats: list[BundleBuildStats] = []
+    raw_cache_dir = Path(plan.local_paths.raw_cache_dir)
+    work_cache_dir = Path(plan.local_paths.work_cache_dir)
+
+    bundle_states: dict[str, _BundleRuntimeState] = {}
+    source_to_bundle_ids: dict[str, list[str]] = {}
+    for bundle_spec in plan.bundle_specs:
+        bundle_dir = Path(bundle_spec.local_staging_dir)
+        bundle_dir.mkdir(parents=True, exist_ok=True)
+        bundle_repo_root = bundle_dir
+        shards_dir = bundle_repo_root / "shards"
+        repo_manifests_dir = bundle_repo_root / "manifests"
+        manifests_dir = Path(bundle_spec.local_manifest_dir)
+        cards_dir = bundle_repo_root / "cards"
+        manifests_dir.mkdir(parents=True, exist_ok=True)
+        repo_manifests_dir.mkdir(parents=True, exist_ok=True)
+        cards_dir.mkdir(parents=True, exist_ok=True)
+        bundle_states[bundle_spec.bundle_id] = _BundleRuntimeState(
+            bundle_id=bundle_spec.bundle_id,
+            source_ids=bundle_spec.source_ids,
+            bundle_class=bundle_spec.bundle_class,
+            retention_mode=bundle_spec.retention_mode,
+            bundle_dir=bundle_dir,
+            bundle_repo_root=bundle_repo_root,
+            repo_manifests_dir=repo_manifests_dir,
+            manifests_dir=manifests_dir,
+            cards_dir=cards_dir,
+            shard_writer=TarShardWriter(shards_dir, stage.shard_target_size_mb),
+            manifest_rows=[],
+            unique_docs=set(),
+            remaining_sources=len(bundle_spec.source_ids),
+        )
+        for source_id in bundle_spec.source_ids:
+            source_to_bundle_ids.setdefault(source_id, []).append(bundle_spec.bundle_id)
 
     write_heartbeat(
         RunHeartbeat(
@@ -128,92 +177,44 @@ def build_data_pipeline_stage(
         layout=layout,
     )
 
-    for bundle_index, bundle_spec in enumerate(plan.bundle_specs, start=1):
-        append_event(
-            layout=layout,
-            event_type="data_bundle_started",
-            phase="data_pipeline",
-            stage=stage.stage,
-            payload={"bundle_id": bundle_spec.bundle_id, "source_ids": list(bundle_spec.source_ids)},
-        )
-        bundle_dir = Path(bundle_spec.local_staging_dir)
-        bundle_dir.mkdir(parents=True, exist_ok=True)
-        shards_dir = bundle_dir / "shards"
-        manifests_dir = Path(bundle_spec.local_manifest_dir)
-        manifests_dir.mkdir(parents=True, exist_ok=True)
-
-        shard_writer = TarShardWriter(shards_dir, stage.shard_target_size_mb)
-        manifest_rows: list[dict[str, object]] = []
-        unique_docs: set[str] = set()
-        page_count = 0
-        asset_bytes = 0
-
-        for source_id in bundle_spec.source_ids:
-            worker = worker_registry.get(source_id)
-            if worker is None:
-                raise RuntimeError(f"No data worker is registered for source {source_id}")
-            source_context = SourceBuildContext(
-                stage=stage,
-                experiment_id=experiment_id,
-                bundle_id=bundle_spec.bundle_id,
-                bundle_class=bundle_spec.bundle_class,
-                raw_cache_dir=Path(plan.local_paths.raw_cache_dir),
-                work_cache_dir=Path(plan.local_paths.work_cache_dir),
-                manual_source_root=Path(manual_source_root) if manual_source_root else None,
-                render_pdf_pages=True,
-                publish_enabled=publish,
-                keep_raw=keep_raw,
-                source_limits=effective_limits,
-                max_pages_per_document=DEFAULT_MAX_PAGES_S0,
-            )
-            for sample in worker.iter_samples(source_context):
-                assert isinstance(sample, CanonicalSample)
-                shard_writer.write_sample(sample)
-                manifest_rows.append(sample.manifest_record())
-                unique_docs.add(sample.doc_id)
-                if sample.page_id is not None:
-                    page_count += 1
-                asset_bytes += sum(asset.size_bytes() for asset in sample.assets)
-
-        shard_writer.close()
+    def finalize_bundle(bundle_id: str, *, completion_index: int) -> None:
+        bundle_spec = next(item for item in plan.bundle_specs if item.bundle_id == bundle_id)
+        state = bundle_states[bundle_id]
+        state.shard_writer.close()
         manifest_path = write_manifest_parquet(
-            manifest_rows,
-            manifests_dir / "samples.parquet",
+            state.manifest_rows,
+            state.manifests_dir / "samples.parquet",
         )
+        shutil.copy2(manifest_path, state.repo_manifests_dir / "samples.parquet")
         stats = BundleBuildStats(
-            bundle_id=bundle_spec.bundle_id,
-            sample_count=len(manifest_rows),
-            document_count=len(unique_docs),
-            page_count=page_count,
-            asset_bytes=asset_bytes,
-            shard_count=len(shard_writer.shard_paths),
+            bundle_id=bundle_id,
+            sample_count=len(state.manifest_rows),
+            document_count=len(state.unique_docs),
+            page_count=state.page_count,
+            asset_bytes=state.asset_bytes,
+            shard_count=len(state.shard_writer.shard_paths),
         )
         write_bundle_card(
-            path=manifests_dir / "bundle-card.json",
-            bundle_id=bundle_spec.bundle_id,
-            source_ids=bundle_spec.source_ids,
+            path=state.cards_dir / "bundle-card.json",
+            bundle_id=bundle_id,
+            source_ids=state.source_ids,
             sample_count=stats.sample_count,
-            shard_paths=shard_writer.shard_paths,
+            shard_paths=state.shard_writer.shard_paths,
             manifest_path=manifest_path,
             notes=[
-                f"bundle_class={bundle_spec.bundle_class}",
-                f"retention_mode={bundle_spec.retention_mode}",
+                f"bundle_class={state.bundle_class}",
+                f"retention_mode={state.retention_mode}",
             ],
         )
+        shutil.copy2(state.cards_dir / "bundle-card.json", state.manifests_dir / "bundle-card.json")
         if publish:
-            upload_root = _bundle_upload_root(bundle_dir, bundle_spec.bundle_id)
-            target_dir = upload_root / bundle_spec.bundle_id
-            shutil.copytree(shards_dir, target_dir / "shards", dirs_exist_ok=True)
-            shutil.copy2(manifest_path, target_dir / "manifests" / "samples.parquet")
-            shutil.copy2(manifests_dir / "bundle-card.json", target_dir / "cards" / "bundle-card.json")
-
             bundle_publish = publish_folder_to_hf(
-                local_folder=upload_root,
+                local_folder=state.bundle_repo_root,
                 hf_uri=bundle_spec.bundle_uri,
                 num_workers=min(stage.runtime.io_workers, 8),
             )
             metadata_publish = publish_folder_to_hf(
-                local_folder=manifests_dir,
+                local_folder=state.manifests_dir,
                 hf_uri=bundle_spec.manifest_uri,
                 num_workers=min(stage.runtime.io_workers, 4),
             )
@@ -228,7 +229,7 @@ def build_data_pipeline_stage(
             event_type="data_bundle_completed",
             phase="data_pipeline",
             stage=stage.stage,
-            payload={"bundle_id": bundle_spec.bundle_id, "sample_count": stats.sample_count},
+            payload={"bundle_id": bundle_id, "sample_count": stats.sample_count},
         )
         write_heartbeat(
             RunHeartbeat(
@@ -236,19 +237,77 @@ def build_data_pipeline_stage(
                 phase="data_pipeline",
                 stage=stage.stage,
                 state="running",
-                current_step=bundle_index,
+                current_step=completion_index,
                 latest_metrics={
-                    "bundle_index": float(bundle_index),
+                    "bundle_index": float(completion_index),
                     "sample_count": float(stats.sample_count),
                 },
             ),
             layout=layout,
         )
+        if publish and not keep_raw and state.bundle_dir.exists():
+            shutil.rmtree(state.bundle_dir)
 
-    if stage.raw_retention_mode == "publish_canonical_then_purge_raw" and publish and not keep_raw:
-        raw_cache = Path(plan.local_paths.raw_cache_dir)
-        if raw_cache.exists():
-            shutil.rmtree(raw_cache)
+    for source_index, source_id in enumerate(plan.source_ids, start=1):
+        bundle_ids = tuple(source_to_bundle_ids.get(source_id, ()))
+        if not bundle_ids:
+            continue
+        append_event(
+            layout=layout,
+            event_type="data_source_started",
+            phase="data_pipeline",
+            stage=stage.stage,
+            payload={"source_id": source_id, "bundle_ids": list(bundle_ids)},
+        )
+        worker = worker_registry.get(source_id)
+        if worker is None:
+            raise RuntimeError(f"No data worker is registered for source {source_id}")
+        primary_bundle_id = bundle_ids[0]
+        primary_bundle = bundle_states[primary_bundle_id]
+        source_context = SourceBuildContext(
+            stage=stage,
+            experiment_id=experiment_id,
+            bundle_id=primary_bundle_id,
+            bundle_class=primary_bundle.bundle_class,
+            raw_cache_dir=raw_cache_dir,
+            work_cache_dir=work_cache_dir,
+            manual_source_root=Path(manual_source_root) if manual_source_root else None,
+            render_pdf_pages=True,
+            publish_enabled=publish,
+            keep_raw=keep_raw,
+            source_limits=effective_limits,
+            max_pages_per_document=DEFAULT_MAX_PAGES_S0,
+        )
+        for sample in worker.iter_samples(source_context):
+            assert isinstance(sample, CanonicalSample)
+            for target_bundle_id in bundle_ids:
+                state = bundle_states[target_bundle_id]
+                bundle_sample = replace(sample, bundle_id=target_bundle_id)
+                state.shard_writer.write_sample(bundle_sample)
+                state.manifest_rows.append(bundle_sample.manifest_record())
+                state.unique_docs.add(bundle_sample.doc_id)
+                if bundle_sample.page_id is not None:
+                    state.page_count += 1
+                state.asset_bytes += sum(asset.size_bytes() for asset in bundle_sample.assets)
+
+        append_event(
+            layout=layout,
+            event_type="data_source_completed",
+            phase="data_pipeline",
+            stage=stage.stage,
+            payload={"source_id": source_id, "bundle_ids": list(bundle_ids)},
+        )
+        if stage.raw_retention_mode == "publish_canonical_then_purge_raw" and not keep_raw:
+            _purge_source_cache(
+                source_id=source_id,
+                raw_cache_dir=raw_cache_dir,
+                work_cache_dir=work_cache_dir,
+            )
+        for target_bundle_id in bundle_ids:
+            state = bundle_states[target_bundle_id]
+            state.remaining_sources -= 1
+            if state.remaining_sources == 0:
+                finalize_bundle(target_bundle_id, completion_index=len(bundle_stats) + 1)
 
     summary = RunSummary(
         experiment_id=experiment_id,

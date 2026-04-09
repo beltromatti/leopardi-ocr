@@ -27,6 +27,20 @@ from leopardi.data_pipeline.schemas import CanonicalAsset, CanonicalSample
 
 USER_AGENT = "leopardi-ocr-data-pipeline/0.1"
 
+_HF_STREAMING_COLUMNS: dict[str, tuple[str, ...]] = {
+    "publaynet": ("image", "image_id", "page_id", "id", "annotations"),
+    "mathwriting": ("image", "latex", "label", "formula", "text", "transcription", "gt", "id"),
+    "im2latex_100k": ("image", "latex", "label", "formula", "text", "transcription", "gt", "id"),
+    "crohme": ("image", "latex", "label", "formula", "text", "transcription", "gt", "id"),
+    "funsd": ("image", "id", "words", "bboxes", "ner_tags"),
+    "cord": ("image", "id", "ground_truth"),
+    "sroie": ("image", "id", "entities", "words", "bboxes"),
+    "chartqa": ("image", "id", "question", "query", "answer", "label"),
+    "plotqa": ("image", "id", "text"),
+    "fintabnet_family": ("image", "id", "cells", "cols", "filename"),
+    "iam": ("image", "id", "text", "transcription"),
+}
+
 
 @dataclass(slots=True)
 class SourceBuildContext:
@@ -258,72 +272,76 @@ class ArxivSourceWorker(SourceWorker):
         for record in _iter_arxiv_oai_records(limit=limit, from_date=from_date):
             doc_id = record["id"].replace("/", "_")
             doc_root = source_root / doc_id
-            pdf_path = doc_root / f"{doc_id}.pdf"
-            src_path = doc_root / f"{doc_id}.src"
-            extract_root = doc_root / "src"
-            if not pdf_path.exists():
-                _download_to_path(f"https://export.arxiv.org/pdf/{record['id']}.pdf", pdf_path)
-            if not src_path.exists():
-                _download_to_path(f"https://export.arxiv.org/e-print/{record['id']}", src_path)
-            if not extract_root.exists():
-                extract_root.mkdir(parents=True, exist_ok=True)
-                try:
-                    _safe_extract_tar(src_path, extract_root)
-                except tarfile.ReadError:
+            try:
+                pdf_path = doc_root / f"{doc_id}.pdf"
+                src_path = doc_root / f"{doc_id}.src"
+                extract_root = doc_root / "src"
+                if not pdf_path.exists():
+                    _download_to_path(f"https://export.arxiv.org/pdf/{record['id']}.pdf", pdf_path)
+                if not src_path.exists():
+                    _download_to_path(f"https://export.arxiv.org/e-print/{record['id']}", src_path)
+                if not extract_root.exists():
+                    extract_root.mkdir(parents=True, exist_ok=True)
                     try:
-                        data = gzip.decompress(src_path.read_bytes())
-                        (extract_root / "main.tex").write_bytes(data)
-                    except OSError:
-                        pass
-            main_tex = _choose_main_tex_file(extract_root)
-            if main_tex is None:
-                continue
-            canonical_markdown = tex_to_markdown(
-                main_tex.read_text(encoding="utf-8", errors="ignore")
-            )
-            if not canonical_markdown:
-                continue
-            if context.bundle_id in {"tokenizer_v1", "p1_text_warmup_v1"}:
-                yield CanonicalSample(
-                    sample_id=f"{self.source_id}-{doc_id}-document",
-                    source_id=self.source_id,
-                    bundle_id=context.bundle_id,
-                    doc_id=doc_id,
-                    data_class="exact_pair",
-                    task_family="document_parsing",
-                    target_type="document_markdown",
-                    canonical_target=canonical_markdown,
-                    slice_tags=("exact", "scientific", "latex"),
-                    metadata={"arxiv_id": record["id"], "title": record["title"]},
-                    source_license=record["license"] or None,
-                )
-                continue
-            page_texts = _extract_pdf_page_texts(pdf_path, max_pages=max_pages)
-            page_targets = project_markdown_to_pages(canonical_markdown, page_texts)
-            page_assets = _render_pdf_pages(pdf_path, max_pages=max_pages) if context.render_pdf_pages else ()
-            for page_index, asset in enumerate(page_assets):
-                target = page_targets[page_index] if page_index < len(page_targets) else ""
-                if not target:
+                        _safe_extract_tar(src_path, extract_root)
+                    except tarfile.ReadError:
+                        try:
+                            data = gzip.decompress(src_path.read_bytes())
+                            (extract_root / "main.tex").write_bytes(data)
+                        except OSError:
+                            pass
+                main_tex = _choose_main_tex_file(extract_root)
+                if main_tex is None:
                     continue
-                yield CanonicalSample(
-                    sample_id=f"{self.source_id}-{doc_id}-page-{page_index + 1:04d}",
-                    source_id=self.source_id,
-                    bundle_id=context.bundle_id,
-                    doc_id=doc_id,
-                    page_id=f"{doc_id}:{page_index + 1}",
-                    data_class="exact_pair",
-                    task_family="document_parsing",
-                    target_type="page_markdown_projection",
-                    canonical_target=target,
-                    slice_tags=("exact", "scientific", "page_projection"),
-                    metadata={
-                        "arxiv_id": record["id"],
-                        "title": record["title"],
-                        "page_index": page_index,
-                    },
-                    assets=(asset,),
-                    source_license=record["license"] or None,
+                canonical_markdown = tex_to_markdown(
+                    main_tex.read_text(encoding="utf-8", errors="ignore")
                 )
+                if not canonical_markdown:
+                    continue
+                if context.bundle_id in {"tokenizer_v1", "p1_text_warmup_v1"}:
+                    yield CanonicalSample(
+                        sample_id=f"{self.source_id}-{doc_id}-document",
+                        source_id=self.source_id,
+                        bundle_id=context.bundle_id,
+                        doc_id=doc_id,
+                        data_class="exact_pair",
+                        task_family="document_parsing",
+                        target_type="document_markdown",
+                        canonical_target=canonical_markdown,
+                        slice_tags=("exact", "scientific", "latex"),
+                        metadata={"arxiv_id": record["id"], "title": record["title"]},
+                        source_license=record["license"] or None,
+                    )
+                    continue
+                page_texts = _extract_pdf_page_texts(pdf_path, max_pages=max_pages)
+                page_targets = project_markdown_to_pages(canonical_markdown, page_texts)
+                page_assets = _render_pdf_pages(pdf_path, max_pages=max_pages) if context.render_pdf_pages else ()
+                for page_index, asset in enumerate(page_assets):
+                    target = page_targets[page_index] if page_index < len(page_targets) else ""
+                    if not target:
+                        continue
+                    yield CanonicalSample(
+                        sample_id=f"{self.source_id}-{doc_id}-page-{page_index + 1:04d}",
+                        source_id=self.source_id,
+                        bundle_id=context.bundle_id,
+                        doc_id=doc_id,
+                        page_id=f"{doc_id}:{page_index + 1}",
+                        data_class="exact_pair",
+                        task_family="document_parsing",
+                        target_type="page_markdown_projection",
+                        canonical_target=target,
+                        slice_tags=("exact", "scientific", "page_projection"),
+                        metadata={
+                            "arxiv_id": record["id"],
+                            "title": record["title"],
+                            "page_index": page_index,
+                        },
+                        assets=(asset,),
+                        source_license=record["license"] or None,
+                    )
+            finally:
+                if not context.keep_raw and doc_root.exists():
+                    shutil.rmtree(doc_root)
 
 
 def _latest_pmc_filelists() -> list[str]:
@@ -370,86 +388,140 @@ class PMCSourceWorker(SourceWorker):
         for record in _iter_pmc_records(limit):
             pmcid = record["pmcid"]
             doc_root = source_root / pmcid
-            package_path = doc_root / f"{pmcid}.tar.gz"
-            extract_root = doc_root / "package"
-            if not _is_valid_cached_download(package_path):
-                package_path.unlink(missing_ok=True)
-                with opener.open(
-                    _request(f"https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi?id={pmcid}"),
-                    timeout=120,
-                ) as response:
-                    xml = ET.fromstring(response.read())
-                link = xml.find(".//record/link")
-                if link is None:
+            try:
+                package_path = doc_root / f"{pmcid}.tar.gz"
+                extract_root = doc_root / "package"
+                if not _is_valid_cached_download(package_path):
+                    package_path.unlink(missing_ok=True)
+                    with opener.open(
+                        _request(f"https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi?id={pmcid}"),
+                        timeout=120,
+                    ) as response:
+                        xml = ET.fromstring(response.read())
+                    link = xml.find(".//record/link")
+                    if link is None:
+                        continue
+                    href = link.attrib["href"].replace("ftp://ftp.ncbi.nlm.nih.gov", "https://ftp.ncbi.nlm.nih.gov")
+                    _download_to_path(href, package_path)
+                if not extract_root.exists():
+                    _safe_extract_tar(package_path, extract_root)
+                xml_files = list(extract_root.rglob("*.xml")) + list(extract_root.rglob("*.nxml"))
+                pdf_files = list(extract_root.rglob("*.pdf"))
+                if not xml_files or not pdf_files:
                     continue
-                href = link.attrib["href"].replace("ftp://ftp.ncbi.nlm.nih.gov", "https://ftp.ncbi.nlm.nih.gov")
-                _download_to_path(href, package_path)
-            if not extract_root.exists():
-                _safe_extract_tar(package_path, extract_root)
-            xml_files = list(extract_root.rglob("*.xml")) + list(extract_root.rglob("*.nxml"))
-            pdf_files = list(extract_root.rglob("*.pdf"))
-            if not xml_files or not pdf_files:
-                continue
-            xml_text = xml_files[0].read_text(encoding="utf-8", errors="ignore")
-            canonical_markdown = jats_to_markdown(xml_text)
-            if not canonical_markdown:
-                continue
-            if context.bundle_id in {"tokenizer_v1", "p1_text_warmup_v1"}:
-                yield CanonicalSample(
-                    sample_id=f"{self.source_id}-{pmcid}-document",
-                    source_id=self.source_id,
-                    bundle_id=context.bundle_id,
-                    doc_id=pmcid,
-                    data_class="exact_pair",
-                    task_family="document_parsing",
-                    target_type="document_markdown",
-                    canonical_target=canonical_markdown,
-                    slice_tags=("exact", "jats", "biomedical"),
-                    metadata={"pmcid": pmcid, "citation": record["citation"]},
-                    source_license=record["license"] or None,
-                )
-                continue
-            pdf_path = pdf_files[0]
-            page_texts = _extract_pdf_page_texts(pdf_path, max_pages=max_pages)
-            page_targets = project_markdown_to_pages(canonical_markdown, page_texts)
-            page_assets = _render_pdf_pages(pdf_path, max_pages=max_pages) if context.render_pdf_pages else ()
-            for page_index, asset in enumerate(page_assets):
-                target = page_targets[page_index] if page_index < len(page_targets) else ""
-                if not target:
+                xml_text = xml_files[0].read_text(encoding="utf-8", errors="ignore")
+                canonical_markdown = jats_to_markdown(xml_text)
+                if not canonical_markdown:
                     continue
-                yield CanonicalSample(
-                    sample_id=f"{self.source_id}-{pmcid}-page-{page_index + 1:04d}",
-                    source_id=self.source_id,
-                    bundle_id=context.bundle_id,
-                    doc_id=pmcid,
-                    page_id=f"{pmcid}:{page_index + 1}",
-                    data_class="exact_pair",
-                    task_family="document_parsing",
-                    target_type="page_markdown_projection",
-                    canonical_target=target,
-                    slice_tags=("exact", "jats", "page_projection"),
-                    metadata={
-                        "pmcid": pmcid,
-                        "citation": record["citation"],
-                        "page_index": page_index,
-                    },
-                    assets=(asset,),
-                    source_license=record["license"] or None,
-                )
+                if context.bundle_id in {"tokenizer_v1", "p1_text_warmup_v1"}:
+                    yield CanonicalSample(
+                        sample_id=f"{self.source_id}-{pmcid}-document",
+                        source_id=self.source_id,
+                        bundle_id=context.bundle_id,
+                        doc_id=pmcid,
+                        data_class="exact_pair",
+                        task_family="document_parsing",
+                        target_type="document_markdown",
+                        canonical_target=canonical_markdown,
+                        slice_tags=("exact", "jats", "biomedical"),
+                        metadata={"pmcid": pmcid, "citation": record["citation"]},
+                        source_license=record["license"] or None,
+                    )
+                    continue
+                pdf_path = pdf_files[0]
+                page_texts = _extract_pdf_page_texts(pdf_path, max_pages=max_pages)
+                page_targets = project_markdown_to_pages(canonical_markdown, page_texts)
+                page_assets = _render_pdf_pages(pdf_path, max_pages=max_pages) if context.render_pdf_pages else ()
+                for page_index, asset in enumerate(page_assets):
+                    target = page_targets[page_index] if page_index < len(page_targets) else ""
+                    if not target:
+                        continue
+                    yield CanonicalSample(
+                        sample_id=f"{self.source_id}-{pmcid}-page-{page_index + 1:04d}",
+                        source_id=self.source_id,
+                        bundle_id=context.bundle_id,
+                        doc_id=pmcid,
+                        page_id=f"{pmcid}:{page_index + 1}",
+                        data_class="exact_pair",
+                        task_family="document_parsing",
+                        target_type="page_markdown_projection",
+                        canonical_target=target,
+                        slice_tags=("exact", "jats", "page_projection"),
+                        metadata={
+                            "pmcid": pmcid,
+                            "citation": record["citation"],
+                            "page_index": page_index,
+                        },
+                        assets=(asset,),
+                        source_license=record["license"] or None,
+                    )
+            finally:
+                if not context.keep_raw and doc_root.exists():
+                    shutil.rmtree(doc_root)
 
 
-def _iter_hf_parquet_rows(repo_id: str) -> Iterator[dict[str, Any]]:
-    from huggingface_hub import hf_hub_download, list_repo_files
-    import pyarrow.parquet as pq
+def _preferred_hf_config_name(repo_id: str) -> str | None:
+    from datasets import get_dataset_config_names
 
-    files = [item for item in list_repo_files(repo_id, repo_type="dataset") if item.endswith(".parquet")]
-    for filename in sorted(files):
-        parquet_path = hf_hub_download(repo_id=repo_id, repo_type="dataset", filename=filename)
-        parquet_file = pq.ParquetFile(parquet_path)
-        for row_group_index in range(parquet_file.num_row_groups):
-            table = parquet_file.read_row_group(row_group_index)
-            for row in table.to_pylist():
-                yield row
+    config_names = list(get_dataset_config_names(repo_id))
+    if not config_names:
+        return None
+    if "default" in config_names:
+        return "default"
+    return sorted(config_names)[0]
+
+
+def _streaming_dataset_kwargs(repo_id: str, *, cache_dir: Path | None = None) -> dict[str, Any]:
+    config_name = _preferred_hf_config_name(repo_id)
+    kwargs: dict[str, Any] = {"path": repo_id, "streaming": True}
+    if config_name is not None:
+        kwargs["name"] = config_name
+    if cache_dir is not None:
+        kwargs["cache_dir"] = str(cache_dir)
+    return kwargs
+
+
+def _select_streaming_columns(dataset: Any, *, columns: tuple[str, ...] | None) -> Any:
+    if not columns:
+        return dataset
+    column_names = getattr(dataset, "column_names", None)
+    if not isinstance(column_names, list):
+        return dataset
+    keep = [column for column in columns if column in column_names]
+    if not keep or set(keep) == set(column_names):
+        return dataset
+    if hasattr(dataset, "select_columns"):
+        return dataset.select_columns(keep)
+    if hasattr(dataset, "remove_columns"):
+        remove = [column for column in column_names if column not in keep]
+        if remove:
+            return dataset.remove_columns(remove)
+    return dataset
+
+
+def _iter_hf_parquet_rows(
+    repo_id: str,
+    *,
+    source_id: str | None = None,
+    cache_dir: Path | None = None,
+) -> Iterator[dict[str, Any]]:
+    from datasets import load_dataset
+
+    columns = _HF_STREAMING_COLUMNS.get(source_id or "", None)
+    dataset_or_dict = load_dataset(**_streaming_dataset_kwargs(repo_id, cache_dir=cache_dir))
+    if hasattr(dataset_or_dict, "items"):
+        split_items = sorted(
+            dataset_or_dict.items(),
+            key=lambda item: ({"train": 0, "validation": 1, "test": 2}.get(item[0], 9), item[0]),
+        )
+        for _, split_dataset in split_items:
+            split_dataset = _select_streaming_columns(split_dataset, columns=columns)
+            for row in split_dataset:
+                yield dict(row)
+        return
+    dataset = _select_streaming_columns(dataset_or_dict, columns=columns)
+    for row in dataset:
+        yield dict(row)
 
 
 def _infer_hf_split_from_filename(filename: str, *, source_id: str | None = None) -> str:
@@ -468,19 +540,26 @@ def _iter_hf_parquet_rows_with_split(
     repo_id: str,
     *,
     source_id: str | None = None,
+    cache_dir: Path | None = None,
 ) -> Iterator[tuple[str, dict[str, Any]]]:
-    from huggingface_hub import hf_hub_download, list_repo_files
-    import pyarrow.parquet as pq
+    from datasets import load_dataset
 
-    files = [item for item in list_repo_files(repo_id, repo_type="dataset") if item.endswith(".parquet")]
-    for filename in sorted(files):
-        split = _infer_hf_split_from_filename(filename, source_id=source_id)
-        parquet_path = hf_hub_download(repo_id=repo_id, repo_type="dataset", filename=filename)
-        parquet_file = pq.ParquetFile(parquet_path)
-        for row_group_index in range(parquet_file.num_row_groups):
-            table = parquet_file.read_row_group(row_group_index)
-            for row in table.to_pylist():
-                yield split, row
+    columns = _HF_STREAMING_COLUMNS.get(source_id or "", None)
+    dataset_or_dict = load_dataset(**_streaming_dataset_kwargs(repo_id, cache_dir=cache_dir))
+    if hasattr(dataset_or_dict, "items"):
+        split_items = sorted(
+            dataset_or_dict.items(),
+            key=lambda item: ({"train": 0, "validation": 1, "test": 2}.get(item[0], 9), item[0]),
+        )
+        for split_name, split_dataset in split_items:
+            split_dataset = _select_streaming_columns(split_dataset, columns=columns)
+            normalized_split = split_name if split_name in {"train", "validation", "test"} else "train"
+            for row in split_dataset:
+                yield normalized_split, dict(row)
+        return
+    dataset = _select_streaming_columns(dataset_or_dict, columns=columns)
+    for row in dataset:
+        yield "train", dict(row)
 
 
 def _extract_image_asset(row: dict[str, Any]) -> CanonicalAsset | None:
@@ -929,7 +1008,10 @@ class HFParquetWorker(SourceWorker):
 
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         limit = context.source_limit(self.source_id, 20000)
-        for row_index, row in enumerate(_iter_hf_parquet_rows(self.repo_id)):
+        cache_dir = context.raw_cache_dir / self.source_id / "hf-cache"
+        for row_index, row in enumerate(
+            _iter_hf_parquet_rows(self.repo_id, source_id=self.source_id, cache_dir=cache_dir)
+        ):
             if row_index >= limit:
                 break
             yield _hf_row_to_sample(
@@ -947,8 +1029,13 @@ class HFSplitAwareParquetWorker(SourceWorker):
 
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         limit = context.source_limit(self.source_id, 20000)
+        cache_dir = context.raw_cache_dir / self.source_id / "hf-cache"
         for row_index, (split_assignment, row) in enumerate(
-            _iter_hf_parquet_rows_with_split(self.repo_id, source_id=self.source_id)
+            _iter_hf_parquet_rows_with_split(
+                self.repo_id,
+                source_id=self.source_id,
+                cache_dir=cache_dir,
+            )
         ):
             if row_index >= limit:
                 break
@@ -1247,6 +1334,7 @@ class PubTablesWorker(SourceWorker):
                 repo_id="bsmock/pubtables-1m",
                 repo_type="dataset",
                 filename=filenames["images"],
+                cache_dir=str(cache_dir),
             )
         )
         annotation_tar = Path(
@@ -1254,6 +1342,7 @@ class PubTablesWorker(SourceWorker):
                 repo_id="bsmock/pubtables-1m",
                 repo_type="dataset",
                 filename=filenames["annotations"],
+                cache_dir=str(cache_dir),
             )
         )
         with tarfile.open(image_tar, "r:gz") as images_archive, tarfile.open(

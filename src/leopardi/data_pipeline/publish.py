@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-import shutil
 import tempfile
 
 from leopardi.data_pipeline.schemas import PublishResult
@@ -18,6 +17,18 @@ def parse_hf_uri(uri: str) -> tuple[str, str]:
     repo_id = pieces[0]
     prefix = pieces[1] if len(pieces) == 2 else ""
     return repo_id, prefix
+
+
+def _hardlink_tree(source: Path, target: Path) -> None:
+    target.mkdir(parents=True, exist_ok=True)
+    for item in source.iterdir():
+        destination = target / item.name
+        if item.is_dir():
+            _hardlink_tree(item, destination)
+            continue
+        if destination.exists():
+            destination.unlink()
+        os.link(item, destination)
 
 
 def publish_folder_to_hf(
@@ -39,11 +50,10 @@ def publish_folder_to_hf(
     api = HfApi(token=token)
     api.create_repo(repo_id=repo_id, repo_type=repo_type, exist_ok=True)
     upload_folder = folder
-    with tempfile.TemporaryDirectory(prefix="leopardi-hf-upload-") as temp_root:
+    with tempfile.TemporaryDirectory(dir=folder.parent, prefix="leopardi-hf-upload-") as temp_root:
         if prefix:
             upload_folder = Path(temp_root) / prefix
-            upload_folder.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(folder, upload_folder, dirs_exist_ok=True)
+            _hardlink_tree(folder, upload_folder)
         api.upload_large_folder(
             repo_id=repo_id,
             repo_type=repo_type,
