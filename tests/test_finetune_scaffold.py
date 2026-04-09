@@ -17,13 +17,20 @@ def test_finetune_smoke_loss_and_reward() -> None:
     config = LeopardiS0Config.tiny()
     model = LeopardiS0(config)
     stage = FinetuneStageConfig(stage="f0_general_sft", visual_mode="standard")
+    # Run a forward pass first to determine actual visual token count.
+    import torch
+    probe_img = torch.randn(1, 3, 128, 128)
+    probe_ids = torch.randint(0, config.writer_decoder.vocab_size, (1, 24))
+    probe_out = model(probe_img, probe_ids)
+    actual_visual_tokens = probe_out.visual_tokens.size(1)
+
     batch = FinetuneBatch.synthetic(
         batch_size=1,
         image_size=(128, 128),
         seq_len=24,
         vocab_size=config.writer_decoder.vocab_size,
         planner_blocks=config.planner.num_blocks,
-        visual_tokens=25,
+        visual_tokens=actual_visual_tokens,
         num_block_types=len(config.planner.block_types),
         num_length_buckets=config.planner.num_length_buckets,
         num_hints=len(config.planner.specialist_hints),

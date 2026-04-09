@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
 
+import torch
 import typer
 from rich.console import Console
 
@@ -224,8 +225,9 @@ def benchmark(
 @app.command()
 def model_summary(
     config_path: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
+    load_pretrained: bool = typer.Option(False, "--load-pretrained/--no-load-pretrained"),
 ) -> None:
-    model = LeopardiS0.from_yaml(str(config_path))
+    model = LeopardiS0.from_yaml(str(config_path), load_pretrained=load_pretrained)
     console.print(model.summary())
 
 
@@ -294,18 +296,19 @@ def smoke_train_step(
     model_config: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
     stage_config: Path = typer.Argument(Path("configs/pretraining/s0_p2_multimodal_core.yaml")),
     runtime_config: Path = typer.Argument(Path("configs/runtime/train_rtx5090.yaml")),
+    load_pretrained: bool = typer.Option(False, "--load-pretrained/--no-load-pretrained"),
 ) -> None:
-    model = LeopardiS0.from_yaml(str(model_config))
+    model = LeopardiS0.from_yaml(str(model_config), load_pretrained=load_pretrained)
     stage = PretrainStageConfig.from_yaml(stage_config, runtime_config)
+    probe_ids = torch.zeros(1, 4, dtype=torch.long)
+    probe_out = model(torch.randn(1, 3, 256, 256), probe_ids, visual_mode=stage.visual_mode)
     batch = PretrainBatch.synthetic(
         batch_size=1,
         image_size=(256, 256),
         seq_len=64,
         vocab_size=model.config.writer_decoder.vocab_size,
         planner_blocks=model.config.planner.num_blocks,
-        visual_tokens=sum(
-            grid[0] * grid[1] for grid in model.config.visual_tokenizer.pool_layouts[stage.visual_mode]
-        ),
+        visual_tokens=probe_out.visual_tokens.size(1),
         num_block_types=len(model.config.planner.block_types),
         num_length_buckets=model.config.planner.num_length_buckets,
         num_hints=len(model.config.planner.specialist_hints),
@@ -389,12 +392,13 @@ def smoke_finetune_step(
     model_config: Path = typer.Argument(Path("configs/model/leopardi_s0.yaml")),
     stage_config: Path = typer.Argument(Path("configs/finetune/s0_f0_sft.yaml")),
     runtime_config: Path = typer.Argument(Path("configs/runtime/finetune_rtx5090.yaml")),
+    load_pretrained: bool = typer.Option(False, "--load-pretrained/--no-load-pretrained"),
 ) -> None:
-    model = LeopardiS0.from_yaml(str(model_config))
+    model = LeopardiS0.from_yaml(str(model_config), load_pretrained=load_pretrained)
     stage = FinetuneStageConfig.from_yaml(stage_config, runtime_config)
-    visual_tokens = sum(
-        grid[0] * grid[1] for grid in model.config.visual_tokenizer.pool_layouts[stage.visual_mode]
-    )
+    probe_ids = torch.zeros(1, 4, dtype=torch.long)
+    probe_out = model(torch.randn(1, 3, 256, 256), probe_ids, visual_mode=stage.visual_mode)
+    visual_tokens = probe_out.visual_tokens.size(1)
     batch = FinetuneBatch.synthetic(
         batch_size=1,
         image_size=(256, 256),
@@ -817,7 +821,7 @@ def evaluation_scorecard_example(
         runtime_family=stage.runtime.primary_runtime,
         decode_mode="standard",
         model_name="Leopardi-S0",
-        size_band="~100M",
+        size_band="~150M",
         evidence_grade="local_synthetic_preview",
         samples=samples,
         datasets=[],
@@ -907,7 +911,7 @@ def evaluation_report_example(
             decode_mode="hard",
             samples=samples,
             model_name="Leopardi-S0",
-            size_band="~100M",
+            size_band="~150M",
             params_total_b=0.093,
             lus=1.42,
             root=root,

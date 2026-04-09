@@ -23,6 +23,7 @@ from leopardi.data_pipeline.canonicalize import (
 )
 from leopardi.data_pipeline.config import DataBuildStageConfig
 from leopardi.data_pipeline.schemas import CanonicalAsset, CanonicalSample
+from leopardi.data_pipeline.synthdog import iter_synthdog_european_samples
 
 
 USER_AGENT = "leopardi-ocr-data-pipeline/0.1"
@@ -264,9 +265,9 @@ class ArxivSourceWorker(SourceWorker):
     source_id = "arxiv_source_pdf"
 
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
-        limit = context.source_limit(self.source_id, 2500)
-        max_pages = context.page_limit(self.source_id, 8)
-        from_date = "2018-01-01" if context.stage.target_param_budget_m <= 100 else "2012-01-01"
+        limit = context.source_limit(self.source_id, 50000)
+        max_pages = context.page_limit(self.source_id, 12)
+        from_date = "2012-01-01" if context.stage.target_param_budget_m <= 200 else "2008-01-01"
         source_root = context.raw_cache_dir / self.source_id
         source_root.mkdir(parents=True, exist_ok=True)
         for record in _iter_arxiv_oai_records(limit=limit, from_date=from_date):
@@ -344,35 +345,38 @@ class ArxivSourceWorker(SourceWorker):
                     shutil.rmtree(doc_root)
 
 
-def _latest_pmc_filelists() -> list[str]:
-    opener = _build_opener()
-    url = "https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_bulk/oa_comm/xml/"
-    with opener.open(_request(url), timeout=120) as response:
-        html = response.read().decode("utf-8", "replace")
-    baselines = re.findall(r'href="([^"]+baseline[^"]+filelist\.csv)"', html)
-    incrementals = re.findall(r'href="([^"]+incr\.[^"]+filelist\.csv)"', html)
-    return [f"{url}{name}" for name in sorted(baselines)] + [
-        f"{url}{name}" for name in sorted(incrementals)[-30:]
-    ]
+def _pmc_oa_filelist_urls() -> tuple[str, ...]:
+    return (
+        "https://pmc-oa-opendata.s3.amazonaws.com/oa_comm/xml/metadata/csv/oa_comm.filelist.csv",
+        "https://pmc-oa-opendata.s3.amazonaws.com/oa_noncomm/xml/metadata/csv/oa_noncomm.filelist.csv",
+        "https://pmc-oa-opendata.s3.amazonaws.com/phe_timebound/xml/metadata/csv/phe_timebound.filelist.csv",
+    )
 
 
 def _iter_pmc_records(limit: int) -> Iterator[dict[str, str]]:
     yielded = 0
     opener = _build_opener()
-    for filelist_url in _latest_pmc_filelists():
-        with opener.open(_request(filelist_url), timeout=120) as response:
+    seen: set[str] = set()
+    for url in _pmc_oa_filelist_urls():
+        with opener.open(_request(url), timeout=120) as response:
             payload = response.read().decode("utf-8", "replace").splitlines()
-        reader = csv.DictReader(payload)
+        reader = csv.reader(payload)
         for row in reader:
             if yielded >= limit:
                 return
-            pmcid_path = row["Article File"]
-            pmcid = Path(pmcid_path).stem
+            if not row or len(row) < 7:
+                continue
+            if row[0] == "Key":
+                continue
+            pmcid = row[3].strip()
+            if not pmcid.startswith("PMC") or pmcid in seen:
+                continue
+            seen.add(pmcid)
             yielded += 1
             yield {
                 "pmcid": pmcid,
-                "citation": row.get("Article Citation", ""),
-                "license": row.get("License", ""),
+                "citation": row[2].strip(),
+                "license": row[6].strip(),
             }
 
 
@@ -854,7 +858,7 @@ def _hf_row_to_sample(
 ) -> CanonicalSample:
     image_asset = _extract_image_asset(row)
     doc_id = str(row.get("id") or row.get("image_id") or row.get("uid") or row_index)
-    if source_id in {"mathwriting", "im2latex_100k", "crohme"}:
+    if source_id in {"mathwriting", "im2latex_100k", "crohme", "unimer_1m"}:
         target = ""
         for key in ("latex", "label", "formula", "text", "transcription", "gt"):
             value = row.get(key)
@@ -872,7 +876,13 @@ def _hf_row_to_sample(
             task_family="formula",
             target_type="latex_formula",
             canonical_target=_standalone_formula_markdown(target),
-            slice_tags=("formula", "handwritten") if source_id == "crohme" else ("formula", "aux"),
+            slice_tags=(
+                ("formula", "handwritten")
+                if source_id == "crohme"
+                else ("formula", "printed", "large_scale")
+                if source_id == "unimer_1m"
+                else ("formula", "aux")
+            ),
             metadata={key: value for key, value in row.items() if key != "image"},
             assets=(image_asset,) if image_asset else (),
         )
@@ -1047,6 +1057,174 @@ class HFSplitAwareParquetWorker(SourceWorker):
             )
             sample.split_assignment = split_assignment
             yield sample
+
+
+class UniMERArchiveWorker(SourceWorker):
+    source_id = "unimer_1m"
+    repo_id = "wanderkid/UniMER_Dataset"
+    archive_name = "UniMER-1M.zip"
+
+    def _archive_path(self, context: SourceBuildContext) -> Path:
+        from huggingface_hub import hf_hub_download
+
+        cache_dir = context.raw_cache_dir / self.source_id
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        return Path(
+            hf_hub_download(
+                repo_id=self.repo_id,
+                repo_type="dataset",
+                filename=self.archive_name,
+                cache_dir=str(cache_dir),
+            )
+        )
+
+    @staticmethod
+    def _iter_manifest_pairs(archive: zipfile.ZipFile) -> Iterator[tuple[str, str, str]]:
+        for member_name in archive.namelist():
+            lowered = member_name.lower()
+            if not lowered.endswith((".jsonl", ".json", ".csv", ".tsv")):
+                continue
+            if "readme" in lowered or lowered.endswith("/"):
+                continue
+            with archive.open(member_name) as handle:
+                if lowered.endswith(".jsonl"):
+                    for line in handle.read().decode("utf-8", "ignore").splitlines():
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            row = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        image_path = next((row.get(key) for key in ("image", "image_path", "img", "path", "file_name") if row.get(key)), None)
+                        label = next((row.get(key) for key in ("latex", "label", "formula", "gt", "text") if row.get(key)), None)
+                        sample_id = str(row.get("id") or row.get("uid") or Path(str(image_path or "sample")).stem)
+                        if image_path and isinstance(label, str):
+                            yield sample_id, str(image_path), label
+                else:
+                    rows = handle.read().decode("utf-8", "ignore").splitlines()
+                    delimiter = "\t" if lowered.endswith(".tsv") else ","
+                    reader = csv.DictReader(rows, delimiter=delimiter)
+                    for row in reader:
+                        image_path = next((row.get(key) for key in ("image", "image_path", "img", "path", "file_name") if row.get(key)), None)
+                        label = next((row.get(key) for key in ("latex", "label", "formula", "gt", "text") if row.get(key)), None)
+                        sample_id = str(row.get("id") or row.get("uid") or Path(str(image_path or "sample")).stem)
+                        if image_path and isinstance(label, str):
+                            yield sample_id, str(image_path), label
+
+    @staticmethod
+    def _fallback_stem_pairs(archive: zipfile.ZipFile) -> Iterator[tuple[str, str, str]]:
+        image_members: dict[str, str] = {}
+        label_members: dict[str, str] = {}
+        for member_name in archive.namelist():
+            lowered = member_name.lower()
+            if lowered.endswith((".png", ".jpg", ".jpeg", ".bmp", ".webp")):
+                image_members[Path(member_name).stem] = member_name
+            elif lowered.endswith((".txt", ".tex", ".latex")):
+                label_members[Path(member_name).stem] = member_name
+        for stem in sorted(set(image_members) & set(label_members)):
+            with archive.open(label_members[stem]) as handle:
+                label = handle.read().decode("utf-8", "ignore").strip()
+            if label:
+                yield stem, image_members[stem], label
+
+    def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
+        limit = context.source_limit(self.source_id, 200000)
+        archive_path = self._archive_path(context)
+        yielded = 0
+        with zipfile.ZipFile(archive_path) as archive:
+            yielded_ids: set[str] = set()
+            for sample_id, image_member, label in self._iter_manifest_pairs(archive):
+                if yielded >= limit:
+                    return
+                try:
+                    image_bytes = archive.read(image_member)
+                except KeyError:
+                    continue
+                suffix = Path(image_member).suffix.lstrip(".") or "png"
+                yielded_ids.add(sample_id)
+                yielded += 1
+                yield CanonicalSample(
+                    sample_id=f"{self.source_id}-{sample_id}",
+                    source_id=self.source_id,
+                    bundle_id=context.bundle_id,
+                    doc_id=sample_id,
+                    data_class="trusted_aux",
+                    task_family="formula",
+                    target_type="latex_formula",
+                    canonical_target=_standalone_formula_markdown(label),
+                    slice_tags=("formula", "printed", "large_scale"),
+                    metadata={"image_member": image_member, "archive": self.archive_name},
+                    assets=(
+                        CanonicalAsset(
+                            name=f"image.{suffix}",
+                            media_type=f"image/{'jpeg' if suffix in {'jpg', 'jpeg'} else 'png'}",
+                            payload_bytes=image_bytes,
+                        ),
+                    ),
+                    source_license="apache-2.0",
+                )
+            for sample_id, image_member, label in self._fallback_stem_pairs(archive):
+                if yielded >= limit:
+                    return
+                if sample_id in yielded_ids:
+                    continue
+                image_bytes = archive.read(image_member)
+                suffix = Path(image_member).suffix.lstrip(".") or "png"
+                yielded += 1
+                yield CanonicalSample(
+                    sample_id=f"{self.source_id}-{sample_id}",
+                    source_id=self.source_id,
+                    bundle_id=context.bundle_id,
+                    doc_id=sample_id,
+                    data_class="trusted_aux",
+                    task_family="formula",
+                    target_type="latex_formula",
+                    canonical_target=_standalone_formula_markdown(label),
+                    slice_tags=("formula", "printed", "large_scale"),
+                    metadata={"image_member": image_member, "archive": self.archive_name},
+                    assets=(
+                        CanonicalAsset(
+                            name=f"image.{suffix}",
+                            media_type=f"image/{'jpeg' if suffix in {'jpg', 'jpeg'} else 'png'}",
+                            payload_bytes=image_bytes,
+                        ),
+                    ),
+                    source_license="apache-2.0",
+                )
+
+
+class SynthDoGEuropeanWorker(SourceWorker):
+    source_id = "synthdog_european"
+
+    def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
+        limit = context.source_limit(self.source_id, 100000)
+        for sample in iter_synthdog_european_samples(total_limit=limit):
+            yield CanonicalSample(
+                sample_id=sample.sample_id,
+                source_id=self.source_id,
+                bundle_id=context.bundle_id,
+                doc_id=sample.doc_id,
+                page_id=f"{sample.doc_id}:1",
+                data_class="synthetic_exact",
+                task_family="document_parsing",
+                target_type="page_markdown_projection",
+                canonical_target=sample.canonical_target,
+                slice_tags=("synthetic", "multilingual", "european", sample.language),
+                metadata={
+                    "language": sample.language,
+                    "source": "wikimedia/wikipedia",
+                    "title": sample.title,
+                },
+                assets=(
+                    CanonicalAsset(
+                        name="image.png",
+                        media_type="image/png",
+                        payload_bytes=sample.image_png,
+                    ),
+                ),
+                source_license="cc-by-sa",
+            )
 
 
 class DocLayNetWorker(SourceWorker):
@@ -1555,6 +1733,8 @@ def build_worker_registry() -> dict[str, SourceWorker]:
             "fintabnet_family", "docling-project/FinTabNet_OTSL"
         ),
         "iam": HFSplitAwareParquetWorker("iam", "Teklia/IAM-line"),
+        "unimer_1m": UniMERArchiveWorker(),
+        "synthdog_european": SynthDoGEuropeanWorker(),
         "approved_exact_full_page_targets": ManualManifestWorker("approved_exact_full_page_targets"),
         "synthetic_from_exact": ManualManifestWorker("synthetic_from_exact"),
         "model_failures_plus_exact_truth": ManualManifestWorker("model_failures_plus_exact_truth"),

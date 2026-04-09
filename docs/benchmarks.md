@@ -31,7 +31,7 @@ Best accuracy under a fixed size and hardware budget.
 
 Best performance per parameter class.
 
-This matters because the first research phase is `~100M`, not `~1B`.
+This matters because the first research phase is `~150M`, not `~1B`.
 
 ## Hardware Protocol
 

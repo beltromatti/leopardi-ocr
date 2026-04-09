@@ -1,8 +1,10 @@
 # Leopardi Architecture
 
-Date locked: 2026-04-08
+Date locked: 2026-04-09
 
-This document defines the final research blueprint for Leopardi.
+This document defines the revised research blueprint for Leopardi, updated to
+integrate pretrained vision and language components following the April 2026
+architecture revision (see `docs/research/architecture-revision-2026-04.md`).
 
 The current implementation surface for this blueprint lives in:
 
@@ -18,8 +20,10 @@ Leopardi is a full-document parser whose external contract is:
 - formulas: LaTeX
 - tables: Markdown-native canonical table format
 
-The first research vehicle is `Leopardi-S0`, a compact `~100M` parameter model optimized for fast iteration on `RTX 5090`.
-The final product model will be `Leopardi-S1`, a `~500M` scale-up of the same design after the right recipe is found.
+The first research vehicle is `Leopardi-S0`, a `~150M` parameter model built on
+pretrained vision and language backbones, optimized for fast iteration on `RTX 5090`.
+The final product model will be `Leopardi-S1`, a `~500M` scale-up of the same
+design after the right recipe is found.
 
 ## Core Design Principles
 
@@ -33,11 +37,11 @@ Leopardi should not waste scarce model capacity on tasks that can be handled che
 - page border cleanup
 - duplicate header and footer detection at document assembly time
 
-For a `~100M` model, this is non-negotiable.
+For a `~150M` model, this is non-negotiable.
 
 ### 2. Optimize active compute, not only total parameter count
 
-The `100M` phase is explicitly about intelligence per parameter and intelligence per millisecond.
+The `150M` phase is explicitly about intelligence per parameter and intelligence per millisecond.
 
 That means:
 
@@ -58,7 +62,7 @@ Leopardi therefore uses:
 - grammar-aware decoding and repair
 - syntax validators during training and inference
 
-### 4. The 100M model must be a research instrument, not just a small product model
+### 4. The 150M model must be a research instrument, not just a small product model
 
 `Leopardi-S0` is designed to maximize ablation speed on a single `RTX 5090`.
 It must be small enough to retrain frequently and instrumented enough to reveal what actually works.
@@ -71,9 +75,19 @@ Research vehicle for rapid iteration.
 
 Target size:
 
-- `90M` to `110M` total parameters
+- `~150M` total parameters
 - dense model
 - no MoE in v1
+- pretrained vision encoder: SigLIP2-base-patch16-NaFlex (~86M)
+- pretrained decoder initialization: SmolLM2-135M weight transfer
+
+Why pretrained backbones:
+
+- every competitive system in the 100M–600M class uses pretrained components
+- SigLIP2 provides strong document-aware visual features from day one
+- SmolLM2 provides language generation priors from 2T tokens of pretraining
+- the Leopardi innovations (planner, bottleneck, side-maps, repair) differentiate
+  on top of proven foundations
 
 Why dense first:
 
@@ -88,9 +102,11 @@ Final-scale product model after the recipe is locked.
 
 Target size:
 
-- `450M` to `550M` total parameters
+- `~500M` total parameters
 - same architecture family
-- more depth, more latent capacity, larger visual budget, optional lightweight routed specialists
+- SigLIP2-base vision encoder (same as S0 for comparability)
+- larger decoder initialized from SmolLM2-360M
+- more depth, more latent capacity, optional lightweight routed specialists
 
 ## External System Shape
 
@@ -155,14 +171,17 @@ Reason:
 
 Target allocation:
 
-- visual stem and hierarchical encoder: `34M` to `40M`
-- latent compressor and planner: `10M` to `14M`
-- writer decoder: `42M` to `48M`
-- auxiliary heads and embeddings: `8M` to `12M`
+- pretrained vision encoder (SigLIP2-base-NaFlex): `~86M`
+- pixel shuffle and projection: `~1M`
+- structural latent bottleneck: `~8M`
+- block planner: `~5.5M`
+- layout side-map encoder: `~0.3M`
+- writer decoder (9 layers, SmolLM2-initialized): `~48M`
+- MTP heads and auxiliary heads: `~0.5M`
 
 Target total:
 
-- `~100M`, with the first concrete preset currently in the low-`90M` range
+- `~150M`
 
 ### 1. Page Canonicalizer
 
@@ -185,23 +204,41 @@ Why it matters:
 - reduces token waste
 - improves robustness to arbitrary rotation and photographed pages
 
-### 2. Adaptive Visual Tokenizer
+### 2. Pretrained Visual Encoder (SigLIP2-base-NaFlex)
 
-The visual front-end should be a compact hierarchical encoder with dynamic-resolution support.
+The visual front-end is a pretrained SigLIP2 ViT-B/16 with NaFlex
+dynamic-resolution support.
 
-Blueprint:
+Specifications:
 
-- convolutional patch stem for local robustness
-- hierarchical ViT-style encoder with patch merging
-- variable patch density based on page complexity
-- optional crop refinement for dense local regions
-- side-map reuse for layout priors without a second heavy encoder
+- model: `google/siglip2-base-patch16-naflex`
+- architecture: ViT-B/16 with 2D learned positional embeddings
+- hidden size: 768
+- layers: 12
+- attention heads: 12
+- patch size: 16
+- parameters: ~86M
+- NaFlex: processes images at native aspect ratio with variable sequence length
 
-Why this design:
+Post-encoder processing:
 
-- better local inductive bias than a plain ViT at this size
-- lower token count than naive high-resolution patching
-- better fit for document pages than generic image classification backbones
+- pixel shuffle (2×2→1) to reduce visual token count by 4×
+- MLP projection from 768 to internal hidden dimension (512)
+
+Why SigLIP2-base-NaFlex:
+
+- state-of-the-art pretrained vision encoder as of 2026
+- NaFlex excels specifically on OCR and document retrieval tasks
+- 86M parameters provide strong visual features that would require
+  billions of training samples to learn from scratch
+- same architecture family scales to SigLIP2-Large (303M) for S1 if needed
+- widely validated in production VLMs (Granite Vision, SmolVLM2)
+
+Training regime:
+
+- freeze bottom 8 layers during P2 core multimodal pretraining
+- fine-tune top 4 layers from the start of P2
+- progressively unfreeze during P3 and finetuning stages
 
 ### 2b. Layout Side-Map Encoder
 
@@ -212,8 +249,10 @@ Blueprint:
 
 - ingest line-density and text-direction maps
 - encode them with a lightweight convolutional side branch
-- pool them into a small fixed grid of layout tokens
+- pool them into a small fixed grid of layout tokens (3×4 = 12 tokens)
 - feed those tokens into the latent bottleneck and writer memory
+
+Parameters: ~0.3M
 
 Why it matters:
 
@@ -223,15 +262,26 @@ Why it matters:
 
 ### 3. Structural Latent Bottleneck
 
-This is one of the most important parts of the blueprint.
-
 Instead of exposing the decoder to all visual tokens directly, Leopardi compresses the page into a small set of learned parse latents.
 
-Blueprint:
+Blueprint for S0:
 
-- `128` to `256` learned latents
-- several rounds of cross-attention from latents to visual tokens
+- `128` learned latents at hidden dimension 512
+- `3` cross-attention layers (self-attention + cross-attention to visual+layout tokens + FFN)
 - latent outputs feed both the planner and the writer
+
+Parameters: ~8M
+
+Blueprint for S1:
+
+- `256` learned latents at hidden dimension 768
+- `5` cross-attention layers
+
+Research backing:
+
+- InternVL-X (2025): SOTA with only 20% visual tokens, validating aggressive compression
+- Perceiver/Perceiver IO: learned latent cross-attention is effective for multimodal compression
+- Q-Former (BLIP-2): similar cross-attention bottleneck widely validated
 
 Why it matters:
 
@@ -243,6 +293,9 @@ Why it matters:
 ### 4. Block Planner
 
 Leopardi should not decode the entire page as one undifferentiated stream.
+
+Blueprint for S0: 2 layers, 48 query slots, hidden 512 (~5.5M)
+Blueprint for S1: 4 layers, 64 query slots, hidden 768 (~14M)
 
 The planner predicts an ordered sequence of block descriptors:
 
@@ -278,28 +331,55 @@ Why it matters:
 
 ### 5. Writer Decoder
 
-The writer is a compact autoregressive decoder conditioned on:
+The writer is a modern autoregressive decoder conditioned on:
 
 - structural latents
 - layout-side tokens
-- current block descriptor
+- current block descriptor (from planner)
 - block-local crop features when needed
 - previously emitted blocks
 
 The writer emits canonical Markdown plus LaTeX.
 
-Why an autoregressive writer remains the right choice:
+Blueprint for S0: 9 layers, hidden 512, GQA 8Q/2KV, SwiGLU, RoPE, RMSNorm (~48M)
+Blueprint for S1: 20 layers, hidden 768, GQA 16Q/4KV, SwiGLU, RoPE, RMSNorm (~370M)
 
-- output is heterogeneous and hierarchical
-- formulas and tables benefit from exact sequence control
-- structured decoding and repair can be applied at block level
+Modern architectural features (adopted from Qwen3, 2025):
 
-To keep this efficient at serving time, the writer should also expose native multi-token-prediction heads.
-This keeps the family compatible with speculative-serving and draft-style acceleration paths used by modern runtimes.
+- **RoPE** (Rotary Position Embeddings) with theta=1000000 for unlimited length extrapolation
+- **GQA** (Grouped Query Attention) for efficient KV-cache at inference
+- **SwiGLU** activation in FFN for better approximation capacity
+- **RMSNorm** with pre-normalization for faster and stabler training
+- **QK-Norm** for training stability at scale
+- **No QKV bias** (following Qwen3 empirical finding)
+
+Initialization:
+
+- Self-attention and FFN weights initialized from SmolLM2-135M (S0) or SmolLM2-360M (S1)
+  via layer selection and dimension projection
+- Cross-attention layers randomly initialized
+- Token embeddings randomly initialized (domain-specific tokenizer)
+- This gives the decoder strong pretrained language patterns while allowing
+  full customization of the cross-modal conditioning and output vocabulary
+
+Memory construction:
+
+```
+memory = cat(structural_latents, layout_tokens, planner_states)
+```
+
+Each WriterBlock applies:
+
+1. Causal self-attention (with RoPE)
+2. Cross-attention to memory
+3. SwiGLU FFN
+
+The writer also exposes native multi-token-prediction heads (horizon=2 for S0, 3 for S1).
+This keeps the family compatible with speculative-serving and draft-style acceleration.
 
 ### 6. Specialist Adapters and Heads
 
-At `~100M`, Leopardi should not fork into many independent models.
+At `~150M`, Leopardi should not fork into many independent models.
 
 The right compromise is:
 
@@ -339,7 +419,7 @@ Repair policy:
 - repair only invalid or low-confidence blocks
 - allow stronger grammar constraints during repair than during the first pass
 
-## Why This Architecture Is Better Suited To 100M Than The Main Alternatives
+## Why This Architecture Is Better Suited To 150M Than The Main Alternatives
 
 ### Not a plain OCR pipeline
 
@@ -365,10 +445,23 @@ Why reject for v1:
 - single-GPU training and serving become less clean
 - quantization and debugging become harder
 
-### Why block-planned dense VLM is the right first bet
+### Not trained from scratch
 
-- best match to exact-output transduction
-- efficient enough for rapid iteration
+Why reject at this scale:
+
+- every successful system at 100M–600M uses pretrained components
+- a 9.4M vision encoder from scratch cannot compete with 86M SigLIP2
+- a 50M decoder from scratch cannot match SmolLM2 trained on 2T tokens
+- pretrained components reduce data requirements by orders of magnitude
+
+### Why pretrained-backbone block-planned dense VLM is the right first bet
+
+- SigLIP2 provides strong visual features from day one
+- SmolLM2 initialization provides strong language generation priors
+- block planning reduces decode entropy and enables localized repair
+- the novel components (bottleneck, planner, side-maps) differentiate on
+  top of proven foundations rather than competing with them
+- efficient enough for rapid iteration on a single RTX 5090
 - compatible with constrained decoding
 - naturally scales to `500M`
 
@@ -386,7 +479,7 @@ The model must support the following training signals from day one:
 - text-only continuation on canonical Markdown outputs
 
 This is deliberate.
-The `100M` model has to learn from many cheap auxiliary signals because that is how small models become disproportionately strong.
+The `150M` model has to learn from many cheap auxiliary signals because that is how small models become disproportionately strong.
 
 ## Inference Hooks Designed Into The Architecture
 
@@ -413,28 +506,39 @@ The model must support three inference modes without architecture changes:
 
 The `500M` model should not be a redesign.
 
-Scale the same ingredients:
+Scale the same ingredients with the same vision encoder:
 
-- deeper and wider visual encoder
-- richer layout-side memory
-- more structural latents
-- stronger writer decoder
-- larger block planner
-- optional routed specialists for math and tables
+| Dimension | S0 (150M) | S1 (500M) |
+|-----------|-----------|-----------|
+| Vision encoder | SigLIP2-base 86M | SigLIP2-base 86M |
+| Internal hidden | 512 | 768 |
+| Latent bottleneck layers | 3 | 5 |
+| Latent count | 128 | 256 |
+| Planner layers | 2 | 4 |
+| Planner queries | 48 | 64 |
+| Decoder layers | 9 | 20 |
+| Decoder init source | SmolLM2-135M | SmolLM2-360M |
+| MTP horizon | 2 | 3 |
 
 What should stay unchanged:
 
+- SigLIP2-base vision encoder (for perfect comparability)
 - page canonicalizer
 - canonical Markdown contract
 - block planner and writer split
 - localized repair philosophy
 - benchmark protocol
 
+If S1 needs stronger vision, SigLIP2-Large (303M) can be swapped in as a controlled ablation.
+
 ## Non-Negotiable Architectural Decisions
 
-1. Dense compact first, not MoE first
-2. Block planning before writing
-3. Markdown canonical form with exact table extension
-4. Dynamic visual budget
-5. Validation and local repair as first-class modules
-6. Same design family for `100M` and `500M`
+1. Pretrained vision encoder (SigLIP2 family)
+2. Dense compact first, not MoE first
+3. Block planning before writing
+4. Markdown canonical form with exact table extension
+5. Dynamic visual budget
+6. Validation and local repair as first-class modules
+7. Same design family for `150M` and `500M`
+8. RoPE, GQA, SwiGLU, RMSNorm in all transformer blocks
+9. `torch.compile`-compatible forward pass for RTX 5090

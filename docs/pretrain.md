@@ -1,8 +1,10 @@
 # Leopardi Pretraining Plan
 
-Date locked: 2026-04-08
+Date locked: 2026-04-09
 
-This document defines the pretraining plan for `Leopardi-S0` and the scale-up path to `Leopardi-S1`.
+This document defines the pretraining plan for `Leopardi-S0 ~150M` (with
+pretrained SigLIP2 vision encoder and SmolLM2-initialized decoder) and the
+scale-up path to `Leopardi-S1 ~500M`.
 
 The current implementation surface for this plan now lives in:
 
@@ -47,6 +49,15 @@ Recommended first tokenizer:
 ### P1. Text-Only Domain Warmup
 
 Before multimodal training, warm up the writer decoder on target-domain text.
+The decoder is already initialized from SmolLM2-135M weights, so P1 adapts
+those general language priors to the Leopardi tokenizer and canonical Markdown
+output domain.
+
+Implementation note:
+
+- SmolLM2 initializes the decoder transformer stack itself
+- Leopardi-native cross-attention remains random because it has no direct source counterpart
+- token embeddings remain Leopardi-native when the tokenizer vocabulary differs from SmolLM2
 
 Data:
 
@@ -54,14 +65,29 @@ Data:
 - extracted LaTeX spans
 - tables converted to canonical table blocks
 
+What is trainable in P1:
+
+- writer decoder only (~52M)
+- SigLIP2 vision encoder and all novel components are frozen
+
 Why:
 
-- a `100M` model cannot afford weak output-language priors
-- this improves exact Markdown and LaTeX generation without using a large general LM
+- SmolLM2 provides general language priors but not Markdown/LaTeX fluency
+- P1 bridges the gap: the decoder learns the new tokenizer vocabulary and
+  the exact canonical output format before multimodal pressure
+- this is faster than P1 in the previous design because SmolLM2 already
+  has strong language patterns — P1 now mostly teaches the domain format
 
 ### P2. Core Multimodal Parsing Pretraining
 
 Train the full model on paired page-to-canonical-target data.
+
+What is trainable in P2:
+
+- writer decoder (~52M, all layers)
+- novel components: latent bottleneck + block planner + layout encoder (~14M)
+- SigLIP2 vision encoder top 4 layers (~28M unfrozen out of 86M total)
+- total trainable: ~94M out of ~154M
 
 Primary data:
 
@@ -88,7 +114,14 @@ Auxiliary objectives:
 - table topology prediction
 - formula span prediction
 
-Modern compact OCR-VLM results and repos also imply three practical rules for `S0`:
+Learning rate strategy:
+
+- SigLIP2 unfrozen layers: 1/10th of base learning rate
+- novel components (bottleneck, planner, layout): base learning rate
+- writer decoder: base learning rate
+- this differential LR prevents catastrophic forgetting of pretrained vision features
+
+Modern compact OCR-VLM results and repos also imply practical rules for `S0`:
 
 - curriculum and sample weighting matter as much as raw data volume
 - formula and table spans need extra token pressure, not only page-level supervision
@@ -99,6 +132,11 @@ Modern compact OCR-VLM results and repos also imply three practical rules for `S
 ### P3. Hard-Case Curriculum
 
 Once the model can parse clean born-digital pages, expose it aggressively to hard cases.
+
+What is trainable in P3:
+
+- ALL parameters unfrozen (~154M), including all SigLIP2 layers
+- the vision encoder now fine-tunes fully to adapt to degraded/rotated/handwritten inputs
 
 Data:
 
@@ -161,20 +199,29 @@ Supervise:
 
 ## Data Mixture For `Leopardi-S0`
 
-Recommended initial mixture:
+Recommended initial mixture (target ~4M total samples):
 
-- `45%` exact paired pages from arXiv and PMC
-- `20%` synthetic corruptions of exact paired pages
+- `40%` exact paired pages from arXiv (400K) and PMC (160K)
+- `20%` synthetic hard cases with text corruption (800K)
 - `10%` layout-focused supervision from PubLayNet and DocLayNet
-- `10%` table-focused supervision from PubTables-1M and SciTSR
-- `10%` formula-focused supervision from CROHME, MathWriting, and Im2LaTeX-100K
-- `5%` handwriting, forms, and chart-heavy tasks
+- `10%` formula-focused from UniMER-1M (200K), CROHME, MathWriting, Im2LaTeX-100K
+- `8%` table-focused from PubTables-1M and SciTSR
+- `5%` European multilingual from SynthDoG-European DE/FR/ES/IT/PT (100K, 20K per language)
+- `4%` handwriting from IAM, Bentham, READ 2016
+- `3%` forms, receipts, charts from FUNSD, CORD, SROIE, ChartQA, PlotQA
 
-Inside those buckets, the first compact-model recipe should explicitly oversample:
+Inside those buckets, the compact-model recipe should explicitly oversample:
 
 - `formula + rotation`
 - `table + caption`
 - `handwriting + structure`
+- `european_multilingual + layout`
+
+Text corruption pre-training (per MiniCPM-V 4.5):
+
+- during P2: 10% of exact pages have text regions corrupted
+- during P3: 20-40% corruption rate on hard-case pages
+- target always stays exact — forces the model to use context
 
 This should be treated as the first strong prior, not as immutable truth.
 Weak or partially teacher-derived supervision should be discounted explicitly rather than mixed at full strength.
@@ -205,22 +252,38 @@ For small models that usually wastes training budget.
 
 Primary assumptions:
 
-- single-GPU training
-- `bf16`
-- gradient checkpointing on
-- FlashAttention-compatible attention path
-- Liger kernels where stable
+- single-GPU training on RTX 5090 (Blackwell, SM 12.0, 32GB VRAM)
+- `bf16` training (Blackwell has strong bf16 tensor core support)
+- gradient checkpointing on (required for 154M + activations in 32GB)
+- `torch.compile` as the primary optimization path
+- `F.scaled_dot_product_attention` for all attention (FlashAttention-compatible)
+- CUDA 12.8+ with PyTorch 2.9+ (sm_120 support)
+- Liger-Kernel fused ops where stable (RMSNorm, SwiGLU, cross-entropy, RoPE)
 
 Recommended first training shape:
 
 - page render DPI: mixed `144` and `192`
-- adaptive crop budget instead of always higher resolution
-- global batch via gradient accumulation
-- cosine decay with short warmup and module-wise learning-rate scaling
+- SigLIP2-NaFlex handles dynamic resolution natively
+- global batch via gradient accumulation (effective batch 32-64)
+- cosine decay with short warmup
+- module-wise learning-rate scaling:
+  - SigLIP2 unfrozen layers: 1e-5
+  - novel components: 1e-4
+  - writer decoder: 1e-4
+
+VRAM budget estimate for S0 (154M params):
+
+- model parameters (bf16): ~0.3 GB
+- optimizer states (AdamW, fp32): ~1.2 GB
+- activations with gradient checkpointing: ~8-12 GB
+- SigLIP2 frozen layers: ~0.17 GB (no grad)
+- batch of page images + targets: ~2-4 GB
+- estimated total: ~12-18 GB out of 32 GB available
 
 Why this matters:
 
-- the point of the `100M` phase is rapid algorithmic iteration, not one heroic training run
+- the point of the `150M` phase is rapid algorithmic iteration, not one heroic training run
+- the pretrained backbone means P2 converges much faster than from-scratch training
 
 ## What Not To Do In Pretraining
 
@@ -252,10 +315,15 @@ If exact-core conversion drops tables, captions, or display math, the model lear
 
 Once `Leopardi-S0` is stable and the best recipe is known:
 
-- increase encoder depth and width
-- increase latent count
-- increase decoder capacity
+- keep SigLIP2-base vision encoder (same for comparability)
+- increase internal hidden from 512 to 768
+- increase latent count from 128 to 256 (5 layers)
+- increase decoder from 9 to 20 layers (initialized from SmolLM2-360M)
+- increase planner from 2 to 4 layers
 - widen specialist adapters
 - keep the same target representation and objectives
+- increase MTP horizon from 2 to 3
 
 The scale-up should be recipe-preserving, not architecture-resetting.
+Every training stage (P0–P3) and finetuning stage (F0–F3) runs identically,
+only with larger capacity and proportionally more data.

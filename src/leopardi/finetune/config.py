@@ -62,7 +62,7 @@ class SamplingConfig:
 
 @dataclass(slots=True)
 class ModuleLrConfig:
-    visual_tokenizer: float = 0.5
+    vision_encoder: float = 0.5
     layout_side_encoder: float = 0.6
     latent_bottleneck: float = 0.8
     planner: float = 1.1

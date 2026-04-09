@@ -125,11 +125,19 @@ Published bundles should be consumable by streaming loaders so that later pretra
 
 ## Current S0 Storage Envelope
 
-For the `Leopardi-S0 ~100M` full external build on the intended rented machine, the operational disk target is now:
+For the `Leopardi-S0 ~150M` full external build on the intended rented machine:
 
-- minimum realistic free space: about `300 GB`
+- peak disk usage during build: about `262 GB` (when p2_exact_core shards accumulate before publish)
+- minimum realistic free space: about `320 GB`
 - recommended free space: about `400 GB`
-- comfortable headroom: `450-500 GB`
+- comfortable headroom: `500 GB`
+
+Why the peak is manageable:
+
+- raw source data is streamed and purged per-document (arXiv, PMC) or per-batch (HF streaming)
+- the largest single bundle (p2_exact_core) produces ~247 GB of tar shards, which are published to HF and deleted before the next bundle builds
+- HF parquet-backed sources (UniMER-1M, SynthDoG, specialists) have near-zero local raw footprint
+- the ~2M synthetic hard cases are generated at training time, not pre-materialized during the data build
 
 This lower budget is possible because the builder no longer:
 

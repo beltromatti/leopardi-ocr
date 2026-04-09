@@ -6,7 +6,7 @@ This roadmap turns the research corpus and blueprint into an execution sequence.
 
 The central strategy is explicit:
 
-- move fast with `Leopardi-S0` at `~100M`
+- move fast with `Leopardi-S0` at `~150M`
 - run many disciplined ablations on `RTX 5090`
 - discover the best recipe first
 - scale to `Leopardi-S1` at `~500M` only after the recipe is locked
@@ -46,7 +46,7 @@ Must produce:
 
 Deliverables:
 
-- first dense `~100M` parser
+- first dense `~150M` parser
 - block planner
 - writer decoder
 - canonicalizer
@@ -103,7 +103,7 @@ Must answer:
 
 Deliverables:
 
-- best `100M` checkpoint
+- best `150M` checkpoint
 - public-comparison benchmark report
 - error taxonomy
 - locked blueprint for scale-up

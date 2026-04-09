@@ -38,7 +38,7 @@ def finetune_stage_recipe(stage: str) -> FinetuneStageConfig:
                 keep_clean_anchor_fraction=0.18,
             ),
             module_lr=ModuleLrConfig(
-                visual_tokenizer=0.45,
+                vision_encoder=0.45,
                 latent_bottleneck=0.75,
                 planner=1.05,
                 writer=1.2,
@@ -91,7 +91,7 @@ def finetune_stage_recipe(stage: str) -> FinetuneStageConfig:
                 keep_clean_anchor_fraction=0.18,
             ),
             module_lr=ModuleLrConfig(
-                visual_tokenizer=0.55,
+                vision_encoder=0.55,
                 latent_bottleneck=0.85,
                 planner=1.15,
                 writer=1.25,
@@ -152,7 +152,7 @@ def finetune_stage_recipe(stage: str) -> FinetuneStageConfig:
                 keep_clean_anchor_fraction=0.08,
             ),
             module_lr=ModuleLrConfig(
-                visual_tokenizer=0.40,
+                vision_encoder=0.40,
                 latent_bottleneck=0.75,
                 planner=1.1,
                 writer=1.3,
@@ -233,7 +233,7 @@ def finetune_stage_recipe(stage: str) -> FinetuneStageConfig:
                 keep_clean_anchor_fraction=0.06,
             ),
             module_lr=ModuleLrConfig(
-                visual_tokenizer=0.0,
+                vision_encoder=0.0,
                 latent_bottleneck=0.85,
                 planner=1.1,
                 writer=1.15,

@@ -46,7 +46,7 @@ def stage_recipe(stage: str) -> PretrainStageConfig:
                 keep_easy_fraction=1.0,
             ),
             module_lr=ModuleLrConfig(
-                visual_tokenizer=0.0,
+                vision_encoder=0.0,
                 latent_bottleneck=0.8,
                 planner=1.0,
                 writer=1.25,
@@ -137,7 +137,7 @@ def stage_recipe(stage: str) -> PretrainStageConfig:
                 keep_easy_fraction=0.12,
             ),
             module_lr=ModuleLrConfig(
-                visual_tokenizer=0.6,
+                vision_encoder=0.6,
                 latent_bottleneck=0.9,
                 planner=1.2,
                 writer=1.3,

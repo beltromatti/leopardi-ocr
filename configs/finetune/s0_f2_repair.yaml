@@ -36,7 +36,7 @@ sampling:
   refresh_failure_buffer_every: 200
   keep_clean_anchor_fraction: 0.08
 module_lr:
-  visual_tokenizer: 0.40
+  vision_encoder: 0.40
   layout_side_encoder: 0.45
   latent_bottleneck: 0.75
   planner: 1.1

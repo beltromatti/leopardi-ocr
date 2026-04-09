@@ -1,54 +1,50 @@
 model:
   family: leopardi_s0
-  target_params_m: 100
-  hidden_size: 448
+  target_params_m: 150
+  hidden_size: 512
   architecture_contract:
     parser_scope: document_parser
     processing_unit: page
     output_contract: markdown_with_latex
-    backbone_regime: dense_compact
+    backbone_regime: pretrained_dense
     planner_writer_split: true
     dynamic_visual_budget: true
     layout_side_memory: true
     mtp_ready_decode: true
     localized_repair: true
+
   page_canonicalizer:
     line_density_pool: 16
     contrast_eps: 1.0e-5
-  visual_tokenizer:
-    stem_dim: 96
-    stage_dims: [96, 192, 288, 384]
-    stage_depths: [2, 2, 6, 3]
-    hidden_size: 448
-    dropout: 0.0
-    stage_indices: [2, 3]
-    pool_layouts:
-      fast:
-        - [4, 4]
-        - [6, 6]
-      standard:
-        - [6, 6]
-        - [8, 8]
-      hard:
-        - [8, 8]
-        - [10, 10]
+
+  vision_encoder:
+    pretrained_model: google/siglip2-base-patch16-naflex
+    output_dim: 768
+    freeze_layers: 8
+    pixel_shuffle_factor: 2
+    projection_dim: 512
+
   layout_side_encoder:
     stem_dim: 64
-    hidden_size: 448
+    hidden_size: 512
     pool_grid: [3, 4]
     dropout: 0.0
+
   latent_bottleneck:
-    hidden_size: 448
-    num_latents: 256
-    num_layers: 5
+    hidden_size: 512
+    num_latents: 128
+    num_layers: 2
     num_heads: 8
-    mlp_ratio: 4.0
+    num_kv_heads: 2
+    mlp_ratio: 2.67
     dropout: 0.1
+
   planner:
-    hidden_size: 448
-    num_layers: 4
+    hidden_size: 512
+    num_layers: 2
     num_heads: 8
-    num_blocks: 64
+    num_kv_heads: 2
+    num_blocks: 48
     num_length_buckets: 8
     block_types:
       - heading
@@ -68,19 +64,26 @@ model:
       - handwriting
       - chart
     dropout: 0.1
+
   writer_decoder:
     vocab_size: 40960
-    hidden_size: 448
-    num_layers: 11
+    hidden_size: 512
+    num_layers: 9
     num_heads: 8
-    mlp_ratio: 4.0
-    max_seq_len: 2048
+    num_kv_heads: 2
+    mlp_ratio: 2.67
+    max_seq_len: 4096
+    rope_theta: 1000000.0
     dropout: 0.1
     tie_embeddings: true
+    pretrained_init: HuggingFaceTB/SmolLM2-135M
+    init_layer_indices: [0, 3, 7, 10, 14, 17, 21, 24, 28]
+
   multi_token_prediction:
     enabled: true
     horizon: 2
     dropout: 0.05
+
   auxiliary_heads:
     rotation_classes: 4
     handwriting_classes: 4

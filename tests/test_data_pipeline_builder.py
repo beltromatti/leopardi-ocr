@@ -22,7 +22,9 @@ from leopardi.data_pipeline.workers import (
     ArchivePairWorker,
     HFParquetWorker,
     HFSplitAwareParquetWorker,
+    SynthDoGEuropeanWorker,
     SourceBuildContext,
+    UniMERArchiveWorker,
     _is_valid_cached_download,
     _infer_hf_split_from_filename,
     _hf_row_to_sample,
@@ -321,6 +323,8 @@ def test_worker_registry_promotions_for_verified_sources() -> None:
     assert isinstance(registry["bentham"], ArchivePairWorker)
     assert isinstance(registry["read_2016"], ArchivePairWorker)
     assert isinstance(registry["iam"], HFSplitAwareParquetWorker)
+    assert isinstance(registry["unimer_1m"], UniMERArchiveWorker)
+    assert isinstance(registry["synthdog_european"], SynthDoGEuropeanWorker)
 
 
 def test_manifest_record_infers_canonical_features() -> None:
@@ -461,6 +465,20 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
     assert crohme.target_type == "latex_formula"
     assert crohme.canonical_target == "$$\n\\frac{a}{b}\n$$"
 
+    unimer_row = {
+        "label": r"\int_0^1 x^2 \\, dx",
+        "image": {"bytes": _PNG_1X1, "path": "unimer.png"},
+    }
+    unimer = _hf_row_to_sample(
+        source_id="unimer_1m",
+        bundle_id="preview",
+        row=unimer_row,
+        row_index=0,
+    )
+    assert unimer.target_type == "latex_formula"
+    assert "int_0^1" in unimer.canonical_target
+    assert "large_scale" in unimer.slice_tags
+
     iam_row = {
         "text": "put down a resolution on the subject",
         "image": {"bytes": _PNG_1X1, "path": "line.jpg"},
@@ -474,6 +492,64 @@ def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None
     assert iam.target_type == "text_line"
     assert iam.task_family == "handwriting"
     assert iam.canonical_target == "put down a resolution on the subject"
+
+
+def test_unimer_archive_worker_pairs_zip_samples(tmp_path: Path) -> None:
+    archive_path = tmp_path / "UniMER-1M.zip"
+    _write_zip_archive(
+        archive_path,
+        {
+            "images/sample-1.png": _PNG_1X1,
+            "labels/sample-1.txt": b"\\frac{a}{b}",
+        },
+    )
+    worker = UniMERArchiveWorker()
+    worker._archive_path = lambda context: archive_path  # type: ignore[method-assign]
+    context = SourceBuildContext(
+        stage=_manual_stage(),
+        experiment_id="unit",
+        bundle_id="preview",
+        bundle_class="structural_aux",
+        raw_cache_dir=tmp_path / "raw",
+        work_cache_dir=tmp_path / "work",
+    )
+    sample = next(worker.iter_samples(context))
+    assert sample.source_id == "unimer_1m"
+    assert sample.target_type == "latex_formula"
+    assert sample.assets[0].materialize_bytes() == _PNG_1X1
+
+
+def test_synthdog_worker_emits_page_markdown(monkeypatch) -> None:
+    from leopardi.data_pipeline import workers as worker_module
+    from leopardi.data_pipeline.synthdog import SynthDoGSample
+
+    monkeypatch.setattr(
+        worker_module,
+        "iter_synthdog_european_samples",
+        lambda total_limit: [
+            SynthDoGSample(
+                sample_id="synthdog-eu-000001",
+                doc_id="de-wiki-000001",
+                language="de",
+                title="Titel",
+                canonical_target="# Titel\n\nAbsatz",
+                image_png=_PNG_1X1,
+            )
+        ],
+    )
+    worker = SynthDoGEuropeanWorker()
+    context = SourceBuildContext(
+        stage=_manual_stage(),
+        experiment_id="unit",
+        bundle_id="preview",
+        bundle_class="multimodal_exact",
+        raw_cache_dir=Path("tmp/raw"),
+        work_cache_dir=Path("tmp/work"),
+    )
+    sample = next(worker.iter_samples(context))
+    assert sample.target_type == "page_markdown_projection"
+    assert sample.task_family == "document_parsing"
+    assert "multilingual" in sample.slice_tags
 
 
 def test_tex_canonicalizer_preserves_spaces_around_inline_math() -> None:
@@ -518,21 +594,63 @@ def test_tex_canonicalizer_preserves_complex_math_commands() -> None:
     assert r"N_{r,\ell}^{G_t,ij}" in markdown
 
 
-def test_clean_tex_text_preserves_nxml_payloads() -> None:
+def test_clean_tex_text_preserves_nxml_payloads(tmp_path: Path) -> None:
+    import fitz
+
     stage = _manual_stage()
     context = SourceBuildContext(
         stage=stage,
         experiment_id="pmc-test",
         bundle_id="p2_exact_core_v1",
         bundle_class="exact_pair",
-        raw_cache_dir=Path("tmp/source_probe_raw"),
-        work_cache_dir=Path("tmp/source_probe_work"),
+        raw_cache_dir=tmp_path / "raw",
+        work_cache_dir=tmp_path / "work",
         render_pdf_pages=True,
         keep_raw=True,
         source_limits={"pmc_oa_pdf_xml": 1},
         max_pages_per_document={"pmc_oa_pdf_xml": 1},
     )
-    sample = next(iter(build_worker_registry()["pmc_oa_pdf_xml"].iter_samples(context)))
+
+    pmcid = "PMCUNIT0001"
+    doc_root = context.raw_cache_dir / "pmc_oa_pdf_xml" / pmcid
+    package_path = doc_root / f"{pmcid}.tar.gz"
+    pdf_doc = fitz.open()
+    page = pdf_doc.new_page(width=595, height=842)
+    page.insert_text((72, 72), "Synthetic abstract text for PMC exact-core.")
+    pdf_bytes = pdf_doc.tobytes()
+    pdf_doc.close()
+
+    nxml = """
+    <article>
+      <front>
+        <article-meta>
+          <title-group><article-title>Unit Test Paper</article-title></title-group>
+          <abstract><p>Synthetic abstract text for PMC exact-core.</p></abstract>
+        </article-meta>
+      </front>
+      <body>
+        <sec><title>Body</title><p>Body text.</p></sec>
+      </body>
+    </article>
+    """.encode("utf-8")
+    _write_tar_archive(
+        package_path,
+        {
+            f"{pmcid}/{pmcid}.nxml": nxml,
+            f"{pmcid}/{pmcid}.pdf": pdf_bytes,
+        },
+    )
+
+    from leopardi.data_pipeline import workers as worker_module
+    original_iter = worker_module._iter_pmc_records
+    worker_module._iter_pmc_records = lambda limit: iter(
+        [{"pmcid": pmcid, "citation": "Unit citation", "license": "CC-BY"}]
+    )
+    try:
+        sample = next(iter(build_worker_registry()["pmc_oa_pdf_xml"].iter_samples(context)))
+    finally:
+        worker_module._iter_pmc_records = original_iter
+
     assert sample.sample_id.startswith("pmc_oa_pdf_xml-")
     assert sample.target_type == "page_markdown_projection"
     assert "## Abstract" in sample.canonical_target

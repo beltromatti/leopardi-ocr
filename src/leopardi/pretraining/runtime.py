@@ -51,8 +51,8 @@ def _named_trainable_parameters(model: nn.Module) -> list[tuple[str, nn.Paramete
 
 def _module_scale_for_name(name: str, stage_config: PretrainStageConfig) -> float:
     scales = stage_config.module_lr
-    if name.startswith("visual_tokenizer"):
-        return scales.visual_tokenizer
+    if name.startswith("vision_encoder"):
+        return scales.vision_encoder
     if name.startswith("layout_side_encoder"):
         return scales.layout_side_encoder
     if name.startswith("latent_bottleneck"):
@@ -140,7 +140,7 @@ def build_pretraining_execution_plan(
     checkpoint_uri = f"hf://leopardi-ocr-checkpoints/{experiment_id}/{stage.stage}"
     train_command = (
         "python -m leopardi.cli smoke-train-step "
-        f"{model_config_path} {stage_config_path} {runtime_config_path}"
+        f"{model_config_path} {stage_config_path} {runtime_config_path} --load-pretrained"
     )
     return PretrainingExecutionPlan(
         stage=stage.stage,

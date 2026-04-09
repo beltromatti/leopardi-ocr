@@ -9,6 +9,6 @@ Current control-plane entry points:
 - `document_parser_core.yaml`
   - shared product-scope data contract
 - `s0_exact_core_build.yaml`
-  - exact-pair-first build for the `~100M` research vehicle
+  - exact-pair-first build for the `~150M` research vehicle
 - `s0_full_frontier_build.yaml`
   - rare full-stack build once exact core and specialist slices are stable

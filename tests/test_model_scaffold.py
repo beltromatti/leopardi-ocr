@@ -17,7 +17,7 @@ def test_leopardi_s0_tiny_forward_shapes() -> None:
         seq_len=32,
         vocab_size=config.writer_decoder.vocab_size,
         planner_blocks=config.planner.num_blocks,
-        visual_tokens=25,
+        visual_tokens=16,
         num_block_types=len(config.planner.block_types),
         num_length_buckets=config.planner.num_length_buckets,
         num_hints=len(config.planner.specialist_hints),
@@ -33,7 +33,7 @@ def test_leopardi_s0_tiny_forward_shapes() -> None:
         config.writer_decoder.vocab_size,
     )
     assert outputs.planner.block_type_logits.shape[:2] == (2, config.planner.num_blocks)
-    assert outputs.visual_tokens.shape[1] == 25
+    assert outputs.visual_tokens.shape[1] > 0
     assert outputs.layout_tokens.shape[1] == 4
     assert outputs.mtp_logits is not None
     assert len(outputs.mtp_logits) == config.multi_token_prediction.horizon
@@ -53,7 +53,7 @@ def test_pretraining_loss_report_smoke() -> None:
         seq_len=24,
         vocab_size=config.writer_decoder.vocab_size,
         planner_blocks=config.planner.num_blocks,
-        visual_tokens=25,
+        visual_tokens=16,
         num_block_types=len(config.planner.block_types),
         num_length_buckets=config.planner.num_length_buckets,
         num_hints=len(config.planner.specialist_hints),

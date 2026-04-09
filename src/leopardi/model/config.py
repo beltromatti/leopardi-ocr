@@ -14,45 +14,40 @@ class PageCanonicalizerConfig:
 
 
 @dataclass(slots=True)
-class VisualTokenizerConfig:
-    stem_dim: int = 96
-    stage_dims: tuple[int, int, int, int] = (96, 160, 224, 320)
-    stage_depths: tuple[int, int, int, int] = (2, 2, 4, 2)
-    hidden_size: int = 384
-    dropout: float = 0.0
-    pool_layouts: dict[str, list[list[int]]] = field(
-        default_factory=lambda: {
-            "fast": [[4, 4], [6, 6]],
-            "standard": [[6, 6], [8, 8]],
-            "hard": [[8, 8], [10, 10]],
-        }
-    )
-    stage_indices: tuple[int, int] = (2, 3)
+class VisionEncoderConfig:
+    pretrained_model: str = "google/siglip2-base-patch16-naflex"
+    output_dim: int = 768
+    freeze_layers: int = 8
+    pixel_shuffle_factor: int = 2
+    projection_dim: int = 512
 
 
 @dataclass(slots=True)
 class LayoutSideEncoderConfig:
-    stem_dim: int = 48
-    hidden_size: int = 384
+    stem_dim: int = 64
+    hidden_size: int = 512
     pool_grid: tuple[int, int] = (3, 4)
     dropout: float = 0.0
 
 
 @dataclass(slots=True)
 class LatentBottleneckConfig:
-    hidden_size: int = 384
-    num_latents: int = 192
-    num_layers: int = 4
-    num_heads: int = 6
-    mlp_ratio: float = 4.0
+    hidden_size: int = 512
+    num_latents: int = 128
+    num_layers: int = 3
+    num_heads: int = 8
+    num_kv_heads: int = 2
+    mlp_ratio: float = 2.67
     dropout: float = 0.1
 
 
 @dataclass(slots=True)
 class PlannerConfig:
-    hidden_size: int = 384
-    num_layers: int = 3
-    num_heads: int = 6
+    hidden_size: int = 512
+    num_layers: int = 2
+    num_heads: int = 8
+    num_kv_heads: int = 2
+    mlp_ratio: float = 2.67
     num_blocks: int = 48
     num_length_buckets: int = 8
     block_types: tuple[str, ...] = (
@@ -74,20 +69,24 @@ class PlannerConfig:
 @dataclass(slots=True)
 class WriterDecoderConfig:
     vocab_size: int = 40_960
-    hidden_size: int = 384
-    num_layers: int = 8
-    num_heads: int = 6
-    mlp_ratio: float = 4.0
-    max_seq_len: int = 2_048
+    hidden_size: int = 512
+    num_layers: int = 9
+    num_heads: int = 8
+    num_kv_heads: int = 2
+    mlp_ratio: float = 2.67
+    max_seq_len: int = 4_096
+    rope_theta: float = 1_000_000.0
     dropout: float = 0.1
     tie_embeddings: bool = True
+    pretrained_init: str = ""
+    init_layer_indices: list[int] | None = None
 
 
 @dataclass(slots=True)
 class MultiTokenPredictionConfig:
     enabled: bool = True
     horizon: int = 2
-    dropout: float = 0.0
+    dropout: float = 0.05
 
 
 @dataclass(slots=True)
@@ -100,10 +99,10 @@ class AuxiliaryHeadsConfig:
 @dataclass(slots=True)
 class LeopardiS0Config:
     family: str = "leopardi_s0"
-    target_params_m: int = 100
-    hidden_size: int = 384
+    target_params_m: int = 150
+    hidden_size: int = 512
     page_canonicalizer: PageCanonicalizerConfig = field(default_factory=PageCanonicalizerConfig)
-    visual_tokenizer: VisualTokenizerConfig = field(default_factory=VisualTokenizerConfig)
+    vision_encoder: VisionEncoderConfig = field(default_factory=VisionEncoderConfig)
     layout_side_encoder: LayoutSideEncoderConfig = field(default_factory=LayoutSideEncoderConfig)
     latent_bottleneck: LatentBottleneckConfig = field(default_factory=LatentBottleneckConfig)
     planner: PlannerConfig = field(default_factory=PlannerConfig)
@@ -113,31 +112,40 @@ class LeopardiS0Config:
 
     def __post_init__(self) -> None:
         expected = (
-            self.visual_tokenizer.hidden_size,
+            self.vision_encoder.projection_dim,
             self.layout_side_encoder.hidden_size,
             self.latent_bottleneck.hidden_size,
             self.planner.hidden_size,
             self.writer_decoder.hidden_size,
         )
         if len(set(expected)) != 1:
-            raise ValueError("All hidden sizes must match for Leopardi-S0.")
+            raise ValueError(
+                f"Internal hidden sizes must match: {expected}. "
+                "Vision projection_dim, layout, bottleneck, planner, and "
+                "decoder hidden_size must all be equal."
+            )
         self.hidden_size = expected[0]
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "LeopardiS0Config":
         model = payload.get("model", payload)
+
+        writer_kwargs = dict(model.get("writer_decoder", {}))
+        if "init_layer_indices" in writer_kwargs and writer_kwargs["init_layer_indices"] is not None:
+            writer_kwargs["init_layer_indices"] = list(writer_kwargs["init_layer_indices"])
+
         return cls(
             family=model.get("family", "leopardi_s0"),
-            target_params_m=model.get("target_params_m", 100),
-            hidden_size=model.get("hidden_size", 384),
+            target_params_m=model.get("target_params_m", 150),
+            hidden_size=model.get("hidden_size", 512),
             page_canonicalizer=PageCanonicalizerConfig(
                 **model.get("page_canonicalizer", {})
             ),
-            visual_tokenizer=VisualTokenizerConfig(**model.get("visual_tokenizer", {})),
+            vision_encoder=VisionEncoderConfig(**model.get("vision_encoder", {})),
             layout_side_encoder=LayoutSideEncoderConfig(**model.get("layout_side_encoder", {})),
             latent_bottleneck=LatentBottleneckConfig(**model.get("latent_bottleneck", {})),
             planner=PlannerConfig(**model.get("planner", {})),
-            writer_decoder=WriterDecoderConfig(**model.get("writer_decoder", {})),
+            writer_decoder=WriterDecoderConfig(**writer_kwargs),
             multi_token_prediction=MultiTokenPredictionConfig(**model.get("multi_token_prediction", {})),
             auxiliary_heads=AuxiliaryHeadsConfig(**model.get("auxiliary_heads", {})),
         )
@@ -153,12 +161,12 @@ class LeopardiS0Config:
         return cls(
             hidden_size=128,
             target_params_m=8,
-            visual_tokenizer=VisualTokenizerConfig(
-                stem_dim=32,
-                stage_dims=(32, 48, 64, 96),
-                stage_depths=(1, 1, 1, 1),
-                hidden_size=128,
-                pool_layouts={"fast": [[2, 2], [3, 3]], "standard": [[3, 3], [4, 4]], "hard": [[4, 4], [5, 5]]},
+            vision_encoder=VisionEncoderConfig(
+                pretrained_model="",
+                output_dim=128,
+                freeze_layers=0,
+                pixel_shuffle_factor=1,
+                projection_dim=128,
             ),
             layout_side_encoder=LayoutSideEncoderConfig(
                 stem_dim=24,
@@ -170,11 +178,15 @@ class LeopardiS0Config:
                 num_latents=32,
                 num_layers=2,
                 num_heads=4,
+                num_kv_heads=2,
+                mlp_ratio=2.67,
             ),
             planner=PlannerConfig(
                 hidden_size=128,
-                num_layers=2,
+                num_layers=1,
                 num_heads=4,
+                num_kv_heads=2,
+                mlp_ratio=2.67,
                 num_blocks=12,
                 num_length_buckets=4,
             ),
@@ -183,11 +195,14 @@ class LeopardiS0Config:
                 hidden_size=128,
                 num_layers=2,
                 num_heads=4,
+                num_kv_heads=2,
+                mlp_ratio=2.67,
                 max_seq_len=128,
+                rope_theta=10_000.0,
             ),
             multi_token_prediction=MultiTokenPredictionConfig(
                 enabled=True,
-                horizon=2,
+                horizon=1,
             ),
             auxiliary_heads=AuxiliaryHeadsConfig(
                 rotation_classes=4,

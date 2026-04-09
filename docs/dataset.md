@@ -1,6 +1,6 @@
 # Leopardi Dataset Plan
 
-Date locked: 2026-04-08
+Date locked: 2026-04-09
 
 This document defines the exact data plan for Leopardi.
 
@@ -30,15 +30,19 @@ Here `LaTeX` means only the math notation used inside Markdown output:
 
 It does not mean full TeX document syntax with preamble, packages, theorem setup, bibliography commands, or other source-level scaffolding.
 
-### 2. Small models need cleaner data than large models
+### 2. Small models need cleaner data than large models, but also need enough
 
-For `~100M`, curation quality matters more than raw scale.
+For `~150M`, curation quality matters more than raw scale — but the quantity
+gap with competitors must be closed. Research (SAIL-VL, Beyond Chinchilla)
+shows that more high-quality data always helps, following logarithmic scaling.
 
 Operational implication:
 
 - exact page or document pairs stay dominant through `P2`
 - specialist and synthetic sources are staged in, not dumped in uniformly from the beginning
 - `F0` and `F1` both retain exact anchors during finetuning
+- target total for S0: ~4M samples (up from ~300K), still curated
+- target total for S1: ~15-20M samples
 
 ### 3. Benchmark test sets are never training data
 
@@ -52,8 +56,8 @@ We will synthesize data from public sources, not from undocumented prompts and a
 
 Current evidence supports the following claim:
 
-- this data plan is strong enough to make `Leopardi-S0 ~100M` highly competitive in the compact-parser regime
-- it is not scientifically defensible to promise that a `100M` model will automatically beat every `~0.9B` frontier parser on every benchmark before training and evaluation happen
+- this data plan is strong enough to make `Leopardi-S0 ~150M` highly competitive in the compact-parser regime
+- it is not scientifically defensible to promise that a `150M` model will automatically beat every `~0.9B` frontier parser on every benchmark before training and evaluation happen
 
 The strongest reasons the plan is still worth pursuing are:
 
@@ -229,6 +233,31 @@ Use:
 Role:
 
 - formula specialist training
+
+### 10b. UniMER-1M
+
+Use:
+
+- 1M+ diverse formula image-to-LaTeX pairs
+- covers printed, handwritten, simple, and complex expressions
+- includes arXiv formulas, Pix2tex, CROHME, and HME100K subsets
+
+Why it matters:
+
+- 10× larger than Im2LaTeX-100K
+- much more diverse in expression complexity and style
+- Apache 2.0 license, verified accessible on HuggingFace
+- developed by OpenDataLab alongside the CDM evaluation metric
+
+Official source:
+
+- `wanderkid/UniMER_Dataset` on HuggingFace
+
+Role:
+
+- primary formula specialist training source for S0 and S1
+- bridges the gap between isolated formula datasets and the quantity
+  needed for robust formula recognition at scale
 
 ### 11. Formula spans mined from arXiv and PMC
 
@@ -421,16 +450,45 @@ Use explicit public tooling such as:
 
 ## Multilingual Extension Data
 
-The first `100M` loop should be English-heavy because exact public supervision is strongest there.
+The `150M` S0 loop is English-heavy because exact public supervision is
+strongest there. But minimal multilingual coverage is now included from S0
+to avoid being completely excluded from multilingual benchmarks like MDPBench.
 
-After the architecture is locked, extend multilingual coverage with:
+### S0 Multilingual Sources
 
-- Wikimedia and Wikisource dumps for text content
-- public PDF or HTML document sources by language where licensing is clear
-- Noto font family for script coverage
-- synthetic rendered document generation using the same canonical Markdown targets
+#### SynthDoG-European (DE, FR, ES, IT, PT — generated at build time)
 
-This is phase-two data, not the first bottleneck.
+Source: generated on the rented machine using the open-source SynthDoG tool
+from the Donut project with Wikipedia dumps in each language and Noto fonts
+License: generated data, Apache 2.0 (tool license)
+S0 target: 20,000 pages per language = 100,000 total
+Generated using: `github.com/clovaai/donut/synthdog/`
+
+Why European languages:
+
+- Leopardi targets academic, scientific, and business documents — a primarily
+  anglophone and European market
+- German, French, Spanish, Italian, Portuguese cover the major European
+  scientific and legal document languages
+- Latin-script languages cost almost zero to the tokenizer (shared alphabet)
+- CJK would require a much larger vocabulary and more parameters to handle well
+- the 150M S0 model should focus on what it can do best with limited capacity
+
+Generation pipeline:
+
+1. Download Wikipedia dumps for DE, FR, ES, IT, PT
+2. Run SynthDoG with Noto fonts and document backgrounds
+3. Canonicalize output into Leopardi sample format (image + ground_truth text)
+4. Publish as a Leopardi bundle on HuggingFace
+
+### S1 Multilingual Extension
+
+For S1, expand multilingual coverage with:
+
+- full SynthDoG-European: 100K per language = 500K
+- EUR-Lex legal documents rendered as synthetic PDFs in 23 EU languages
+- arXiv non-English papers: filtered subset with language tagging
+- Optional CJK expansion once European coverage is proven
 
 ## Evaluation-Only Data
 
@@ -494,23 +552,27 @@ Drop or quarantine:
 
 ## What To Use First For `Leopardi-S0`
 
-The first `100M` loop should start with the smallest high-value core:
+The `150M` S0 loop uses all high-value sources at scaled quantity:
 
-1. arXiv paired data
-2. PMC OA paired data
-3. PubLayNet
-4. DocLayNet
-5. PubTables-1M
-6. SciTSR
-7. CROHME
-8. Im2LaTeX-100K
-9. IAM
-10. FUNSD
-11. CORD
-12. ChartQA
-13. synthetic perturbations derived from the above
+1. arXiv paired data (50K documents, ~400K pages)
+2. PMC OA paired data (20K documents, ~160K pages)
+3. UniMER-1M (200K formula pairs)
+4. PubLayNet (50K layout samples)
+5. DocLayNet (15K layout samples)
+6. PubTables-1M (40K table samples)
+7. SciTSR (15K table samples)
+8. CROHME (handwritten formulas)
+9. MathWriting (30K handwritten math)
+10. Im2LaTeX-100K (30K printed formulas)
+11. IAM, Bentham, READ 2016 (handwriting)
+12. FUNSD, CORD, SROIE (forms and receipts)
+13. ChartQA, PlotQA (charts and plots)
+14. SynthDoG-European DE/FR/ES/IT/PT (100K generated at build time, 20K per language)
+15. Synthetic perturbations with text corruption (~2M hard cases)
 
-This is enough to discover the right architecture before expanding further.
+Target total: ~4M samples. This is competitive with Nougat (8.2M) and
+within range of GOT-OCR (15M), while maintaining strictly higher per-sample
+quality through exact-pair foundations and 8 quality gates.
 
 ## Official Source References
 

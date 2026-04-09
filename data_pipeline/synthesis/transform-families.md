@@ -63,6 +63,47 @@ Constraint:
 - if the handwriting is intended to be parsed, it must be inserted into the canonical target explicitly
 - if it is pure distractor noise, it must be tagged as such
 
+## Text Corruption Families
+
+Date added: 2026-04-09
+
+Source: MiniCPM-V 4.5 (2025) demonstrated that dynamic text region corruption
+during pre-training forces the vision encoder to develop stronger OCR features
+and the decoder to rely on linguistic context, eliminating dependence on
+perfect visual input.
+
+### Text Region Corruption
+
+The canonical target remains unchanged. The model must infer corrupted text
+from surrounding context and layout.
+
+Applied during P2 (10% corruption rate) and P3 (20-40% corruption rate):
+
+- heavy Gaussian blur on selected text regions (sigma 5-15)
+- block noise fill replacing text with random pixels
+- contrast reduction making text regions near-invisible
+- partial character erosion simulating damaged scans
+
+Detection of text regions:
+
+- use line density map from the page canonicalizer
+- regions with density above threshold are candidate text areas
+- randomly select 10-40% of candidate regions per page
+
+Constraint:
+
+- the canonical target is NEVER modified
+- corruption is visual-only — the model learns to reconstruct from context
+- each corrupted region should be tagged in metadata for analysis
+
+### Resolution Degradation
+
+Applied during P3 only:
+
+- downsample page image to 72-96 DPI then upsample back
+- JPEG compression at quality 20-50
+- simulate phone camera: perspective warp + motion blur + noise
+
 ## Forbidden Transform Families
 
 - any transform that silently changes text content without regenerating the target

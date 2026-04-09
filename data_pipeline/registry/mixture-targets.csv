@@ -1,9 +1,9 @@
-stage_id,exact_pair_pct,synthetic_exact_pct,trusted_aux_pct,weak_aux_pct,primary_goal,notes
-tokenizer_v1,70,0,30,0,learn_markdown_and_latex_tokenization,table_and_formula syntax matter for tokenizer quality
-p1_text_warmup_v1,100,0,0,0,learn_target_language_prior,pure target-side warmup
-p2_exact_core_v1,70,0,30,0,build_core_page_to_markdown_transduction,aux provides layout and structure pressure
-p2_structural_aux_v1,0,0,100,0,inject_specialist_structure_pressure,tables formulas and layout only
-p3_hardcases_v1,35,45,20,0,build_robustness_on_top_of_exact_core,synthetic exact dominates but exact anchor remains
-sft_core_v1,85,0,15,0,maximize_exact_output_fidelity,prefer gold exact
-sft_repair_v1,45,40,15,0,repair_brittle_long_tail_failures,exact and synthetic both matter
-o_calibration_docmix_v1,35,0,65,0,build_representative_quantization_calibration_pool,medium and hard pages only with no evaluation overlap
+stage_id,exact_pair_pct,synthetic_exact_pct,trusted_aux_pct,multilingual_pct,weak_aux_pct,primary_goal,notes
+tokenizer_v1,70,0,30,0,0,learn_markdown_and_latex_tokenization,table_and_formula syntax matter for tokenizer quality
+p1_text_warmup_v1,100,0,0,0,0,learn_target_language_prior,pure target-side warmup on exact Markdown+LaTeX targets
+p2_exact_core_v1,65,10,25,0,0,build_core_page_to_markdown_transduction,text corruption applied to 10% synthetic; English exact-pair dominant
+p2_structural_aux_v1,0,0,100,0,0,inject_specialist_structure_pressure,tables formulas and layout only
+p3_hardcases_v1,28,40,17,10,5,build_robustness_on_top_of_exact_core,text corruption at 20-40% rate; European multilingual 100K from SynthDoG-European
+sft_core_v1,90,0,10,0,0,maximize_exact_output_fidelity,prefer gold exact
+sft_repair_v1,45,40,10,5,0,repair_brittle_long_tail_failures,exact and synthetic both matter
+o_calibration_docmix_v1,30,5,50,10,5,build_representative_quantization_calibration_pool,medium and hard pages with multilingual coverage and no evaluation overlap

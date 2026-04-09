@@ -22,5 +22,8 @@ synthetic_from_exact,internal,, ,no,internal_generated,derived from exact canoni
 model_failures_plus_exact_truth,internal,, ,no,internal_generated,derived after benchmark and evaluation failure mining
 sft_and_repair_prompt_packs,internal,, ,no,internal_generated,derived from promoted SFT and repair bundles
 curated_non_overlap_holdouts,internal,, ,no,internal_generated,derived from leakage-safe curated holdout slices
+unimer_1m,automated,get,https://huggingface.co/datasets/wanderkid/UniMER_Dataset,yes,hf_dataset_repo,Apache 2.0 formula dataset with 1M+ LaTeX-image pairs from OpenDataLab
+synthdog_european,internal,, ,no,internal_generated,generated at build time using SynthDoG tool with DE FR ES IT PT Wikipedia dumps
+cmer_3m,manual,, ,conditional,research_watchlist,verify download access via github.com/Baitlo/CMER before ingestion
 monkeydoc,manual,, ,conditional,research_watchlist,verify release terms and overlap before any ingestion
 churro_ds,manual,, ,conditional,research_watchlist,verify release terms and target compatibility before ingestion

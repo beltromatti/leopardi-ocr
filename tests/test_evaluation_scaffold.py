@@ -82,7 +82,7 @@ def test_evaluation_result_compilation() -> None:
         runtime_family="vllm",
         decode_mode="standard",
         model_name="Leopardi-S0",
-        size_band="~100M",
+        size_band="~150M",
         evidence_grade="local_reproduction",
         samples=samples,
         datasets=load_dataset_registry(),
@@ -139,7 +139,7 @@ def test_evaluation_materialization_and_report(tmp_path) -> None:
             )
         ],
         model_name="Leopardi-S0",
-        size_band="~100M",
+        size_band="~150M",
         params_total_b=0.093,
         root=tmp_path / "runs",
     )

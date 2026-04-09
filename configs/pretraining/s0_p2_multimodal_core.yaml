@@ -38,7 +38,7 @@ curriculum:
   refresh_failure_pool_every: 1000
   keep_easy_fraction: 0.18
 module_lr:
-  visual_tokenizer: 0.7
+  vision_encoder: 0.7
   layout_side_encoder: 0.8
   latent_bottleneck: 1.0
   planner: 1.15

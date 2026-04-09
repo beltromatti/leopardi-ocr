@@ -1,8 +1,10 @@
 # Leopardi Finetuning Plan
 
-Date locked: 2026-04-08
+Date locked: 2026-04-09
 
-This document defines the post-pretraining path for turning a good compact parser into a frontier parser.
+This document defines the post-pretraining path for turning `Leopardi-S0 ~150M`
+(with pretrained SigLIP2 vision encoder and SmolLM2-initialized decoder) into a
+frontier parser.
 
 The current implementation surface for this plan now lives in:
 
@@ -94,11 +96,14 @@ Primary bundle:
 
 - `f3_rlvr_v1`
 
-Current open compact parsers suggest two additional lessons:
+Current open compact parsers suggest additional lessons:
 
 - specialist SFT does most of the heavy lifting on quality
 - RLVR is most useful as a sharpener for exactness and efficiency once syntax is already stable
 - compact parsers benefit if layout-side memory and MTP heads stay active through finetuning instead of being treated as pretrain-only tricks
+- with pretrained backbones, finetuning converges faster — budget more iterations for F1 specialist and F3 RLVR stages
+- SigLIP2 should remain fully unfrozen during all finetuning stages
+- differential learning rates should persist: vision encoder at 1/10th base LR
 
 ## Reward Design
 
@@ -203,17 +208,22 @@ This mined set is one of the most valuable assets in the project.
 
 ## Exit Criteria For `Leopardi-S0`
 
-`Leopardi-S0` is blueprint-complete only when all are true:
+`Leopardi-S0 ~150M` is blueprint-complete only when all are true:
 
 1. strong general SFT is stable
 2. specialist slices no longer collapse on formulas or tables
 3. repair mode improves hard pages with modest latency tax
 4. RLVR improves exactness without destabilizing output format
 5. compressed serving variants preserve the quality ranking
+6. pretrained encoder features are preserved (no catastrophic forgetting)
 
 Operationally the compact-model path should behave like this:
 
-- `F0` stabilizes syntax and reading order
+- `F0` stabilizes syntax and reading order (leverage SmolLM2 language priors)
 - `F1` moves formulas, tables, handwriting, rotation, and charts
 - `F2` teaches cheap local repair
 - `F3` sharpens objective validity and latency tradeoffs without undoing the SFT gains
+
+The pretrained backbone means F0 should converge faster than in the previous
+from-scratch design. This freed budget should be invested in longer F1 specialist
+training and more thorough F3 RLVR exploration.

@@ -2,7 +2,7 @@
 
 Date locked: 2026-04-08
 
-This note records the current evidence-based position of `Leopardi-S0 ~100M` against the 2026 document-parsing frontier.
+This note records the current evidence-based position of `Leopardi-S0 ~150M` against the 2026 document-parsing frontier.
 
 It is intentionally conservative.
 The goal is to identify what the current pipeline can plausibly support, and what it still cannot justify.
@@ -11,7 +11,7 @@ The goal is to identify what the current pipeline can plausibly support, and wha
 
 The current `Leopardi-S0` data and training plan is now defensible as a serious compact-model attempt at the frontier.
 
-It is **not** yet defensible to claim that a `~100M` model will certainly beat:
+It is **not** yet defensible to claim that a `~150M` model will certainly beat:
 
 - `PaddleOCR-VL-1.5`
 - `HunyuanOCR`

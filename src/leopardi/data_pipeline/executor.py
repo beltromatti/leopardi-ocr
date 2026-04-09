@@ -24,24 +24,27 @@ from leopardi.ops import (
 
 
 DEFAULT_SOURCE_LIMITS_S0 = {
-    "arxiv_source_pdf": 2500,
-    "pmc_oa_pdf_xml": 2000,
+    "arxiv_source_pdf": 50000,
+    "pmc_oa_pdf_xml": 20000,
     "publaynet": 50000,
     "doclaynet": 15000,
     "pubtables_1m": 40000,
     "scitsr": 15000,
     "mathwriting": 30000,
     "im2latex_100k": 30000,
+    "unimer_1m": 200000,
     "funsd": 1000,
     "cord": 2000,
-    "chartqa": 12000,
-    "plotqa": 12000,
+    "sroie": 2000,
+    "chartqa": 15000,
+    "plotqa": 15000,
+    "synthdog_european": 100000,
 }
 
 
 DEFAULT_MAX_PAGES_S0 = {
-    "arxiv_source_pdf": 8,
-    "pmc_oa_pdf_xml": 8,
+    "arxiv_source_pdf": 12,
+    "pmc_oa_pdf_xml": 12,
 }
 
 
@@ -128,8 +131,9 @@ def build_data_pipeline_stage(
         layout=layout,
     )
     worker_registry = build_worker_registry()
-    default_source_limits = DEFAULT_SOURCE_LIMITS_S0 if stage.target_param_budget_m <= 100 else {}
+    default_source_limits = DEFAULT_SOURCE_LIMITS_BY_FAMILY.get(stage.target_model_family, {})
     effective_limits = {**default_source_limits, **(source_limits or {})}
+    effective_max_pages = DEFAULT_MAX_PAGES_BY_FAMILY.get(stage.target_model_family, {})
     bundle_stats: list[BundleBuildStats] = []
     raw_cache_dir = Path(plan.local_paths.raw_cache_dir)
     work_cache_dir = Path(plan.local_paths.work_cache_dir)
@@ -275,9 +279,9 @@ def build_data_pipeline_stage(
             render_pdf_pages=True,
             publish_enabled=publish,
             keep_raw=keep_raw,
-            source_limits=effective_limits,
-            max_pages_per_document=DEFAULT_MAX_PAGES_S0,
-        )
+                source_limits=effective_limits,
+                max_pages_per_document=effective_max_pages,
+            )
         for sample in worker.iter_samples(source_context):
             assert isinstance(sample, CanonicalSample)
             for target_bundle_id in bundle_ids:
@@ -358,3 +362,10 @@ def build_data_pipeline_stage(
         plan_path=plan.plan_path,
         publish_ledger_path=plan.local_paths.publish_ledger_path,
     )
+DEFAULT_SOURCE_LIMITS_BY_FAMILY = {
+    "leopardi_s0": DEFAULT_SOURCE_LIMITS_S0,
+}
+
+DEFAULT_MAX_PAGES_BY_FAMILY = {
+    "leopardi_s0": DEFAULT_MAX_PAGES_S0,
+}

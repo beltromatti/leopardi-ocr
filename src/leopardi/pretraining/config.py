@@ -64,7 +64,7 @@ class CurriculumConfig:
 
 @dataclass(slots=True)
 class ModuleLrConfig:
-    visual_tokenizer: float = 0.7
+    vision_encoder: float = 0.7
     layout_side_encoder: float = 0.8
     latent_bottleneck: float = 1.0
     planner: float = 1.15
