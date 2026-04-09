@@ -576,6 +576,20 @@ def _extract_image_asset(row: dict[str, Any]) -> CanonicalAsset | None:
             media_type=media_type,
             payload_bytes=image["bytes"],
         )
+    if hasattr(image, "save") and hasattr(image, "mode"):
+        import io
+
+        mode = getattr(image, "mode", "")
+        suffix = "jpg" if mode == "RGB" else "png"
+        media_type = f"image/{'jpeg' if suffix == 'jpg' else 'png'}"
+        buf = io.BytesIO()
+        save_format = "JPEG" if suffix == "jpg" else "PNG"
+        image.save(buf, format=save_format)
+        return CanonicalAsset(
+            name=f"image.{suffix}",
+            media_type=media_type,
+            payload_bytes=buf.getvalue(),
+        )
     return None
 
 
@@ -591,6 +605,44 @@ def _json_target(row: dict[str, Any]) -> str:
 
     sanitized = {key: _json_safe(value) for key, value in row.items() if key != "image"}
     return normalize_target_text(json.dumps(sanitized, ensure_ascii=True, sort_keys=True))
+
+
+def _format_bbox_markdown(bbox: Any) -> str:
+    if isinstance(bbox, dict):
+        values = {
+            key: normalize_target_text(str(bbox.get(key, "")))
+            for key in ("x", "y", "w", "h", "xmin", "ymin", "xmax", "ymax")
+            if key in bbox
+        }
+        return ", ".join(f"{key}={value}" for key, value in values.items())
+    if isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
+        x, y, w, h = bbox[:4]
+        return f"x={x}, y={y}, w={w}, h={h}"
+    return normalize_target_text(str(bbox))
+
+
+def _layout_annotations_markdown(
+    annotations: list[dict[str, Any]],
+    *,
+    category_names: dict[int, str] | None = None,
+    title: str = "Layout Regions",
+) -> str:
+    lines = [f"## {title}"]
+    for annotation in annotations:
+        category_id = annotation.get("category_id")
+        category = ""
+        if isinstance(category_id, int) and category_names:
+            category = category_names.get(category_id, "")
+        if not category and category_id is not None:
+            category = f"category_{category_id}"
+        if not category:
+            category = normalize_target_text(str(annotation.get("name") or "region"))
+        bbox = _format_bbox_markdown(annotation.get("bbox"))
+        line = f"- {category}"
+        if bbox:
+            line += f": {bbox}"
+        lines.append(line)
+    return normalize_target_text("\n".join(lines))
 
 
 def _markdown_escape_cell(text: str) -> str:
@@ -982,6 +1034,24 @@ def _hf_row_to_sample(
             metadata={key: value for key, value in row.items() if key != "image"},
             assets=(image_asset,) if image_asset else (),
         )
+    if source_id == "publaynet":
+        annotations = row.get("annotations")
+        target = _layout_annotations_markdown(annotations) if isinstance(annotations, list) else ""
+        if not target:
+            target = _json_target(row)
+        return CanonicalSample(
+            sample_id=f"{source_id}-{doc_id}",
+            source_id=source_id,
+            bundle_id=bundle_id,
+            doc_id=doc_id,
+            data_class="trusted_aux",
+            task_family="layout",
+            target_type="layout_annotation",
+            canonical_target=target,
+            slice_tags=("layout", "weak_layout"),
+            metadata={key: value for key, value in row.items() if key != "image"},
+            assets=(image_asset,) if image_asset else (),
+        )
     if source_id == "fintabnet_family":
         return CanonicalSample(
             sample_id=f"{source_id}-{doc_id}",
@@ -1257,6 +1327,11 @@ class DocLayNetWorker(SourceWorker):
                         None,
                     )
                     assets: tuple[CanonicalAsset, ...] = ()
+                    category_names = {
+                        int(category.get("id", -1)): normalize_target_text(str(category.get("name") or ""))
+                        for category in data.get("categories", [])
+                        if category.get("id") is not None
+                    }
                     if full_image_name is not None:
                         suffix = Path(full_image_name).suffix.lstrip(".") or "png"
                         assets = (
@@ -1274,9 +1349,11 @@ class DocLayNetWorker(SourceWorker):
                         page_id=str(image_info.get("page_no") or image_info["id"]),
                         data_class="trusted_aux",
                         task_family="layout",
-                        target_type="aux_annotation",
-                        canonical_target=normalize_target_text(
-                            json.dumps(by_image.get(int(image_info["id"]), []), sort_keys=True)
+                        target_type="layout_annotation",
+                        canonical_target=_layout_annotations_markdown(
+                            by_image.get(int(image_info["id"]), []),
+                            category_names=category_names,
+                            title="Layout Regions",
                         ),
                         slice_tags=("layout", "human_annotated"),
                         metadata=image_info,
@@ -1303,6 +1380,25 @@ def _pascal_xml_to_json(xml_bytes: bytes) -> str:
             }
         )
     return normalize_target_text(json.dumps(objects, sort_keys=True))
+
+
+def _pascal_xml_to_markdown(xml_bytes: bytes) -> str:
+    root = ET.fromstring(xml_bytes)
+    objects: list[dict[str, Any]] = []
+    for obj in root.findall(".//object"):
+        box = obj.find("./bndbox")
+        objects.append(
+            {
+                "name": normalize_target_text(obj.findtext("./name", default="region")),
+                "bbox": {
+                    "xmin": int(float(box.findtext("./xmin", default="0"))) if box is not None else 0,
+                    "ymin": int(float(box.findtext("./ymin", default="0"))) if box is not None else 0,
+                    "xmax": int(float(box.findtext("./xmax", default="0"))) if box is not None else 0,
+                    "ymax": int(float(box.findtext("./ymax", default="0"))) if box is not None else 0,
+                },
+            }
+        )
+    return _layout_annotations_markdown(objects, title="Table Regions")
 
 
 def _archive_stem(path: str) -> str:
@@ -1552,8 +1648,8 @@ class PubTablesWorker(SourceWorker):
                     doc_id=stem,
                     data_class="trusted_aux",
                     task_family="tables",
-                    target_type="aux_annotation",
-                    canonical_target=_pascal_xml_to_json(xml_bytes),
+                    target_type="table_annotation",
+                    canonical_target=_pascal_xml_to_markdown(xml_bytes),
                     slice_tags=("table", "structure"),
                     metadata={"archive_member": member.name},
                     assets=(

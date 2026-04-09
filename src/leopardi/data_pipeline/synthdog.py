@@ -215,6 +215,8 @@ def iter_synthdog_european_samples(*, total_limit: int, seed: int = 1337) -> lis
     samples: list[SynthDoGSample] = []
 
     for lang, hf_config in EUROPEAN_WIKIPEDIA_CONFIGS.items():
+        if len(samples) >= total_limit:
+            break
         ds = load_dataset("wikimedia/wikipedia", hf_config, split="train", streaming=True)
         generated = 0
         for article in ds:

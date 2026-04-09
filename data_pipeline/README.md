@@ -175,6 +175,16 @@ Primary examples:
 
 Auxiliary supervision for subtasks such as layout, tables, formulas, and handwriting.
 
+Trusted auxiliary targets are still canonical text artifacts.
+They should not default to opaque raw JSON dumps when a more structured target is possible.
+
+Current policy:
+
+- layout corpora emit compact Markdown region lists with typed boxes
+- table-structure corpora emit GFM tables or compact table-region blocks
+- formula corpora emit embedded math LaTeX
+- handwriting corpora emit plain text or structured Markdown depending on source granularity
+
 Primary examples:
 
 - PubTables-1M

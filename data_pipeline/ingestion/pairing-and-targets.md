@@ -61,7 +61,7 @@ Emit:
 - GFM tables when the source table is simple and rectangular
 - canonical complex-table blocks when rowspan or colspan is present
 - topology metadata
-- optional region-level aux targets
+- compact region-level Markdown targets instead of raw JSON when the source is annotation-only
 
 ### Formulas
 

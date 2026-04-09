@@ -7,6 +7,8 @@ from pathlib import Path
 import tarfile
 
 import pyarrow.parquet as pq
+from PIL import Image
+import datasets
 
 from leopardi.data_pipeline.canonicalize import (
     jats_to_markdown,
@@ -28,7 +30,9 @@ from leopardi.data_pipeline.workers import (
     _is_valid_cached_download,
     _infer_hf_split_from_filename,
     _hf_row_to_sample,
+    _extract_image_asset,
     _pagexml_to_markdown,
+    _pascal_xml_to_markdown,
     build_worker_registry,
 )
 
@@ -135,6 +139,26 @@ def test_tex_front_matter_is_cleaned_and_preserved() -> None:
     assert "definecolor" not in markdown
 
 
+def test_tex_front_matter_deduplicates_abstract_and_drops_empty_braces() -> None:
+    tex = r"""
+    \documentclass{article}
+    \TITLE{Test}
+    \ABSTRACT{First abstract.}
+    \begin{document}
+    {}
+    \begin{abstract}
+    First abstract.
+    \end{abstract}
+    \section{Intro}
+    Body.
+    \end{document}
+    """
+    markdown = tex_to_markdown(tex)
+    assert markdown.count("## Abstract") == 1
+    assert "\n{}\n" not in f"\n{markdown}\n"
+    assert "Body." in markdown
+
+
 def test_tex_table_and_figure_are_preserved() -> None:
     tex = r"""
     \documentclass{article}
@@ -190,6 +214,35 @@ def test_jats_table_and_inline_formula_are_preserved() -> None:
     assert "| Metric | Value |" in markdown
 
 
+def test_hf_row_to_sample_publaynet_uses_layout_markdown() -> None:
+    sample = _hf_row_to_sample(
+        source_id="publaynet",
+        bundle_id="probe",
+        row={
+            "id": 1,
+            "annotations": [
+                {"category_id": 2, "bbox": [10, 20, 30, 40]},
+                {"category_id": 4, "bbox": [50, 60, 70, 80]},
+            ],
+        },
+        row_index=0,
+    )
+    assert sample.target_type == "layout_annotation"
+    assert "## Layout Regions" in sample.canonical_target
+    assert "- category_2: x=10, y=20, w=30, h=40" in sample.canonical_target
+
+
+def test_pascal_xml_to_markdown_produces_region_block() -> None:
+    xml_bytes = b"""
+    <annotation>
+      <object><name>table</name><bndbox><xmin>1</xmin><ymin>2</ymin><xmax>3</xmax><ymax>4</ymax></bndbox></object>
+    </annotation>
+    """
+    markdown = _pascal_xml_to_markdown(xml_bytes)
+    assert "## Table Regions" in markdown
+    assert "- table: xmin=1, ymin=2, xmax=3, ymax=4" in markdown
+
+
 def test_page_projection_preserves_order() -> None:
     markdown = "## A\n\nalpha beta gamma\n\n## B\n\ndelta epsilon zeta"
     pages = ["alpha beta gamma", "delta epsilon zeta"]
@@ -220,6 +273,15 @@ def test_parse_hf_uri() -> None:
         "leopardi-ocr-data-bundles",
         "p2_exact_core_v1",
     )
+
+
+def test_extract_image_asset_supports_pil_images() -> None:
+    image = Image.new("RGB", (2, 2), color=(255, 255, 255))
+    asset = _extract_image_asset({"image": image})
+    assert asset is not None
+    assert asset.name == "image.jpg"
+    assert asset.media_type == "image/jpeg"
+    assert asset.payload_bytes
 
 
 def test_data_pipeline_build_manual_source(tmp_path: Path) -> None:
@@ -550,6 +612,26 @@ def test_synthdog_worker_emits_page_markdown(monkeypatch) -> None:
     assert sample.target_type == "page_markdown_projection"
     assert sample.task_family == "document_parsing"
     assert "multilingual" in sample.slice_tags
+
+
+def test_iter_synthdog_european_stops_after_required_languages(monkeypatch) -> None:
+    from leopardi.data_pipeline import synthdog as synth_module
+
+    calls: list[str] = []
+
+    def fake_load_dataset(path: str, config: str, split: str, streaming: bool) -> list[dict[str, str]]:
+        calls.append(config)
+        return [
+            {
+                "title": f"Title {config}",
+                "text": "Section\n\nParagraph " * 200,
+            }
+        ]
+
+    monkeypatch.setattr(datasets, "load_dataset", fake_load_dataset)
+    samples = synth_module.iter_synthdog_european_samples(total_limit=1, seed=1)
+    assert len(samples) == 1
+    assert len(calls) == 1
 
 
 def test_tex_canonicalizer_preserves_spaces_around_inline_math() -> None:

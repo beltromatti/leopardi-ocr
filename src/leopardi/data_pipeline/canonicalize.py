@@ -476,6 +476,7 @@ def tex_to_markdown(tex: str) -> str:
     macros = _extract_simple_tex_macros(content)
     content = _apply_simple_tex_macros(content, macros)
     front_matter = _extract_tex_front_matter(content)
+    has_front_abstract = any(block == "## Abstract" for block in front_matter)
     content = _extract_tex_document_body(content)
     content = re.sub(r"\\documentclass(?:\[[^\]]*\])?\{[^{}]+\}", "", content)
     content = re.sub(r"\\usepackage(?:\[[^\]]*\])?\{[^{}]+\}", "", content)
@@ -492,12 +493,20 @@ def tex_to_markdown(tex: str) -> str:
     content = re.sub(r"\\tableofcontents", "", content)
     content = _strip_tex_named_commands(content, _FRONT_MATTER_COMMANDS)
 
-    content = re.sub(
-        r"\\begin\{abstract\}(.*?)\\end\{abstract\}",
-        lambda match: f"## Abstract\n\n{match.group(1).strip()}\n\n",
-        content,
-        flags=re.DOTALL,
-    )
+    if has_front_abstract:
+        content = re.sub(
+            r"\\begin\{abstract\}(.*?)\\end\{abstract\}",
+            "\n",
+            content,
+            flags=re.DOTALL,
+        )
+    else:
+        content = re.sub(
+            r"\\begin\{abstract\}(.*?)\\end\{abstract\}",
+            lambda match: f"## Abstract\n\n{match.group(1).strip()}\n\n",
+            content,
+            flags=re.DOTALL,
+        )
     for command, heading in _SECTION_COMMANDS.items():
         content = _replace_tex_command(content, command, heading)
     for command in _TEXT_UNWRAP_COMMANDS:
@@ -534,6 +543,7 @@ def tex_to_markdown(tex: str) -> str:
     payload = normalize_target_text(content)
     if front_matter:
         payload = normalize_target_text("\n\n".join((*front_matter, payload)))
+    payload = re.sub(r"^\{\s*\}$", "", payload, flags=re.MULTILINE)
     payload = re.sub(r"^\{([^{}\n]+)\}$", r"\1", payload, flags=re.MULTILINE)
     payload = re.sub(
         r"\$\s*([^$\n]+?)\s*\$",

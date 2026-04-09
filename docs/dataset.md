@@ -132,6 +132,7 @@ Use:
 
 - layout region supervision
 - block detection and reading-order support
+- compact Markdown layout-region targets instead of raw annotation dumps
 
 Role:
 
@@ -143,6 +144,7 @@ Use:
 
 - human-annotated layout supervision
 - harder and cleaner layout evaluation than weakly labeled sources
+- compact Markdown layout-region targets instead of raw annotation dumps
 
 Role:
 
@@ -158,6 +160,7 @@ Use:
 - table detection
 - structure recovery
 - header/body segmentation
+- canonical table-region targets for non-rectangular specialist supervision
 
 Role:
 
