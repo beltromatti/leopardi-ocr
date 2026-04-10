@@ -3,9 +3,9 @@
 Date locked: 2026-04-09
 
 This document records the research basis for upgrading `Leopardi-S0` from an
-`~86M` fully-trained-from-scratch model to a `~150M` model built on top of
+`~86M` fully-trained-from-scratch model to a `~200M` model built on top of
 pretrained vision and language components, and the coherent scaling path to
-`Leopardi-S1 ~500M`.
+`Leopardi-S1 ~600M`.
 
 ## Why The Revision
 
@@ -47,7 +47,7 @@ Model ID: `google/siglip2-base-patch16-naflex`
    documents at their native aspect ratio, minimizing distortion. The paper
    explicitly notes NaFlex superiority on OCR-based retrieval tasks.
 
-2. **86M parameters**: ViT-B/16 backbone. Fits within the 150M budget while
+2. **92.93M parameters**: ViT-B/16 backbone. Fits within the 200M budget while
    leaving meaningful capacity for the decoder and novel components.
 
 3. **State-of-the-art pretrained features**: SigLIP2 outperforms SigLIP,
@@ -60,7 +60,7 @@ Model ID: `google/siglip2-base-patch16-naflex`
 5. **Widely adopted**: used in Granite Vision 3.3, SmolVLM2, and other
    production VLMs as of 2026.
 
-6. **Scales cleanly**: ViT-B (86M) for S0, ViT-L (303M) or So400m (400M)
+6. **Scales cleanly**: ViT-B (92.93M) for S0, ViT-L (303M) or So400m (400M)
    for S1 with the same architecture family.
 
 ### Architecture Details (ViT-B/16)
@@ -70,7 +70,7 @@ Model ID: `google/siglip2-base-patch16-naflex`
 - Layers: 12
 - Attention heads: 12
 - Patch size: 16
-- Parameters: ~86M (vision tower only)
+- Parameters: 92.93M (vision tower only)
 - NaFlex: supports variable sequence lengths and native aspect ratios
 - 2D learned positional embeddings
 
@@ -80,7 +80,7 @@ Model ID: `google/siglip2-base-patch16-naflex`
 - Fine-tune top 4 layers from the start of P2
 - Unfreeze progressively during P3 and finetuning stages
 - Use pixel shuffle (2×2→1) to reduce visual token count by 4×
-- Project from 768 to internal hidden dimension (512) via MLP
+- Project from 768 to internal hidden dimension (576) via MLP
 
 ## Chosen Pretrained Language Decoder Base: SmolLM2-135M Architecture with Qwen3 Innovations
 
@@ -93,7 +93,7 @@ Source: Qwen Team (arXiv:2505.09388, May 2025)
 Key features adopted for the Leopardi writer decoder:
 
 - **RoPE** (Rotary Position Embeddings) with theta=1000000
-- **GQA** (Grouped Query Attention): 8 query heads, 2 KV heads at 512 hidden
+- **GQA** (Grouped Query Attention): 9 query heads, 3 KV heads at 576 hidden
 - **SwiGLU** activation in FFN
 - **RMSNorm** with pre-normalization
 - **QK-Norm** for training stability
@@ -119,13 +119,13 @@ SmolLM2-135M config:
 
 ### Integration strategy
 
-The Leopardi writer decoder operates at hidden_size=512 with 9 layers.
+The Leopardi writer decoder operates at hidden_size=576 with 12 layers.
 Initialization from SmolLM2:
 
-1. Select 9 evenly-spaced layers from SmolLM2's 30 layers (indices
-   0, 3, 7, 10, 14, 17, 21, 24, 28)
-2. Project self-attention and FFN weight matrices from 576→512 via
-   truncated SVD
+1. Select 12 layers distributed across SmolLM2's 30 layers (indices
+   0, 3, 5, 8, 11, 13, 16, 18, 21, 24, 26, 29)
+2. Copy self-attention and FFN weight matrices at native 576 hidden size
+   without down-projecting the language prior
 3. Add cross-attention layers (randomly initialized) for conditioning on
    structural latents, planner outputs, and layout tokens
 4. Replace token embeddings with Leopardi's domain-specific tokenizer
@@ -134,46 +134,46 @@ Initialization from SmolLM2:
 This gives the decoder strong pretrained language patterns while allowing
 full customization of the output vocabulary and cross-modal conditioning.
 
-## Parameter Budget: `Leopardi-S0` at ~150M
+## Parameter Budget: `Leopardi-S0` at ~200M
 
 | Component | Params | Source |
 |-----------|--------|--------|
-| SigLIP2-base-NaFlex vision encoder | ~86M | Pretrained (Google) |
-| Pixel shuffle + Projection MLP (768→512) | ~1M | Random init |
-| Structural Latent Bottleneck (3 layers, 128 latents, 512) | ~8M | Random init |
-| Block Planner (2 layers, 48 queries, 512) | ~5.5M | Random init |
+| SigLIP2-base-NaFlex vision encoder | 92.93M | Pretrained (Google) |
+| Pixel shuffle + Projection MLP (768→576) | ~1.77M | Random init |
+| Structural Latent Bottleneck (3 layers, 192 latents, 576) | ~13.39M | Random init |
+| Block Planner (3 layers, 64 queries, 576) | ~13.33M | Random init |
 | Layout Side-Map Encoder | ~0.3M | Random init |
-| Writer Decoder (9 layers, 512, GQA 8Q/2KV, SwiGLU, RoPE) | ~48M | SmolLM2 init |
+| Writer Decoder (12 layers, 576, GQA 9Q/3KV, SwiGLU, RoPE) | ~77.36M | SmolLM2 init |
 | MTP heads (horizon=2) | ~0.5M | Random init |
 | Auxiliary heads | ~0.01M | Random init |
-| **Total** | **~149M** | |
+| **Total** | **~199M** | |
 
 ### Trainable parameter phases
 
-- **P1 text warmup**: decoder only (~48M trainable)
+- **P1 text warmup**: decoder only (~77M trainable)
 - **P2 core multimodal**: decoder + novel components + top 4 SigLIP layers
-  (~62M + ~12M unfrozen encoder = ~74M trainable)
-- **P3 hard cases**: all parameters unfrozen (~149M trainable)
-- **F0–F3 finetuning**: all parameters (~149M trainable)
+  (~106M native plus the low-LR unfrozen vision subset)
+- **P3 hard cases**: all parameters unfrozen (~199M trainable)
+- **F0–F3 finetuning**: all parameters except explicit repair/RLVR freezes (~199M trainable)
 
-## Scaling Path: `Leopardi-S1` at ~500M
+## Scaling Path: `Leopardi-S1` at ~600M
 
-| Component | S0 (150M) | S1 (500M) | Scale factor |
+| Component | S0 (200M) | S1 (600M) | Scale factor |
 |-----------|-----------|-----------|-------------|
-| Vision encoder | SigLIP2-base 86M | SigLIP2-base 86M | 1× (same) |
-| Internal hidden | 512 | 768 | 1.5× |
-| Projection | 768→512 | 768→768 | identity |
-| Latent bottleneck layers | 3 | 5 | 1.67× |
-| Latent count | 128 | 256 | 2× |
-| Planner layers | 2 | 4 | 2× |
-| Planner queries | 48 | 64 | 1.33× |
-| Decoder layers | 9 | 20 | 2.2× |
+| Vision encoder | SigLIP2-base 92.93M | SigLIP2-base 92.93M | 1× (same) |
+| Internal hidden | 576 | 960 | 1.67× |
+| Projection | 768→576 | 768→960 | scale connector |
+| Latent bottleneck layers | 3 | 6 | 2× |
+| Latent count | 192 | 384 | 2× |
+| Planner layers | 3 | 5 | 1.67× |
+| Planner queries | 64 | 112 | 1.75× |
+| Decoder layers | 12 | 27 | 2.25× |
 | Decoder init | SmolLM2-135M | SmolLM2-360M | next tier |
 | MTP horizon | 2 | 3 | 1.5× |
-| **Total** | **~149M** | **~500M** | 3.4× |
+| **Total** | **~199M** | **~606.7M** | 3.05× |
 
 The S1 decoder initialized from SmolLM2-360M (hidden=960, 32 layers):
-- Select 20 layers, project 960→768
+- Select 27 layers at native 960 hidden size
 - Same cross-attention addition strategy as S0
 - Much stronger pretrained language priors
 
@@ -188,7 +188,7 @@ can be swapped in as a controlled ablation.
 ### 1. Pretrained vision encoder (SigLIP2-base-NaFlex)
 
 Previous: 9.4M ConvNeXt from scratch.
-New: 86M SigLIP2 pretrained on billions of image-text pairs.
+New: 92.93M SigLIP2 pretrained on billions of image-text pairs.
 Expected impact: +5–10 points on document parsing benchmarks.
 
 ### 2. Modern decoder architecture (RoPE, GQA, SwiGLU, RMSNorm)
@@ -207,19 +207,19 @@ New: self-attention and FFN weights from SmolLM2 (2T tokens of pretraining).
 Expected impact: faster convergence, better output fluency, reduced P1
 warmup time needed.
 
-### 4. Larger decoder (9 layers vs 11 at hidden 512 vs 448)
+### 4. Larger decoder (12 layers at hidden 576 vs 11 at hidden 448)
 
 Previous: 11 layers at hidden=448, ~50.5M total (30.8M in blocks).
-New: 9 layers at hidden=512, ~48M total but with cross-attention for
+New: 12 layers at hidden=576, ~77M total with cross-attention for
 richer conditioning and GQA for efficient attention.
 Expected impact: comparable or better quality per parameter due to modern
 architecture and pretrained initialization.
 
-### 5. Hardware-aligned hidden dimension (512)
+### 5. Pretrained-aligned hidden dimension (576)
 
 Previous: 448 (non-standard).
-New: 512 (multiple of 64 and 128, optimal for GPU tensor cores).
-Expected impact: ~10-15% better hardware utilization on RTX 5090.
+New: 576 (native SmolLM2-135M width with 9Q/3KV heads).
+Expected impact: cleaner pretrained transfer and less initializer distortion.
 
 ### 6. Increased max sequence length (4096)
 

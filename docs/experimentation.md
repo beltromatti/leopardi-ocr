@@ -8,10 +8,10 @@ This document defines how Leopardi runs many experiments without losing coherenc
 
 The project is explicitly choosing a rapid-iteration strategy:
 
-- many `~150M` experiments
+- many `~200M` experiments
 - one primary GPU class
 - strong ablation pressure
-- later scale-up to `~500M`
+- later scale-up to `~600M`
 
 Without an experiment system, this turns into noise very quickly.
 

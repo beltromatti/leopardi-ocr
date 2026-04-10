@@ -2,7 +2,7 @@
 
 Date locked: 2026-04-09
 
-This document defines the post-pretraining path for turning `Leopardi-S0 ~150M`
+This document defines the post-pretraining path for turning `Leopardi-S0 ~200M`
 (with pretrained SigLIP2 vision encoder and SmolLM2-initialized decoder) into a
 frontier parser.
 
@@ -19,7 +19,7 @@ Locked `S0` rule: finetuning stays compact.
 The current target is `1.50M` total stage draws across `F0-F3`, not another
 multi-million-scale replay of the `~10.31M` pretraining family.
 
-Scaling rule for `S1 ~500M`:
+Scaling rule for `S1 ~600M`:
 
 - keep the same four-stage shape
 - scale stage draws by roughly `3x`
@@ -303,7 +303,7 @@ This mined set is one of the most valuable assets in the project.
 
 ## Exit Criteria For `Leopardi-S0`
 
-`Leopardi-S0 ~150M` is blueprint-complete only when all are true:
+`Leopardi-S0 ~200M` is blueprint-complete only when all are true:
 
 1. strong general SFT is stable
 2. specialist slices no longer collapse on formulas or tables

@@ -24,8 +24,9 @@ Status:
 Current shape:
 
 - compact dense parser
-- target family size: `~100M`
-- concrete implementation currently in the low-`90M` range
+- target family size: `~200M`
+- concrete implementation estimates `~199M` once SigLIP2-base-NaFlex is loaded
+- Leopardi-native parameter budget before loading the vision tower is `~106M`
 
 Main internal components:
 

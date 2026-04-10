@@ -2,7 +2,7 @@ data_build:
   stage: s0_finetune_foundation_build
   profile_id: finetune_foundation
   target_model_family: leopardi_s0
-  target_param_budget_m: 150
+  target_param_budget_m: 200
   future_scale_family: leopardi_s1
   upstream_bundle_target: hf://leopardi-ocr-data-bundles
   strict_disk_guard: true

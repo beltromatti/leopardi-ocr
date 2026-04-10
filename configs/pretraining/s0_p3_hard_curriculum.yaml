@@ -38,11 +38,11 @@ curriculum:
   refresh_failure_pool_every: 500
   keep_easy_fraction: 0.12
 module_lr:
-  vision_encoder: 0.6
+  vision_encoder: 0.35
   layout_side_encoder: 0.75
   latent_bottleneck: 0.9
   planner: 1.2
-  writer: 1.3
+  writer: 1.2
   auxiliary_heads: 1.15
 objective_weights:
   token_ce: 1.0

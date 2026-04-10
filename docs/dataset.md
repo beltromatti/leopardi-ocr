@@ -32,7 +32,7 @@ It does not mean full TeX document syntax with preamble, packages, theorem setup
 
 ### 2. Small models need cleaner data than large models, but also need enough
 
-For `~150M`, curation quality matters more than raw scale — but the quantity
+For `~200M`, curation quality matters more than raw scale — but the quantity
 gap with competitors must be closed. Research (SAIL-VL, Beyond Chinchilla)
 shows that more high-quality data always helps, following logarithmic scaling.
 
@@ -60,8 +60,8 @@ We will synthesize data from public sources, not from undocumented prompts and a
 
 Current evidence supports the following claim:
 
-- this data plan is strong enough to make `Leopardi-S0 ~150M` highly competitive in the compact-parser regime
-- it is not scientifically defensible to promise that a `150M` model will automatically beat every `~0.9B` frontier parser on every benchmark before training and evaluation happen
+- this data plan is strong enough to make `Leopardi-S0 ~200M` highly competitive in the compact-parser regime
+- it is not scientifically defensible to promise that a `200M` model will automatically beat every `~0.9B` frontier parser on every benchmark before training and evaluation happen
 
 The strongest reasons the plan is still worth pursuing are:
 
@@ -457,7 +457,7 @@ Use explicit public tooling such as:
 
 ## Multilingual Extension Data
 
-The `150M` S0 loop is English-heavy because exact public supervision is
+The `200M` S0 loop is English-heavy because exact public supervision is
 strongest there. But minimal multilingual coverage is now included from S0
 to avoid being completely excluded from multilingual benchmarks like MDPBench.
 
@@ -479,7 +479,7 @@ Why European languages:
   scientific and legal document languages
 - Latin-script languages cost almost zero to the tokenizer (shared alphabet)
 - CJK would require a much larger vocabulary and more parameters to handle well
-- the 150M S0 model should focus on what it can do best with limited capacity
+- the 200M S0 model should focus on what it can do best with limited capacity
 
 Generation pipeline:
 
@@ -492,7 +492,7 @@ Generation pipeline:
 
 For S1, expand multilingual coverage with:
 
-- full European multilingual synthetic set: 100K per language = 500K
+- full European multilingual synthetic set: 400K per language = 2M
 - EUR-Lex legal documents rendered as synthetic PDFs in 23 EU languages
 - arXiv non-English papers: filtered subset with language tagging
 - Optional CJK expansion once European coverage is proven
@@ -559,7 +559,7 @@ Drop or quarantine:
 
 ## What To Use First For `Leopardi-S0`
 
-The `150M` S0 loop uses all high-value sources at scaled quantity:
+The `200M` S0 loop uses all high-value sources at scaled quantity:
 
 1. arXiv paired data (`250K` source docs, target `~2.0M` projected pages)
 2. PMC OA paired data (`150K` source docs, target `~1.2M` projected pages)

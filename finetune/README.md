@@ -2,7 +2,7 @@
 
 Date locked: 2026-04-08
 
-This directory is the operational finetuning stack for `Leopardi-S0 ~150M`.
+This directory is the operational finetuning stack for `Leopardi-S0 ~200M`.
 
 It turns a competent pretrained parser into a high-exactness production candidate.
 
@@ -61,7 +61,7 @@ The current finetune surface assumes the model still exposes:
 
 ## Final `S0` Position
 
-For `Leopardi-S0 ~150M`, finetuning now keeps an explicit exact anchor at every specialist stage.
+For `Leopardi-S0 ~200M`, finetuning now keeps an explicit exact anchor at every specialist stage.
 
 The finetune family is intentionally much smaller than pretraining.
 For `S0`, the locked target is:
@@ -74,7 +74,7 @@ For `S0`, the locked target is:
 That keeps finetuning in the `1.50M` stage-draw regime instead of turning it
 into another pretraining pass.
 
-`S1 ~500M` should keep the same stage shape but scale the pools by about `3x`,
+`S1 ~600M` should keep the same stage shape but scale the pools by about `3x`,
 targeting roughly:
 
 - `F0`: `~1.2M` stage draws

@@ -101,6 +101,8 @@ def build_optimizer(model: nn.Module, stage_config: PretrainStageConfig) -> torc
     param_groups: dict[tuple[float, float], dict[str, object]] = {}
     for name, parameter in _named_trainable_parameters(model):
         lr_scale = _module_scale_for_name(name, stage_config)
+        if lr_scale <= 0.0:
+            continue
         weight_decay = 0.0 if _uses_no_decay(name, stage_config) else optimizer_cfg.weight_decay
         key = (lr_scale, weight_decay)
         if key not in param_groups:
@@ -121,6 +123,8 @@ def build_optimizer(model: nn.Module, stage_config: PretrainStageConfig) -> torc
 
 def apply_runtime_policy(model: nn.Module, stage_config: PretrainStageConfig) -> nn.Module:
     model.train()
+    for name, parameter in model.named_parameters():
+        parameter.requires_grad_(bool(_module_scale_for_name(name, stage_config) > 0.0))
     if stage_config.runtime.compile_model:
         model = torch.compile(model)
     return model

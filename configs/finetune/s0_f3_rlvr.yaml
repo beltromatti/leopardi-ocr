@@ -54,7 +54,7 @@ verifier:
   normalize_rewards: true
   min_reward_group_size: 4
   informative_reward_floor: 0.01
-  target_latency_ms: 1200.0
+  target_latency_ms: 1350.0
   target_output_tokens: 3072
   kl_anchor_beta: 0.02
 loss_weights:

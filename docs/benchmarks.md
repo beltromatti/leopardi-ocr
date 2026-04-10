@@ -31,7 +31,7 @@ Best accuracy under a fixed size and hardware budget.
 
 Best performance per parameter class.
 
-This matters because the first research phase is `~150M`, not `~1B`.
+This matters because the first research phase is `~200M`, not `~1B`.
 
 ## Hardware Protocol
 
@@ -321,9 +321,10 @@ Leopardi must report both absolute and size-normalized leaderboards.
 
 ### Size bands
 
-- `tiny`: `<150M`
-- `small`: `150M` to `<500M`
-- `mid`: `500M` to `<2B`
+- `tiny`: `<100M`
+- `compact`: `100M` to `<300M`
+- `small`: `300M` to `<700M`
+- `mid`: `700M` to `<2B`
 - `large`: `2B+`
 
 Why:

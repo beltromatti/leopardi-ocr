@@ -214,18 +214,18 @@ Changes:
 
 ## Scaling Path to S1
 
-For S1 (500M), scale all sources proportionally:
+For S1 (600M), scale the exact-first sources materially while preserving the same curriculum:
 
 | Source | S0 Limit | S1 Limit |
 |--------|---------|---------|
-| arXiv | 50,000 docs | 200,000 docs |
-| PMC OA | 20,000 docs | 80,000 docs |
-| UniMER-1M | 200,000 | 1,000,000 |
-| European multilingual synthetic pages (DE/FR/ES/IT/PT) | 100K (20K each) | 500K (100K each) |
+| arXiv | 250,000 docs / 2.0M pages | 1,000,000 docs / 9.0M pages |
+| PMC OA | 150,000 docs / 1.2M pages | 750,000 docs / 6.0M pages |
+| UniMER-1M | 1,000,000 | 1,000,000 |
+| European multilingual synthetic pages (DE/FR/ES/IT/PT) | 500K (100K each) | 2.0M (400K each) |
 | CMER-3M | 0 (watchlist) | 500K (if verified) |
-| Synthetic hard cases | 2M | 4.5-15M |
-| **Total S0** | **~3.7M** | |
-| **Total S1** | | **~15-20M** |
+| Synthetic hard cases | ~4.5M | ~10-15M |
+| **Total S0** | **~10.31M** | |
+| **Total S1** | | **~25-30M** |
 
 ## Storage Estimate for S0 Full Build
 

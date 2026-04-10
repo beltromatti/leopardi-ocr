@@ -1,7 +1,7 @@
 model:
   family: leopardi_s1
-  target_params_m: 500
-  hidden_size: 768
+  target_params_m: 600
+  hidden_size: 960
   parent_family: leopardi_s0
   architecture_contract:
     parser_scope: document_parser
@@ -24,29 +24,30 @@ model:
     output_dim: 768
     freeze_layers: 0
     pixel_shuffle_factor: 2
-    projection_dim: 768
+    projection_dim: 960
 
   layout_side_encoder:
-    stem_dim: 96
-    hidden_size: 768
-    pool_grid: [4, 5]
+    stem_dim: 128
+    hidden_size: 960
+    pool_grid: [4, 6]
     dropout: 0.0
 
   latent_bottleneck:
-    hidden_size: 768
-    num_latents: 256
-    num_layers: 5
-    num_heads: 12
-    num_kv_heads: 4
-    mlp_ratio: 2.67
+    hidden_size: 960
+    num_latents: 384
+    num_layers: 6
+    num_heads: 15
+    num_kv_heads: 5
+    mlp_ratio: 2.6666666667
     dropout: 0.1
 
   planner:
-    hidden_size: 768
-    num_layers: 4
-    num_heads: 12
-    num_kv_heads: 4
-    num_blocks: 64
+    hidden_size: 960
+    num_layers: 5
+    num_heads: 15
+    num_kv_heads: 5
+    num_blocks: 112
+    mlp_ratio: 2.6666666667
     num_length_buckets: 8
     block_types:
       - heading
@@ -69,17 +70,17 @@ model:
 
   writer_decoder:
     vocab_size: 40960
-    hidden_size: 768
-    num_layers: 20
-    num_heads: 12
-    num_kv_heads: 4
-    mlp_ratio: 2.67
+    hidden_size: 960
+    num_layers: 27
+    num_heads: 15
+    num_kv_heads: 5
+    mlp_ratio: 2.6666666667
     max_seq_len: 4096
     rope_theta: 1000000.0
     dropout: 0.1
     tie_embeddings: true
     pretrained_init: HuggingFaceTB/SmolLM2-360M
-    init_layer_indices: null
+    init_layer_indices: [0, 1, 2, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31]
 
   multi_token_prediction:
     enabled: true

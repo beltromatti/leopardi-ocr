@@ -154,4 +154,4 @@ def test_pipeline_chain_is_coherent(tmp_path: Path) -> None:
     assert evaluation_payload["baseline_count"] > 0
 
     model_config = LeopardiS0Config.from_yaml("configs/model/leopardi_s0.yaml")
-    assert model_config.target_params_m <= 150
+    assert model_config.target_params_m <= 200

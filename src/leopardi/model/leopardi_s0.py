@@ -1,4 +1,4 @@
-"""Leopardi-S0: ~150M document parser with pretrained SigLIP2 vision encoder
+"""Leopardi-S0: ~200M document parser with pretrained SigLIP2 vision encoder
 and SmolLM2-initialized writer decoder.
 
 All forward paths are torch.compile-friendly.
@@ -25,6 +25,11 @@ from leopardi.model.modules import (
     make_causal_mask,
     pixel_shuffle_down,
 )
+
+
+KNOWN_PRETRAINED_VISION_PARAMS_M = {
+    "google/siglip2-base-patch16-naflex": 92.93,
+}
 
 
 def _evenly_spaced_indices(source_count: int, target_count: int) -> list[int]:
@@ -578,12 +583,20 @@ class LeopardiS0(nn.Module):
     def summary(self) -> dict[str, Any]:
         total = self.num_parameters(trainable_only=False)
         trainable = self.num_parameters(trainable_only=True)
-        pending_pretrained_m = max(0.0, float(self.config.target_params_m) - (total / 1_000_000))
+        estimated_vision_m = 0.0
+        if not self.pretrained_state.get("vision_encoder_loaded", False):
+            estimated_vision_m = KNOWN_PRETRAINED_VISION_PARAMS_M.get(
+                self.config.vision_encoder.pretrained_model,
+                max(0.0, float(self.config.target_params_m) - (total / 1_000_000)),
+            )
+        estimated_total_m = (total / 1_000_000) + estimated_vision_m
+        pending_pretrained_m = estimated_vision_m
         return {
             "family": self.config.family,
             "target_params_m": self.config.target_params_m,
             "total_params_m": round(total / 1_000_000, 2),
             "pending_pretrained_params_m": round(pending_pretrained_m, 2),
+            "estimated_total_with_pretrained_vision_m": round(estimated_total_m, 2),
             "trainable_params_m": round(trainable / 1_000_000, 2),
             "hidden_size": self.config.hidden_size,
             "vision_encoder": self.config.vision_encoder.pretrained_model or "custom",

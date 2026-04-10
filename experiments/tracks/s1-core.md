@@ -2,7 +2,7 @@
 
 Mission:
 
-- scale the locked `s0-core` recipe to `~500M`
+- scale the locked `s0-core` recipe to `~600M`
 
 Entry condition:
 

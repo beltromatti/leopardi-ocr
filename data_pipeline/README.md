@@ -125,7 +125,7 @@ Published bundles should be consumable by streaming loaders so that later pretra
 
 ## Current S0 Storage Envelope
 
-For the `Leopardi-S0 ~150M` pretraining-family build at the new frontier scale:
+For the `Leopardi-S0 ~200M` pretraining-family build at the new frontier scale:
 
 - published family target: about `10.3M` samples total
 - build-time materialized share before finetune-specific follow-up stages: about `5.8M` samples

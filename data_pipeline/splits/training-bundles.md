@@ -45,7 +45,7 @@ Oversample:
 
 Small-model rule:
 
-- for `Leopardi-S0 ~150M`, this bundle remains the dominant anchor through `P2`
+- for `Leopardi-S0 ~200M`, this bundle remains the dominant anchor through `P2`
 - hard-case and specialist pressure must not dilute exact-pair supervision too early
 
 ## Bundle: `p2_structural_aux_v1`
@@ -135,7 +135,7 @@ Composition:
 Why:
 
 - move the product-visible long tail that public parsers still mishandle
-- but keep `sft_core_v1` as an exact anchor during sampling so a `~150M` model does not drift from canonical Markdown behavior
+- but keep `sft_core_v1` as an exact anchor during sampling so a `~200M` model does not drift from canonical Markdown behavior
 
 Locked `S0` size:
 

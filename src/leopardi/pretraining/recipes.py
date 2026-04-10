@@ -24,7 +24,7 @@ def stage_recipe(stage: str) -> PretrainStageConfig:
             text_only=True,
             visual_mode="fast",
             data_bundle_ids=("tokenizer_v1", "p1_text_warmup_v1"),
-            optimizer=optimizer,
+            optimizer=OptimizerConfig(lr=5e-4),
             runtime=runtime,
             scheduler=SchedulerConfig(name="cosine", warmup_ratio=0.04, min_lr_ratio=0.2),
             data_mix=DataMixConfig(
@@ -47,10 +47,11 @@ def stage_recipe(stage: str) -> PretrainStageConfig:
             ),
             module_lr=ModuleLrConfig(
                 vision_encoder=0.0,
-                latent_bottleneck=0.8,
-                planner=1.0,
-                writer=1.25,
-                auxiliary_heads=0.5,
+                layout_side_encoder=0.0,
+                latent_bottleneck=0.0,
+                planner=0.0,
+                writer=1.15,
+                auxiliary_heads=0.0,
             ),
             objective_weights=ObjectiveWeights(
                 token_ce=1.0,
@@ -95,7 +96,14 @@ def stage_recipe(stage: str) -> PretrainStageConfig:
                 refresh_failure_pool_every=1_000,
                 keep_easy_fraction=0.18,
             ),
-            module_lr=ModuleLrConfig(),
+            module_lr=ModuleLrConfig(
+                vision_encoder=0.45,
+                layout_side_encoder=0.8,
+                latent_bottleneck=1.0,
+                planner=1.15,
+                writer=1.15,
+                auxiliary_heads=1.1,
+            ),
             objective_weights=ObjectiveWeights(
                 formula_ce=0.18,
                 table_ce=0.18,
@@ -137,10 +145,11 @@ def stage_recipe(stage: str) -> PretrainStageConfig:
                 keep_easy_fraction=0.12,
             ),
             module_lr=ModuleLrConfig(
-                vision_encoder=0.6,
+                vision_encoder=0.35,
+                layout_side_encoder=0.75,
                 latent_bottleneck=0.9,
                 planner=1.2,
-                writer=1.3,
+                writer=1.2,
                 auxiliary_heads=1.15,
             ),
             objective_weights=ObjectiveWeights(

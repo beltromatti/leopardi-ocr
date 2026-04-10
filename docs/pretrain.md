@@ -2,9 +2,9 @@
 
 Date locked: 2026-04-09
 
-This document defines the pretraining plan for `Leopardi-S0 ~150M` (with
+This document defines the pretraining plan for `Leopardi-S0 ~200M` (with
 pretrained SigLIP2 vision encoder and SmolLM2-initialized decoder) and the
-scale-up path to `Leopardi-S1 ~500M`.
+scale-up path to `Leopardi-S1 ~600M`.
 
 The current implementation surface for this plan now lives in:
 
@@ -84,10 +84,10 @@ Train the full model on paired page-to-canonical-target data.
 
 What is trainable in P2:
 
-- writer decoder (~52M, all layers)
-- novel components: latent bottleneck + block planner + layout encoder (~14M)
-- SigLIP2 vision encoder top 4 layers (~28M unfrozen out of 86M total)
-- total trainable: ~94M out of ~154M
+- writer decoder (~77M, all layers)
+- novel components: latent bottleneck + block planner + layout encoder (~27M)
+- SigLIP2 vision encoder top 4 layers at low LR (~31M unfrozen out of 92.93M total)
+- total trainable: ~135M out of ~199M
 
 Primary data:
 
@@ -297,16 +297,16 @@ Recommended first training shape:
 
 VRAM budget estimate for S0 (154M params):
 
-- model parameters (bf16): ~0.3 GB
-- optimizer states (AdamW, fp32): ~1.2 GB
-- activations with gradient checkpointing: ~8-12 GB
+- model parameters (bf16): ~0.4 GB
+- optimizer states (AdamW, fp32): ~1.6 GB
+- activations with gradient checkpointing: ~10-16 GB
 - SigLIP2 frozen layers: ~0.17 GB (no grad)
 - batch of page images + targets: ~2-4 GB
-- estimated total: ~12-18 GB out of 32 GB available
+- estimated total: ~14-22 GB out of 32 GB available
 
 Why this matters:
 
-- the point of the `150M` phase is rapid algorithmic iteration, not one heroic training run
+- the point of the `200M` phase is rapid algorithmic iteration, not one heroic training run
 - the pretrained backbone means P2 converges much faster than from-scratch training
 
 ## What Not To Do In Pretraining
@@ -340,10 +340,10 @@ If exact-core conversion drops tables, captions, or display math, the model lear
 Once `Leopardi-S0` is stable and the best recipe is known:
 
 - keep SigLIP2-base vision encoder (same for comparability)
-- increase internal hidden from 512 to 768
-- increase latent count from 128 to 256 (5 layers)
-- increase decoder from 9 to 20 layers (initialized from SmolLM2-360M)
-- increase planner from 2 to 4 layers
+- increase internal hidden from 576 to 960
+- increase latent count from 192 to 384 (6 layers)
+- increase decoder from 12 to 27 layers (initialized from SmolLM2-360M)
+- increase planner from 3 to 5 layers and 64 to 112 block queries
 - widen specialist adapters
 - keep the same target representation and objectives
 - increase MTP horizon from 2 to 3

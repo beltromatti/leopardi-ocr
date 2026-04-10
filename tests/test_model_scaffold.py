@@ -40,6 +40,25 @@ def test_leopardi_s0_tiny_forward_shapes() -> None:
     assert model.num_parameters() > 0
 
 
+def test_canonical_model_scale_configs_are_aligned() -> None:
+    s0 = LeopardiS0Config.from_yaml("configs/model/leopardi_s0.yaml")
+    s1 = LeopardiS0Config.from_yaml("configs/model/leopardi_s1.yaml")
+
+    assert s0.target_params_m == 200
+    assert s0.hidden_size == 576
+    assert s0.writer_decoder.num_layers == 12
+    assert s0.writer_decoder.num_heads == 9
+    assert s0.writer_decoder.num_kv_heads == 3
+    assert s0.writer_decoder.pretrained_init == "HuggingFaceTB/SmolLM2-135M"
+
+    assert s1.target_params_m == 600
+    assert s1.hidden_size == 960
+    assert s1.writer_decoder.num_layers == 27
+    assert s1.writer_decoder.num_heads == 15
+    assert s1.writer_decoder.num_kv_heads == 5
+    assert s1.writer_decoder.pretrained_init == "HuggingFaceTB/SmolLM2-360M"
+
+
 def test_pretraining_loss_report_smoke() -> None:
     config = LeopardiS0Config.tiny()
     model = LeopardiS0(config)

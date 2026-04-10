@@ -43,7 +43,7 @@ sampling:
   refresh_failure_buffer_every: 500
   keep_clean_anchor_fraction: 0.18
 module_lr:
-  vision_encoder: 0.45
+  vision_encoder: 0.35
   layout_side_encoder: 0.55
   latent_bottleneck: 0.75
   planner: 1.05
@@ -54,7 +54,7 @@ verifier:
   normalize_rewards: true
   min_reward_group_size: 8
   informative_reward_floor: 0.02
-  target_latency_ms: 1250.0
+  target_latency_ms: 1400.0
   target_output_tokens: 4096
   kl_anchor_beta: 0.0
 loss_weights:

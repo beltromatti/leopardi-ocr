@@ -18,7 +18,7 @@ That means finetuning pools must be:
 
 ## Locked `S0` Finetune Footprint
 
-`Leopardi-S0 ~150M` does not reuse the whole `~10.31M` pretraining family as if
+`Leopardi-S0 ~200M` does not reuse the whole `~10.31M` pretraining family as if
 finetuning were a second pretraining pass.
 
 Locked targets:

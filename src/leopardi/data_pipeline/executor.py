@@ -54,9 +54,11 @@ DEFAULT_SOURCE_LIMITS_S0 = {
 }
 
 DEFAULT_SOURCE_LIMITS_S1 = {
-    # S1 keeps the same exact-first logic but opens the aperture materially.
-    "arxiv_source_pdf": 800000,
-    "pmc_oa_pdf_xml": 500000,
+    # S1 keeps the same exact-first logic but opens the aperture for the
+    # 600M scale-up. The limits are still bounded because page projection,
+    # not raw archive retention, drives the final sample count.
+    "arxiv_source_pdf": 1000000,
+    "pmc_oa_pdf_xml": 750000,
     "publaynet": 360000,
     "doclaynet": 80863,
     "pubtables_1m": 500000,
@@ -74,7 +76,7 @@ DEFAULT_SOURCE_LIMITS_S1 = {
     "sroie": 2000,
     "chartqa": 32719,
     "plotqa": 100000,
-    "european_multilingual_synthetic": 1500000,
+    "european_multilingual_synthetic": 2000000,
 }
 
 
@@ -89,8 +91,8 @@ DEFAULT_TARGET_SAMPLE_COUNTS_S0 = {
 }
 
 DEFAULT_TARGET_SAMPLE_COUNTS_S1 = {
-    "arxiv_source_pdf": 6_000_000,
-    "pmc_oa_pdf_xml": 4_000_000,
+    "arxiv_source_pdf": 9_000_000,
+    "pmc_oa_pdf_xml": 6_000_000,
 }
 
 DERIVED_BUNDLE_RETENTION = {

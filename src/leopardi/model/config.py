@@ -19,36 +19,36 @@ class VisionEncoderConfig:
     output_dim: int = 768
     freeze_layers: int = 8
     pixel_shuffle_factor: int = 2
-    projection_dim: int = 512
+    projection_dim: int = 576
 
 
 @dataclass(slots=True)
 class LayoutSideEncoderConfig:
     stem_dim: int = 64
-    hidden_size: int = 512
+    hidden_size: int = 576
     pool_grid: tuple[int, int] = (3, 4)
     dropout: float = 0.0
 
 
 @dataclass(slots=True)
 class LatentBottleneckConfig:
-    hidden_size: int = 512
-    num_latents: int = 128
+    hidden_size: int = 576
+    num_latents: int = 192
     num_layers: int = 3
-    num_heads: int = 8
-    num_kv_heads: int = 2
-    mlp_ratio: float = 2.67
+    num_heads: int = 9
+    num_kv_heads: int = 3
+    mlp_ratio: float = 2.6666666667
     dropout: float = 0.1
 
 
 @dataclass(slots=True)
 class PlannerConfig:
-    hidden_size: int = 512
-    num_layers: int = 2
-    num_heads: int = 8
-    num_kv_heads: int = 2
-    mlp_ratio: float = 2.67
-    num_blocks: int = 48
+    hidden_size: int = 576
+    num_layers: int = 3
+    num_heads: int = 9
+    num_kv_heads: int = 3
+    mlp_ratio: float = 2.6666666667
+    num_blocks: int = 64
     num_length_buckets: int = 8
     block_types: tuple[str, ...] = (
         "heading",
@@ -69,11 +69,11 @@ class PlannerConfig:
 @dataclass(slots=True)
 class WriterDecoderConfig:
     vocab_size: int = 40_960
-    hidden_size: int = 512
-    num_layers: int = 9
-    num_heads: int = 8
-    num_kv_heads: int = 2
-    mlp_ratio: float = 2.67
+    hidden_size: int = 576
+    num_layers: int = 12
+    num_heads: int = 9
+    num_kv_heads: int = 3
+    mlp_ratio: float = 2.6666666667
     max_seq_len: int = 4_096
     rope_theta: float = 1_000_000.0
     dropout: float = 0.1
@@ -99,8 +99,8 @@ class AuxiliaryHeadsConfig:
 @dataclass(slots=True)
 class LeopardiS0Config:
     family: str = "leopardi_s0"
-    target_params_m: int = 150
-    hidden_size: int = 512
+    target_params_m: int = 200
+    hidden_size: int = 576
     page_canonicalizer: PageCanonicalizerConfig = field(default_factory=PageCanonicalizerConfig)
     vision_encoder: VisionEncoderConfig = field(default_factory=VisionEncoderConfig)
     layout_side_encoder: LayoutSideEncoderConfig = field(default_factory=LayoutSideEncoderConfig)
@@ -125,6 +125,16 @@ class LeopardiS0Config:
                 "decoder hidden_size must all be equal."
             )
         self.hidden_size = expected[0]
+        attention_specs = (
+            ("latent_bottleneck", self.latent_bottleneck.num_heads, self.latent_bottleneck.num_kv_heads),
+            ("planner", self.planner.num_heads, self.planner.num_kv_heads),
+            ("writer_decoder", self.writer_decoder.num_heads, self.writer_decoder.num_kv_heads),
+        )
+        for name, heads, kv_heads in attention_specs:
+            if self.hidden_size % heads != 0:
+                raise ValueError(f"{name}.num_heads={heads} must divide hidden_size={self.hidden_size}")
+            if heads % kv_heads != 0:
+                raise ValueError(f"{name}.num_heads={heads} must be divisible by num_kv_heads={kv_heads}")
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "LeopardiS0Config":
@@ -136,8 +146,8 @@ class LeopardiS0Config:
 
         return cls(
             family=model.get("family", "leopardi_s0"),
-            target_params_m=model.get("target_params_m", 150),
-            hidden_size=model.get("hidden_size", 512),
+            target_params_m=model.get("target_params_m", 200),
+            hidden_size=model.get("hidden_size", 576),
             page_canonicalizer=PageCanonicalizerConfig(
                 **model.get("page_canonicalizer", {})
             ),

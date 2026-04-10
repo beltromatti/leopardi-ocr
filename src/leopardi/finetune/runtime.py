@@ -112,6 +112,8 @@ def build_finetune_optimizer(
         ):
             continue
         lr_scale = _module_scale_for_name(name, stage_config)
+        if lr_scale <= 0.0:
+            continue
         weight_decay = 0.0 if _uses_no_decay(name, stage_config) else optimizer_cfg.weight_decay
         key = (lr_scale, weight_decay)
         if key not in param_groups:
@@ -132,10 +134,12 @@ def build_finetune_optimizer(
 
 def apply_finetune_runtime_policy(model: nn.Module, stage_config: FinetuneStageConfig) -> nn.Module:
     model.train()
-    if stage_config.adapter.mode != "full":
-        targets = stage_config.adapter.target_modules
-        for name, parameter in model.named_parameters():
-            parameter.requires_grad = any(name.startswith(target) for target in targets)
+    targets = stage_config.adapter.target_modules
+    for name, parameter in model.named_parameters():
+        in_adapter_scope = stage_config.adapter.mode == "full" or any(
+            name.startswith(target) for target in targets
+        )
+        parameter.requires_grad_(bool(in_adapter_scope and _module_scale_for_name(name, stage_config) > 0.0))
     if stage_config.runtime.compile_model:
         model = torch.compile(model)
     return model

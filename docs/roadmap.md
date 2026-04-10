@@ -6,10 +6,10 @@ This roadmap turns the research corpus and blueprint into an execution sequence.
 
 The central strategy is explicit:
 
-- move fast with `Leopardi-S0` at `~150M`
+- move fast with `Leopardi-S0` at `~200M`
 - run many disciplined ablations on `RTX 5090`
 - discover the best recipe first
-- scale to `Leopardi-S1` at `~500M` only after the recipe is locked
+- scale to `Leopardi-S1` at `~600M` only after the recipe is locked
 
 ## Phase 0. Protocol Lock
 
@@ -46,7 +46,7 @@ Must produce:
 
 Deliverables:
 
-- first dense `~150M` parser
+- first dense `~200M` parser
 - block planner
 - writer decoder
 - canonicalizer
@@ -103,21 +103,21 @@ Must answer:
 
 Deliverables:
 
-- best `150M` checkpoint
+- best `200M` checkpoint
 - public-comparison benchmark report
 - error taxonomy
 - locked blueprint for scale-up
 
 Success criteria:
 
-- dominates the `<150M` class on the chosen metrics
+- dominates the compact `~200M` class on the chosen metrics
 - credible size-normalized challenge to larger competitors
 
 ## Phase 7. `Leopardi-S1` Scale-Up
 
 Deliverables:
 
-- `~500M` scaled model using the same architecture family
+- `~600M` scaled model using the same architecture family
 - same output contract
 - same benchmark protocol
 
@@ -141,7 +141,7 @@ Success criteria:
 
 ## What Not To Do
 
-### 1. Do not jump early to `500M`
+### 1. Do not jump early to `600M`
 
 That would slow down discovery.
 

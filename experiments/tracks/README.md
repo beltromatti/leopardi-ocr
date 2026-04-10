@@ -11,6 +11,6 @@ They prevent unrelated experiments from competing for the same "best model" slot
 - `s0-table`: table-heavy specialist work
 - `s0-math`: formula-heavy specialist work
 - `s0-runtime`: latency, quantization, and serving experiments
-- `s1-core`: `~500M` scale-up, only after `s0-core` is frozen
+- `s1-core`: `~600M` scale-up, only after `s0-core` is frozen
 
 Each track should have exactly one promoted checkpoint at a time.
