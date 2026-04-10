@@ -24,21 +24,54 @@ from leopardi.ops import (
 
 
 DEFAULT_SOURCE_LIMITS_S0 = {
-    "arxiv_source_pdf": 50000,
-    "pmc_oa_pdf_xml": 20000,
-    "publaynet": 50000,
-    "doclaynet": 15000,
-    "pubtables_1m": 40000,
+    # arXiv / PMC are capped in source documents and yield page-level samples.
+    # With the current page-projection rules this targets roughly:
+    # - arXiv: ~2.0M projected pages
+    # - PMC OA: ~1.2M projected pages
+    "arxiv_source_pdf": 250000,
+    "pmc_oa_pdf_xml": 150000,
+    "publaynet": 300000,
+    "doclaynet": 80863,
+    "pubtables_1m": 250000,
     "scitsr": 15000,
-    "mathwriting": 30000,
-    "im2latex_100k": 30000,
-    "unimer_1m": 200000,
+    "fintabnet_family": 100000,
+    "crohme": 10000,
+    "mathwriting": 200000,
+    "im2latex_100k": 100000,
+    "unimer_1m": 1000000,
+    "iam": 10373,
+    "bentham": 5000,
+    "read_2016": 5000,
     "funsd": 1000,
     "cord": 2000,
     "sroie": 2000,
     "chartqa": 15000,
     "plotqa": 15000,
-    "synthdog_european": 100000,
+    "synthdog_european": 500000,
+}
+
+DEFAULT_SOURCE_LIMITS_S1 = {
+    # S1 keeps the same exact-first logic but opens the aperture materially.
+    "arxiv_source_pdf": 800000,
+    "pmc_oa_pdf_xml": 500000,
+    "publaynet": 360000,
+    "doclaynet": 80863,
+    "pubtables_1m": 500000,
+    "scitsr": 15000,
+    "fintabnet_family": 112000,
+    "crohme": 10000,
+    "mathwriting": 230000,
+    "im2latex_100k": 100000,
+    "unimer_1m": 1000000,
+    "iam": 10373,
+    "bentham": 5000,
+    "read_2016": 5000,
+    "funsd": 1000,
+    "cord": 2000,
+    "sroie": 2000,
+    "chartqa": 32719,
+    "plotqa": 100000,
+    "synthdog_european": 1500000,
 }
 
 
@@ -364,8 +397,10 @@ def build_data_pipeline_stage(
     )
 DEFAULT_SOURCE_LIMITS_BY_FAMILY = {
     "leopardi_s0": DEFAULT_SOURCE_LIMITS_S0,
+    "leopardi_s1": DEFAULT_SOURCE_LIMITS_S1,
 }
 
 DEFAULT_MAX_PAGES_BY_FAMILY = {
     "leopardi_s0": DEFAULT_MAX_PAGES_S0,
+    "leopardi_s1": DEFAULT_MAX_PAGES_S0,
 }

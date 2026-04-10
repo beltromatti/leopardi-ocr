@@ -3,7 +3,7 @@ runtime:
   hardware_tag: rtx5090
   cpu_workers: 12
   io_workers: 16
-  local_disk_budget_gb: 400
+  local_disk_budget_gb: 2500
   max_active_sources: 2
   priority:
     - resumability

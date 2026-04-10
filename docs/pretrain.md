@@ -199,16 +199,35 @@ Supervise:
 
 ## Data Mixture For `Leopardi-S0`
 
-Recommended initial mixture (target ~4M total samples):
+Recommended S0 published pool (target ~10.3M total samples):
 
-- `40%` exact paired pages from arXiv (400K) and PMC (160K)
-- `20%` synthetic hard cases with text corruption (800K)
-- `10%` layout-focused supervision from PubLayNet and DocLayNet
-- `10%` formula-focused from UniMER-1M (200K), CROHME, MathWriting, Im2LaTeX-100K
-- `8%` table-focused from PubTables-1M and SciTSR
-- `5%` European multilingual from SynthDoG-European DE/FR/ES/IT/PT (100K, 20K per language)
-- `4%` handwriting from IAM, Bentham, READ 2016
-- `3%` forms, receipts, charts from FUNSD, CORD, SROIE, ChartQA, PlotQA
+- `~5.31M` real-source samples
+- `~500K` build-time multilingual synthetic pages from SynthDoG-European
+- `~4.5M` derived hard cases from `synthetic_from_exact`
+
+Recommended pretraining exposure over the full S0 curriculum:
+
+- `35%` exact paired pages from arXiv and PMC
+- `30%` synthetic hard cases derived from exact sources
+- `10%` formula-focused from UniMER-1M, CROHME, MathWriting, Im2LaTeX-100K
+- `8%` table-focused from PubTables-1M, SciTSR, FinTabNet family
+- `7%` layout-focused supervision from PubLayNet and DocLayNet
+- `5%` multilingual from SynthDoG-European DE/FR/ES/IT/PT
+- `3%` handwriting from IAM, Bentham, READ 2016
+- `2%` forms, receipts, charts from FUNSD, CORD, SROIE, ChartQA, PlotQA
+
+Bundle usage by stage:
+
+- `P1`
+  - `tokenizer_v1`
+  - `p1_text_warmup_v1`
+- `P2`
+  - `p2_exact_core_v1`
+  - `p2_structural_aux_v1`
+- `P3`
+  - `p2_exact_core_v1`
+  - `p2_structural_aux_v1`
+  - `p3_hardcases_v1`
 
 Inside those buckets, the compact-model recipe should explicitly oversample:
 

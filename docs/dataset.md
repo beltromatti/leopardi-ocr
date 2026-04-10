@@ -41,8 +41,12 @@ Operational implication:
 - exact page or document pairs stay dominant through `P2`
 - specialist and synthetic sources are staged in, not dumped in uniformly from the beginning
 - `F0` and `F1` both retain exact anchors during finetuning
-- target total for S0: ~4M samples (up from ~300K), still curated
-- target total for S1: ~15-20M samples
+- target total for S0: ~10.3M samples
+  - ~5.31M real-source samples
+  - ~5.0M synthetic samples
+- target total for S1: ~30M samples
+  - ~15M real-source samples
+  - ~15M synthetic samples
 
 ### 3. Benchmark test sets are never training data
 
@@ -557,25 +561,62 @@ Drop or quarantine:
 
 The `150M` S0 loop uses all high-value sources at scaled quantity:
 
-1. arXiv paired data (50K documents, ~400K pages)
-2. PMC OA paired data (20K documents, ~160K pages)
-3. UniMER-1M (200K formula pairs)
-4. PubLayNet (50K layout samples)
-5. DocLayNet (15K layout samples)
-6. PubTables-1M (40K table samples)
-7. SciTSR (15K table samples)
-8. CROHME (handwritten formulas)
-9. MathWriting (30K handwritten math)
-10. Im2LaTeX-100K (30K printed formulas)
-11. IAM, Bentham, READ 2016 (handwriting)
-12. FUNSD, CORD, SROIE (forms and receipts)
-13. ChartQA, PlotQA (charts and plots)
-14. SynthDoG-European DE/FR/ES/IT/PT (100K generated at build time, 20K per language)
-15. Synthetic perturbations with text corruption (~2M hard cases)
+1. arXiv paired data (`250K` source docs, target `~2.0M` projected pages)
+2. PMC OA paired data (`150K` source docs, target `~1.2M` projected pages)
+3. UniMER-1M (`1.0M` formula pairs)
+4. PubLayNet (`300K` layout samples)
+5. DocLayNet (`80,863` layout samples)
+6. PubTables-1M (`250K` table samples)
+7. SciTSR (`15K` table samples)
+8. FinTabNet family (`100K` financial-table samples)
+9. CROHME (`10K` handwritten formula samples)
+10. MathWriting (`200K` handwritten math samples)
+11. Im2LaTeX-100K (`100K` printed formula samples)
+12. IAM-line (`10,373` handwriting line samples)
+13. Bentham (`5K` page samples)
+14. READ 2016 (`5K` page samples)
+15. FUNSD, CORD, SROIE (`5K` forms and receipts total)
+16. ChartQA, PlotQA (`30K` charts and plots total)
+17. SynthDoG-European DE/FR/ES/IT/PT (`500K` generated at build time, `100K` per language)
+18. Synthetic perturbations with text corruption (`~4.5M` hard cases derived from exact sources)
 
-Target total: ~4M samples. This is competitive with Nougat (8.2M) and
-within range of GOT-OCR (15M), while maintaining strictly higher per-sample
-quality through exact-pair foundations and 8 quality gates.
+Target total for the published `S0` data family: `~10.31M` samples.
+
+- `~5.31M` real-source samples
+- `~500K` build-time synthetic multilingual samples
+- `~4.5M` derived synthetic hard cases
+
+This puts `Leopardi-S0` into a genuinely frontier-scale data regime for a compact parser,
+while still keeping the exact-pair core dominant and auditably cleaner than most competitor stacks.
+
+### S0 Capacity Table
+
+| Source family | S0 target |
+| --- | ---: |
+| arXiv projected pages | ~2,000,000 |
+| PMC projected pages | ~1,200,000 |
+| UniMER-1M | 1,000,000 |
+| PubLayNet | 300,000 |
+| DocLayNet | 80,863 |
+| PubTables-1M | 250,000 |
+| SciTSR | 15,000 |
+| FinTabNet family | 100,000 |
+| CROHME | 10,000 |
+| MathWriting | 200,000 |
+| Im2LaTeX-100K | 100,000 |
+| IAM-line | 10,373 |
+| Bentham | 5,000 |
+| READ 2016 | 5,000 |
+| FUNSD | 1,000 |
+| CORD | 2,000 |
+| SROIE | 2,000 |
+| ChartQA | 15,000 |
+| PlotQA | 15,000 |
+| Real-source subtotal | ~5,311,236 |
+| SynthDoG-European | 500,000 |
+| synthetic_from_exact | ~4,500,000 |
+| Synthetic subtotal | ~5,000,000 |
+| Total S0 family | ~10,311,236 |
 
 ## Official Source References
 

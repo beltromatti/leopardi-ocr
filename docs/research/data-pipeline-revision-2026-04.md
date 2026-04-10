@@ -51,7 +51,7 @@ Research evidence:
 | Charts/plots | ~24K | ~30K | 1.25× |
 | European multilingual (NEW) | 0 | ~100K | new |
 | Synthetic hard cases | ~50K | ~2M | 40× |
-| **Total** | **~300K** | **~4M** | **~13×** |
+| **Total** | **~300K** | **~10.3M** | **~34×** |
 
 This brings Leopardi into the same order of magnitude as Nougat (8.2M) and
 closer to GOT-OCR (15M), while maintaining strictly higher quality per sample.
@@ -107,7 +107,7 @@ Integration:
 - Uses `wikimedia/wikipedia` HF streaming (verified accessible for all 5 languages)
 - Renders Wikipedia text as document pages using Pillow + Noto fonts
 - Ground truth = the Wikipedia text itself (exact by construction)
-- 20K per language × 5 languages = 100K for S0
+- 100K per language × 5 languages = 500K for S0
 - 100K per language × 5 = 500K for S1
 - `scripts/generate_synthdog_european.py` remains available only as a preview/export utility
 - Output in the main build is emitted directly as canonical `page_markdown_projection` samples
@@ -223,7 +223,7 @@ For S1 (500M), scale all sources proportionally:
 | UniMER-1M | 200,000 | 1,000,000 |
 | SynthDoG-European (DE/FR/ES/IT/PT) | 100K (20K each) | 500K (100K each) |
 | CMER-3M | 0 (watchlist) | 500K (if verified) |
-| Synthetic hard cases | 2M | 5-8M |
+| Synthetic hard cases | 2M | 4.5-15M |
 | **Total S0** | **~3.7M** | |
 | **Total S1** | | **~15-20M** |
 
@@ -240,7 +240,7 @@ shard output before publishing to HuggingFace.
 | p3_hardcases shards | ~28 GB | After p2_aux is published and purged |
 | Working cache + OS | ~15 GB | Constant overhead |
 | **Peak total** | **~262 GB** | During p2_exact_core only |
-| **Recommended free disk** | **400 GB** | With safety margin |
+| **Recommended free disk** | **2.5 TB** | With safety margin for the scaled S0 build |
 
 Published dataset total on HuggingFace: **~376 GB** across all bundles
 (includes overlap — same arXiv/PMC pages appear in pretrain and finetune

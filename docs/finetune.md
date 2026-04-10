@@ -30,6 +30,17 @@ Data:
 Primary bundle:
 
 - `f0_general_sft_v1`
+- exact anchor `sft_core_v1`
+
+Published data pool consumed:
+
+- `f0_general_sft_v1`
+  - arXiv projected pages
+  - PMC projected pages
+  - approved exact full-page targets
+  - SynthDoG-European
+- `sft_core_v1`
+  - promoted exact-only subset derived from approved full-page targets
 
 Goal:
 
@@ -55,6 +66,26 @@ Goal:
 Primary bundle:
 
 - `f1_specialist_sft_v1`
+- exact anchor `sft_core_v1`
+
+Published data pool consumed:
+
+- PubTables-1M
+- SciTSR
+- FinTabNet family
+- CROHME
+- MathWriting
+- Im2LaTeX-100K
+- UniMER-1M
+- IAM-line
+- Bentham
+- READ 2016
+- FUNSD
+- CORD
+- SROIE
+- ChartQA
+- PlotQA
+- `synthetic_from_exact`
 
 ### F2. Local Repair SFT
 
@@ -78,6 +109,7 @@ Goal:
 Primary bundle:
 
 - `f2_repair_sft_v1`
+- repair anchor `sft_repair_v1`
 
 ### F3. RLVR
 
@@ -95,6 +127,10 @@ Rollout backends:
 Primary bundle:
 
 - `f3_rlvr_v1`
+
+Published data pool consumed:
+
+- RL prompt packs derived from promoted `F0`, `F1`, and `F2` bundles
 
 Current open compact parsers suggest additional lessons:
 

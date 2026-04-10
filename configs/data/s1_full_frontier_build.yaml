@@ -1,0 +1,13 @@
+data_build:
+  stage: s1_full_frontier_build
+  profile_id: full_frontier
+  target_model_family: leopardi_s1
+  target_param_budget_m: 500
+  future_scale_family: leopardi_s2
+  shard_format: webdataset
+  shard_target_size_mb: 256
+  manifest_format: parquet
+  strict_disk_guard: true
+  raw_retention_mode: publish_canonical_then_purge_raw
+  publish_verify_required: true
+  allow_research_watchlist: false

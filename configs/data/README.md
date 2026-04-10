@@ -11,4 +11,6 @@ Current control-plane entry points:
 - `s0_exact_core_build.yaml`
   - exact-pair-first build for the `~150M` research vehicle
 - `s0_full_frontier_build.yaml`
-  - rare full-stack build once exact core and specialist slices are stable
+  - rare full-stack build for the `~150M` frontier-scale data family (`~10.3M` target samples)
+- `s1_full_frontier_build.yaml`
+  - scaled full-stack build for the final `~500M` family
