@@ -73,3 +73,24 @@ def test_data_pipeline_probe_mixed_policies_local_only() -> None:
     by_id = {item.source_id: item for item in results}
     assert by_id["approved_exact_full_page_targets"].status == "skipped"
     assert by_id["synthetic_from_exact"].status == "skipped"
+
+
+def test_split_pretrain_and_finetune_stage_configs_parse() -> None:
+    pretrain_stage = DataBuildStageConfig.from_yaml(
+        "configs/data/s0_pretrain_family_build.yaml",
+        "configs/runtime/data_build_rtx5090.yaml",
+    )
+    foundation_stage = DataBuildStageConfig.from_yaml(
+        "configs/data/s0_finetune_foundation_build.yaml",
+        "configs/runtime/data_build_rtx5090.yaml",
+    )
+    followup_stage = DataBuildStageConfig.from_yaml(
+        "configs/data/s0_finetune_followup_build.yaml",
+        "configs/runtime/data_build_rtx5090.yaml",
+    )
+
+    assert pretrain_stage.profile_id == "pretrain_family"
+    assert foundation_stage.profile_id == "finetune_foundation"
+    assert foundation_stage.upstream_bundle_target == "hf://leopardi-ocr-data-bundles"
+    assert followup_stage.profile_id == "finetune_followup"
+    assert followup_stage.failure_manifest_uri is not None

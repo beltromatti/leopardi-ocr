@@ -69,3 +69,48 @@ def publish_folder_to_hf(
         repo_id=repo_id,
         verified_file_count=len(files),
     )
+
+
+def fetch_folder_from_hf(
+    *,
+    hf_uri: str,
+    repo_type: str = "dataset",
+    token_env: str = "HF_TOKEN",
+) -> Path:
+    from huggingface_hub import snapshot_download
+
+    token = os.environ.get(token_env)
+    repo_id, prefix = parse_hf_uri(hf_uri)
+    patterns = None
+    if prefix:
+        patterns = [f"{prefix}/**", f"{prefix}/*"]
+    snapshot_root = Path(
+        snapshot_download(
+            repo_id=repo_id,
+            repo_type=repo_type,
+            token=token,
+            allow_patterns=patterns,
+        )
+    )
+    return snapshot_root / prefix if prefix else snapshot_root
+
+
+def fetch_file_from_hf(
+    *,
+    hf_uri: str,
+    repo_type: str = "dataset",
+    token_env: str = "HF_TOKEN",
+) -> Path:
+    from huggingface_hub import hf_hub_download
+
+    token = os.environ.get(token_env)
+    repo_id, prefix = parse_hf_uri(hf_uri)
+    if not prefix:
+        raise ValueError("HF file URI must include a file path")
+    local_path = hf_hub_download(
+        repo_id=repo_id,
+        repo_type=repo_type,
+        filename=prefix,
+        token=token,
+    )
+    return Path(local_path)

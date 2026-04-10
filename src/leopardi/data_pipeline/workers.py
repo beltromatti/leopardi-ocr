@@ -25,6 +25,7 @@ from leopardi.data_pipeline.canonicalize import (
     tex_to_markdown,
 )
 from leopardi.data_pipeline.config import DataBuildStageConfig
+from leopardi.data_pipeline.publish import fetch_file_from_hf, fetch_folder_from_hf
 from leopardi.data_pipeline.schemas import CanonicalAsset, CanonicalSample
 from leopardi.data_pipeline.synthdog import iter_synthdog_european_samples
 
@@ -61,6 +62,7 @@ class SourceBuildContext:
     source_limits: dict[str, int] | None = None
     max_pages_per_document: dict[str, int] | None = None
     bundle_roots: dict[str, str] | None = None
+    failure_manifest_uri: str | None = None
 
     def source_limit(self, source_id: str, default: int) -> int:
         if self.source_limits and source_id in self.source_limits:
@@ -103,7 +105,18 @@ def _derived_target_count(context: SourceBuildContext, *, source_id: str, defaul
 def _bundle_root_for(context: SourceBuildContext, bundle_id: str) -> Path:
     if context.bundle_roots and bundle_id in context.bundle_roots:
         return Path(context.bundle_roots[bundle_id])
+    upstream_target = context.stage.upstream_bundle_target or context.stage.runtime.persistence.bundle_target
+    if upstream_target:
+        return fetch_folder_from_hf(hf_uri=f"{upstream_target.rstrip('/')}/{bundle_id}")
     raise RuntimeError(f"Bundle root is unavailable for derived source dependency {bundle_id}")
+
+
+def _resolve_failure_manifest(context: SourceBuildContext) -> Path:
+    if not context.failure_manifest_uri:
+        raise RuntimeError("failure_manifest_uri is required for model_failures_plus_exact_truth")
+    if context.failure_manifest_uri.startswith("hf://"):
+        return fetch_file_from_hf(hf_uri=context.failure_manifest_uri)
+    return Path(context.failure_manifest_uri)
 
 
 def _iter_bundle_samples(bundle_root: Path) -> Iterator[CanonicalSample]:
@@ -375,42 +388,56 @@ class ModelFailuresPlusExactTruthWorker(SourceWorker):
 
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         target_count = _derived_target_count(context, source_id=self.source_id, default=180_000)
-        emitted = 0
-        for bundle_id in ("sft_core_v1", "f1_specialist_sft_v1"):
-            try:
-                upstream_root = _bundle_root_for(context, bundle_id)
-            except RuntimeError:
-                continue
+        manifest_path = _resolve_failure_manifest(context)
+        rows = []
+        with manifest_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if line.strip():
+                    rows.append(json.loads(line))
+        if not rows:
+            raise RuntimeError("Failure manifest is empty")
+        rows = rows[:target_count]
+        bundle_to_ids: dict[str, set[str]] = {}
+        for row in rows:
+            bundle_to_ids.setdefault(row["source_bundle_id"], set()).add(row["source_sample_id"])
+
+        sample_index: dict[tuple[str, str], CanonicalSample] = {}
+        for bundle_id, sample_ids in bundle_to_ids.items():
+            upstream_root = _bundle_root_for(context, bundle_id)
             for sample in _iter_bundle_samples(upstream_root):
-                corrupted, target_block, recipe = _corrupt_markdown_block(sample.canonical_target)
-                metadata = dict(sample.metadata)
-                metadata["repair_recipe"] = recipe
-                metadata["corrupted_prediction"] = corrupted
-                metadata["source_sample_id"] = sample.sample_id
-                metadata["source_bundle_id"] = sample.bundle_id
-                yield CanonicalSample(
-                    sample_id=f"repair::{recipe}::{sample.sample_id}",
-                    source_id=self.source_id,
-                    bundle_id=context.bundle_id,
-                    doc_id=sample.doc_id,
-                    page_id=sample.page_id,
-                    data_class="synthetic_exact",
-                    task_family="repair",
-                    target_type="repair_block_markdown",
-                    canonical_target=target_block,
-                    split_assignment=sample.split_assignment,
-                    difficulty_tier="pathological" if recipe in {"table_delimiter_drop", "display_math_break"} else "hard",
-                    slice_tags=("repair", recipe, *sample.slice_tags),
-                    transform_recipe=recipe,
-                    metadata=metadata,
-                    assets=sample.assets,
-                    source_license=sample.source_license,
-                )
-                emitted += 1
-                if emitted >= target_count:
-                    return
-        if emitted == 0:
-            raise RuntimeError("No upstream finetune bundles available to derive repair samples")
+                if sample.sample_id in sample_ids:
+                    sample_index[(bundle_id, sample.sample_id)] = sample
+
+        for row in rows:
+            key = (row["source_bundle_id"], row["source_sample_id"])
+            sample = sample_index.get(key)
+            if sample is None:
+                continue
+            recipe = row.get("failure_type", "model_failure")
+            metadata = dict(sample.metadata)
+            metadata["repair_recipe"] = recipe
+            metadata["corrupted_prediction"] = row["corrupted_prediction"]
+            metadata["source_sample_id"] = sample.sample_id
+            metadata["source_bundle_id"] = sample.bundle_id
+            metadata["failure_score"] = row.get("failure_score")
+            yield CanonicalSample(
+                sample_id=f"repair::{recipe}::{sample.sample_id}",
+                source_id=self.source_id,
+                bundle_id=context.bundle_id,
+                doc_id=sample.doc_id,
+                page_id=sample.page_id,
+                data_class="synthetic_exact",
+                task_family="repair",
+                target_type="repair_block_markdown",
+                canonical_target=row["target_block"],
+                split_assignment=sample.split_assignment,
+                difficulty_tier=row.get("difficulty_tier", "hard"),
+                slice_tags=("repair", recipe, *sample.slice_tags),
+                transform_recipe=recipe,
+                metadata=metadata,
+                assets=sample.assets,
+                source_license=sample.source_license,
+            )
 
 
 class SFTAndRepairPromptPackWorker(SourceWorker):

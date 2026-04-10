@@ -41,7 +41,7 @@ Open-source competitor repos are vendored as submodules under [external/competit
 
 - `experiments/`: experiment registry, templates, track definitions, and promotion rules.
 - `model/`: model-family control plane, preset policy, interfaces, and artifact rules.
-- `data_pipeline/`: ingestion, synthesis, curation, manifests, and operational policy for large-scale pretraining and finetuning data.
+- `data_pipeline/`: ingestion, synthesis, curation, manifests, and operational policy for pretraining data builds and later finetuning data builds.
 - `evaluation/`: unified evaluation system including datasets, protocols, runners, metrics, baselines, and reports.
 - `pretraining/`: curriculum and objectives for large-scale synthetic + paired document pretraining.
 - `finetune/`: supervised and preference-based alignment stages.
@@ -117,7 +117,7 @@ The data pipeline now includes executable workers for:
 For the current `Leopardi-S0` full external data build on a rented machine, plan for about `400 GB` free disk (peak ~262 GB during the largest bundle build, then published and purged).
 The optimized builder now streams parquet-backed HF sources, processes each source once, and drops local raw plus verified bundle copies as soon as they are no longer needed.
 
-Manual or conditional sources still use a strict local-manifest import contract only for derived internal bundles when they are promoted from prior runs.
+Generated bundles and failure manifests should be persisted to HF and reused across rented machines; they should not be committed into Git.
 
 Helpful local scripts:
 

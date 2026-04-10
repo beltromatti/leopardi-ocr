@@ -470,6 +470,22 @@ def test_derived_internal_workers_materialize_from_upstream_bundles(tmp_path: Pa
             target_type="repair_block_markdown",
         ),
     )
+    failure_manifest = tmp_path / "failures.jsonl"
+    failure_manifest.write_text(
+        json.dumps(
+            {
+                "source_bundle_id": "f1_specialist_sft_v1",
+                "source_sample_id": "sample.base.1",
+                "corrupted_prediction": "Title Paragraph a=b",
+                "target_block": "$$a=b$$",
+                "failure_type": "display_math_break",
+                "difficulty_tier": "pathological",
+                "failure_score": 0.91,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     context = SourceBuildContext(
         stage=_manual_stage(),
         experiment_id="derived-test",
@@ -477,6 +493,7 @@ def test_derived_internal_workers_materialize_from_upstream_bundles(tmp_path: Pa
         bundle_class="high_precision_exact",
         raw_cache_dir=tmp_path / "raw",
         work_cache_dir=tmp_path / "work",
+        failure_manifest_uri=str(failure_manifest),
         bundle_roots={
             "p2_exact_core_v1": str(p2_root),
             "sft_core_v1": str(sft_core_root),

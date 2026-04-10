@@ -332,6 +332,7 @@ def build_data_pipeline_stage(
             source_limits=effective_limits,
             max_pages_per_document=effective_max_pages,
             bundle_roots={bundle_id: str(state.bundle_repo_root) for bundle_id, state in bundle_states.items()},
+            failure_manifest_uri=stage.failure_manifest_uri,
         )
         for sample in worker.iter_samples(source_context):
             assert isinstance(sample, CanonicalSample)

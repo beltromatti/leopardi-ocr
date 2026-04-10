@@ -35,6 +35,8 @@ class DataBuildStageConfig:
     target_model_family: str = "leopardi_s0"
     target_param_budget_m: int = 100
     future_scale_family: str = "leopardi_s1"
+    upstream_bundle_target: str | None = None
+    failure_manifest_uri: str | None = None
     bundle_ids: tuple[str, ...] = ()
     source_ids: tuple[str, ...] = ()
     allow_research_watchlist: bool = False
@@ -61,6 +63,8 @@ class DataBuildStageConfig:
             target_model_family=stage_payload.get("target_model_family", "leopardi_s0"),
             target_param_budget_m=stage_payload.get("target_param_budget_m", 100),
             future_scale_family=stage_payload.get("future_scale_family", "leopardi_s1"),
+            upstream_bundle_target=stage_payload.get("upstream_bundle_target"),
+            failure_manifest_uri=stage_payload.get("failure_manifest_uri"),
             bundle_ids=tuple(stage_payload.get("bundle_ids", ())),
             source_ids=tuple(stage_payload.get("source_ids", ())),
             allow_research_watchlist=stage_payload.get("allow_research_watchlist", False),

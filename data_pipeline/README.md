@@ -125,10 +125,10 @@ Published bundles should be consumable by streaming loaders so that later pretra
 
 ## Current S0 Storage Envelope
 
-For the `Leopardi-S0 ~150M` full build at the new frontier scale:
+For the `Leopardi-S0 ~150M` pretraining-family build at the new frontier scale:
 
 - published family target: about `10.3M` samples total
-- build-time materialized share before derived internals: about `5.8M` samples
+- build-time materialized share before finetune-specific follow-up stages: about `5.8M` samples
 - peak disk usage during the external build phase: plan for about `1.4-1.8 TB`
 - minimum realistic free space: about `2.0 TB`
 - recommended free space: about `2.5 TB`
@@ -212,6 +212,53 @@ Primary examples:
 - synthetic hard cases derived from exact samples
 - mined failure replay packs
 - RL prompt packs assembled from promoted SFT and repair bundles
+
+## Operational Split: Pretrain Then Finetune
+
+Leopardi now treats pretraining and finetuning data builds as separate operational pipelines.
+
+### First machine: pretraining data build
+
+Use:
+
+- `configs/data/s0_pretrain_family_build.yaml`
+- CLI: `data-pipeline-pretrain-build`
+
+Outcome:
+
+- publish `tokenizer_v1`, `p1_text_warmup_v1`, `p2_exact_core_v1`, `p2_structural_aux_v1`, and `p3_hardcases_v1` to HF
+
+### Later machine: finetune foundation build
+
+Use:
+
+- `configs/data/s0_finetune_foundation_build.yaml`
+- CLI: `data-pipeline-finetune-foundation-build`
+
+Outcome:
+
+- download upstream pretraining bundles from HF
+- build and publish `sft_core_v1`, `f0_general_sft_v1`, and `f1_specialist_sft_v1`
+
+### Later machine after a real run: finetune follow-up build
+
+Use:
+
+- `configs/data/s0_finetune_followup_build.yaml`
+- CLI: `data-pipeline-finetune-followup-build`
+
+Requirements:
+
+- a published failure manifest from the first real model run
+
+Outcome:
+
+- build and publish `sft_repair_v1`, `f2_repair_sft_v1`, and `f3_rlvr_v1`
+
+Best practice:
+
+- publish bundles and failure manifests to HF
+- do not commit generated artifacts into Git
 
 ## Directory Map
 

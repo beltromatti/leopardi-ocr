@@ -6,7 +6,7 @@ This file is the single operator entry point for moving Leopardi onto a rented e
 
 ## Disk Envelope For The Full S0 Data Build
 
-For the current `s0_full_frontier_build` implementation:
+For the current split data-pipeline implementation:
 
 - minimum realistic free disk: about `2.0 TB`
 - recommended free disk: about `2.5 TB`
@@ -66,9 +66,9 @@ source .venv/bin/activate
 ./scripts/smoke_chain_cpu.sh
 python3 -m leopardi.cli --help
 python3 -m leopardi.cli doctor
-python3 -m leopardi.cli data-pipeline-summary configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml
-python3 -m leopardi.cli data-pipeline-materialize leo-s0-data-exact-20260408-001 configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml --root runs
-python3 -m leopardi.cli data-pipeline-build leo-s0-data-exact-20260408-001 configs/data/s0_exact_core_build.yaml configs/runtime/data_build_rtx5090.yaml --root runs --publish
+python3 -m leopardi.cli data-pipeline-pretrain-summary configs/runtime/data_build_rtx5090.yaml
+python3 -m leopardi.cli data-pipeline-pretrain-materialize leo-s0-data-pretrain-20260410-001 configs/runtime/data_build_rtx5090.yaml --root runs
+python3 -m leopardi.cli data-pipeline-pretrain-build leo-s0-data-pretrain-20260410-001 configs/runtime/data_build_rtx5090.yaml --root runs --publish
 python3 -m leopardi.cli model-summary configs/model/leopardi_s0.yaml
 python3 -m leopardi.cli pretrain-summary configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml
 python3 -m leopardi.cli pretrain-materialize leo-s0-p2-20260408-001 configs/pretraining/s0_p2_multimodal_core.yaml configs/runtime/train_rtx5090.yaml configs/model/leopardi_s0.yaml --root runs
@@ -97,13 +97,14 @@ python3 -m leopardi.cli materialize-run-example --root runs
 
 ## Recommended First Engineering Sequence
 
-1. Run `data-pipeline-build` for `exact_core_only` and publish the promoted bundles.
-2. Seed the manual-source root only for any derived internal bundles that are not yet built and published.
-3. Implement the pretraining loop against published bundles.
-4. Implement the finetune loop for `F0` and `F1`.
-5. Implement the optimization export backends and variant validation loop.
-6. Implement the inference supervisor and runtime measurement loop.
-7. Implement dataset adapters and automated supervisors for `public_frontier_v1` and `internal_holdout_v1`.
+1. Run `data-pipeline-pretrain-build` and publish the pretraining bundles.
+2. Run pretraining against those published bundles.
+3. On a later machine, run `data-pipeline-finetune-foundation-build`.
+4. Publish a failure manifest from the first real model run.
+5. Run `data-pipeline-finetune-followup-build`.
+6. Implement the optimization export backends and variant validation loop.
+7. Implement the inference supervisor and runtime measurement loop.
+8. Implement dataset adapters and automated supervisors for `public_frontier_v1` and `internal_holdout_v1`.
 
 ## Rule For The Rented Machine
 

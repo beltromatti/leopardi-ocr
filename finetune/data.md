@@ -163,3 +163,14 @@ That means:
 - reuse many times
 
 The first rented machine should not be expected to rebuild the same finetune bundle from scratch repeatedly.
+
+## Cross-Machine Handoff
+
+The intended sequence is:
+
+1. machine A builds and publishes pretraining bundles
+2. machine B downloads published upstream bundles from HF and builds `F0-F1`
+3. the first real model run publishes a failure manifest to HF
+4. machine C downloads published upstream bundles plus that failure manifest and builds `F2-F3`
+
+Generated artifacts should be persisted to HF, not committed into Git.

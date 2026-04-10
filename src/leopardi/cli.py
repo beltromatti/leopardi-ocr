@@ -104,6 +104,27 @@ def data_pipeline_summary(
 
 
 @app.command()
+def data_pipeline_pretrain_summary(
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+) -> None:
+    data_pipeline_summary(Path("configs/data/s0_pretrain_family_build.yaml"), runtime_config)
+
+
+@app.command()
+def data_pipeline_finetune_foundation_summary(
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+) -> None:
+    data_pipeline_summary(Path("configs/data/s0_finetune_foundation_build.yaml"), runtime_config)
+
+
+@app.command()
+def data_pipeline_finetune_followup_summary(
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+) -> None:
+    data_pipeline_summary(Path("configs/data/s0_finetune_followup_build.yaml"), runtime_config)
+
+
+@app.command()
 def data_pipeline_plan(
     stage_config: Path = typer.Argument(Path("configs/data/s0_exact_core_build.yaml")),
     runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
@@ -168,6 +189,48 @@ def data_pipeline_materialize(
 
 
 @app.command()
+def data_pipeline_pretrain_materialize(
+    experiment_id: str = typer.Argument("leo-s0-data-pretrain-20260410-001"),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    data_pipeline_materialize(
+        experiment_id=experiment_id,
+        stage_config=Path("configs/data/s0_pretrain_family_build.yaml"),
+        runtime_config=runtime_config,
+        root=root,
+    )
+
+
+@app.command()
+def data_pipeline_finetune_foundation_materialize(
+    experiment_id: str = typer.Argument("leo-s0-data-finetune-foundation-20260410-001"),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    data_pipeline_materialize(
+        experiment_id=experiment_id,
+        stage_config=Path("configs/data/s0_finetune_foundation_build.yaml"),
+        runtime_config=runtime_config,
+        root=root,
+    )
+
+
+@app.command()
+def data_pipeline_finetune_followup_materialize(
+    experiment_id: str = typer.Argument("leo-s0-data-finetune-followup-20260410-001"),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+) -> None:
+    data_pipeline_materialize(
+        experiment_id=experiment_id,
+        stage_config=Path("configs/data/s0_finetune_followup_build.yaml"),
+        runtime_config=runtime_config,
+        root=root,
+    )
+
+
+@app.command()
 def data_pipeline_build(
     experiment_id: str = typer.Argument("leo-s0-data-build-20260408-001"),
     stage_config: Path = typer.Argument(Path("configs/data/s0_exact_core_build.yaml")),
@@ -201,6 +264,66 @@ def data_pipeline_build(
         source_limits=source_limits,
     )
     console.print(asdict(result))
+
+
+@app.command()
+def data_pipeline_pretrain_build(
+    experiment_id: str = typer.Argument("leo-s0-data-pretrain-20260410-001"),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+    publish: bool = typer.Option(False, "--publish/--no-publish"),
+    keep_raw: bool = typer.Option(False, "--keep-raw/--purge-raw"),
+    limit_per_source: int | None = typer.Option(None, "--limit-per-source"),
+) -> None:
+    data_pipeline_build(
+        experiment_id=experiment_id,
+        stage_config=Path("configs/data/s0_pretrain_family_build.yaml"),
+        runtime_config=runtime_config,
+        root=root,
+        publish=publish,
+        keep_raw=keep_raw,
+        limit_per_source=limit_per_source,
+    )
+
+
+@app.command()
+def data_pipeline_finetune_foundation_build(
+    experiment_id: str = typer.Argument("leo-s0-data-finetune-foundation-20260410-001"),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+    publish: bool = typer.Option(False, "--publish/--no-publish"),
+    keep_raw: bool = typer.Option(False, "--keep-raw/--purge-raw"),
+    limit_per_source: int | None = typer.Option(None, "--limit-per-source"),
+) -> None:
+    data_pipeline_build(
+        experiment_id=experiment_id,
+        stage_config=Path("configs/data/s0_finetune_foundation_build.yaml"),
+        runtime_config=runtime_config,
+        root=root,
+        publish=publish,
+        keep_raw=keep_raw,
+        limit_per_source=limit_per_source,
+    )
+
+
+@app.command()
+def data_pipeline_finetune_followup_build(
+    experiment_id: str = typer.Argument("leo-s0-data-finetune-followup-20260410-001"),
+    runtime_config: Path = typer.Argument(Path("configs/runtime/data_build_rtx5090.yaml")),
+    root: Path = typer.Option(Path("runs"), "--root"),
+    publish: bool = typer.Option(False, "--publish/--no-publish"),
+    keep_raw: bool = typer.Option(False, "--keep-raw/--purge-raw"),
+    limit_per_source: int | None = typer.Option(None, "--limit-per-source"),
+) -> None:
+    data_pipeline_build(
+        experiment_id=experiment_id,
+        stage_config=Path("configs/data/s0_finetune_followup_build.yaml"),
+        runtime_config=runtime_config,
+        root=root,
+        publish=publish,
+        keep_raw=keep_raw,
+        limit_per_source=limit_per_source,
+    )
 
 
 @app.command()

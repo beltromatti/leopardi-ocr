@@ -16,6 +16,47 @@ Use when:
 
 - bootstrapping `P0`, `P1`, `P2`, or `F0`
 
+## Profile: `pretrain_family`
+
+Build:
+
+- `tokenizer_v1`
+- `p1_text_warmup_v1`
+- `p2_exact_core_v1`
+- `p2_structural_aux_v1`
+- `p3_hardcases_v1`
+
+Use when:
+
+- preparing the full pretraining data family on the first rented machine
+- publishing all pretraining bundles to HF for later remote reuse
+
+## Profile: `finetune_foundation`
+
+Build:
+
+- `sft_core_v1`
+- `f0_general_sft_v1`
+- `f1_specialist_sft_v1`
+
+Use when:
+
+- preparing `F0` and `F1` finetune data on a later machine
+- reusing published pretraining bundles from HF rather than rebuilding the pretraining family
+
+## Profile: `finetune_followup`
+
+Build:
+
+- `sft_repair_v1`
+- `f2_repair_sft_v1`
+- `f3_rlvr_v1`
+
+Use when:
+
+- preparing `F2` and `F3` after the first real model run
+- consuming a published failure manifest from pretrain/eval/finetune runs
+
 ## Profile: `tables_only`
 
 Build:
