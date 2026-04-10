@@ -80,6 +80,13 @@ DEFAULT_MAX_PAGES_S0 = {
     "pmc_oa_pdf_xml": 12,
 }
 
+DERIVED_BUNDLE_RETENTION = {
+    "approved_exact_full_page_targets": ("p2_exact_core_v1",),
+    "synthetic_from_exact": ("p2_exact_core_v1",),
+    "model_failures_plus_exact_truth": ("sft_core_v1", "f1_specialist_sft_v1"),
+    "sft_and_repair_prompt_packs": ("f0_general_sft_v1", "f1_specialist_sft_v1", "f2_repair_sft_v1"),
+}
+
 
 @dataclass(slots=True)
 class DataBuildResult:
@@ -282,8 +289,18 @@ def build_data_pipeline_stage(
             ),
             layout=layout,
         )
-        if publish and not keep_raw and state.bundle_dir.exists():
+        if (
+            publish
+            and not keep_raw
+            and state.bundle_dir.exists()
+            and bundle_id not in retained_bundle_ids
+        ):
             shutil.rmtree(state.bundle_dir)
+
+    retained_bundle_ids: set[str] = set()
+    if publish and not keep_raw:
+        for source_id in plan.source_ids:
+            retained_bundle_ids.update(DERIVED_BUNDLE_RETENTION.get(source_id, ()))
 
     for source_index, source_id in enumerate(plan.source_ids, start=1):
         bundle_ids = tuple(source_to_bundle_ids.get(source_id, ()))
@@ -312,9 +329,10 @@ def build_data_pipeline_stage(
             render_pdf_pages=True,
             publish_enabled=publish,
             keep_raw=keep_raw,
-                source_limits=effective_limits,
-                max_pages_per_document=effective_max_pages,
-            )
+            source_limits=effective_limits,
+            max_pages_per_document=effective_max_pages,
+            bundle_roots={bundle_id: str(state.bundle_repo_root) for bundle_id, state in bundle_states.items()},
+        )
         for sample in worker.iter_samples(source_context):
             assert isinstance(sample, CanonicalSample)
             for target_bundle_id in bundle_ids:
@@ -346,6 +364,12 @@ def build_data_pipeline_stage(
             if state.remaining_sources == 0:
                 finalize_bundle(target_bundle_id, completion_index=len(bundle_stats) + 1)
 
+    if publish and not keep_raw:
+        for bundle_id in retained_bundle_ids:
+            state = bundle_states.get(bundle_id)
+            if state is not None and state.bundle_dir.exists():
+                shutil.rmtree(state.bundle_dir)
+
     summary = RunSummary(
         experiment_id=experiment_id,
         phase="data_pipeline",
@@ -372,7 +396,8 @@ def build_data_pipeline_stage(
         ],
         notes=[
             "Real data-pipeline build completed.",
-            "Manual-only sources still require curated local manifests before the corresponding bundles can be built.",
+            "Derived internal finetune sources are materialized by deterministic internal builders.",
+            "Manual manifests are only still required for curated holdouts or deliberately local-only corpora.",
         ],
     )
     write_summary(summary, layout=layout)

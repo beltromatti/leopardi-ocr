@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
+import hashlib
 import gzip
 import json
+import io
+import heapq
 from pathlib import Path
 import re
 import shutil
@@ -57,6 +60,7 @@ class SourceBuildContext:
     keep_raw: bool = False
     source_limits: dict[str, int] | None = None
     max_pages_per_document: dict[str, int] | None = None
+    bundle_roots: dict[str, str] | None = None
 
     def source_limit(self, source_id: str, default: int) -> int:
         if self.source_limits and source_id in self.source_limits:
@@ -74,6 +78,393 @@ class SourceWorker:
 
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         raise NotImplementedError
+
+
+def _stable_hash(text: str) -> int:
+    return int(hashlib.sha256(text.encode("utf-8")).hexdigest(), 16)
+
+
+def _derived_target_count(context: SourceBuildContext, *, source_id: str, default: int) -> int:
+    allocation_path = (
+        Path(__file__).resolve().parents[2]
+        / "data_pipeline"
+        / "registry"
+        / "finetune-source-allocation-s0.csv"
+    )
+    if allocation_path.exists():
+        with allocation_path.open("r", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            for row in reader:
+                if row["bundle_id"] == context.bundle_id and row["source_id"] == source_id:
+                    return int(row["target_samples"])
+    return context.source_limit(source_id, default)
+
+
+def _bundle_root_for(context: SourceBuildContext, bundle_id: str) -> Path:
+    if context.bundle_roots and bundle_id in context.bundle_roots:
+        return Path(context.bundle_roots[bundle_id])
+    raise RuntimeError(f"Bundle root is unavailable for derived source dependency {bundle_id}")
+
+
+def _iter_bundle_samples(bundle_root: Path) -> Iterator[CanonicalSample]:
+    shards_dir = bundle_root / "shards"
+    if not shards_dir.exists():
+        raise RuntimeError(f"Missing shard directory for upstream bundle {bundle_root}")
+    shard_paths = sorted(shards_dir.glob("*.tar"))
+    if not shard_paths:
+        raise RuntimeError(f"No shard tar files found under {shards_dir}")
+
+    current_record: dict[str, Any] | None = None
+    current_assets: list[CanonicalAsset] = []
+
+    def flush_current() -> CanonicalSample | None:
+        nonlocal current_record, current_assets
+        if current_record is None:
+            return None
+        sample = CanonicalSample(
+            sample_id=str(current_record["sample_id"]),
+            source_id=str(current_record["source_id"]),
+            bundle_id=str(current_record["bundle_id"]),
+            doc_id=str(current_record["doc_id"]),
+            page_id=current_record.get("page_id"),
+            data_class=str(current_record["data_class"]),
+            task_family=str(current_record["task_family"]),
+            target_type=str(current_record["target_type"]),
+            canonical_target=str(current_record["canonical_target"]),
+            split_assignment=str(current_record.get("split_assignment", "train")),
+            difficulty_tier=str(current_record.get("difficulty_tier", "medium")),
+            slice_tags=tuple(current_record.get("slice_tags", [])),
+            transform_recipe=current_record.get("transform_recipe"),
+            metadata=json.loads(current_record.get("metadata_json", "{}")),
+            assets=tuple(current_assets),
+            source_license=current_record.get("source_license"),
+        )
+        current_record = None
+        current_assets = []
+        return sample
+
+    for shard_path in shard_paths:
+        with tarfile.open(shard_path, "r") as archive:
+            for member in archive:
+                if not member.isfile():
+                    continue
+                name = member.name
+                payload = archive.extractfile(member).read()
+                if name.endswith(".sample.json"):
+                    flushed = flush_current()
+                    if flushed is not None:
+                        yield flushed
+                    current_record = json.loads(payload.decode("utf-8"))
+                    current_assets = []
+                    continue
+                if current_record is None:
+                    continue
+                if ".target." in name:
+                    continue
+                sample_prefix = f"{current_record['sample_id']}."
+                if not name.startswith(sample_prefix):
+                    continue
+                asset_name = name[len(sample_prefix) :]
+                asset_media_types = current_record.get("asset_media_types", [])
+                asset_names = current_record.get("asset_names", [])
+                try:
+                    media_type = asset_media_types[asset_names.index(asset_name)]
+                except (ValueError, IndexError):
+                    media_type = "application/octet-stream"
+                current_assets.append(
+                    CanonicalAsset(
+                        name=asset_name,
+                        media_type=media_type,
+                        payload_bytes=payload,
+                    )
+                )
+    flushed = flush_current()
+    if flushed is not None:
+        yield flushed
+
+
+def _iter_bundle_manifest_rows(bundle_root: Path) -> Iterator[dict[str, Any]]:
+    import pyarrow.parquet as pq
+
+    manifest_path = bundle_root / "manifests" / "samples.parquet"
+    if not manifest_path.exists():
+        raise RuntimeError(f"Missing manifest parquet for upstream bundle {bundle_root}")
+    parquet = pq.ParquetFile(manifest_path)
+    for batch in parquet.iter_batches(batch_size=4096):
+        for row in batch.to_pylist():
+            yield row
+
+
+def _pick_primary_image(sample: CanonicalSample) -> CanonicalAsset | None:
+    for asset in sample.assets:
+        if asset.media_type.startswith("image/"):
+            return asset
+    return None
+
+
+def _pil_from_asset(asset: CanonicalAsset):
+    from PIL import Image
+
+    return Image.open(io.BytesIO(asset.materialize_bytes())).convert("RGB")
+
+
+def _png_asset_from_image(*, sample_id: str, image, suffix: str = "png") -> CanonicalAsset:
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return CanonicalAsset(
+        name=f"image.{suffix}",
+        media_type="image/png",
+        payload_bytes=buffer.getvalue(),
+    )
+
+
+def _corrupt_markdown_block(text: str) -> tuple[str, str, str]:
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        return text, text, "identity"
+    table_lines = [line for line in lines if line.strip().startswith("|") and line.strip().endswith("|")]
+    if table_lines:
+        target = "\n".join(table_lines[: min(6, len(table_lines))])
+        corrupted = target.replace("|", " ")
+        return corrupted, target, "table_delimiter_drop"
+    math_blocks = re.findall(r"\$\$(.+?)\$\$", text, flags=re.DOTALL)
+    if math_blocks:
+        target = f"$${math_blocks[0].strip()}$$"
+        corrupted = target.replace("\\", "").replace("$$", "$")
+        return corrupted, target, "display_math_break"
+    if len(lines) >= 2:
+        target = "\n".join(lines[: min(3, len(lines))])
+        corrupted = "\n".join(reversed(target.splitlines()))
+        return corrupted, target, "reading_order_swap"
+    target = lines[0]
+    corrupted = re.sub(r"\s+", " ", target).replace("#", "")
+    return corrupted, target, "header_flatten"
+
+
+class ApprovedExactFullPageTargetsWorker(SourceWorker):
+    source_id = "approved_exact_full_page_targets"
+
+    def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
+        target_count = _derived_target_count(context, source_id=self.source_id, default=50_000)
+        upstream_root = _bundle_root_for(context, "p2_exact_core_v1")
+        ranked: list[tuple[tuple[int, int], str]] = []
+        for row in _iter_bundle_manifest_rows(upstream_root):
+            target = str(row["canonical_target"])
+            score = 0
+            score += 3 if len(target) >= 256 else 0
+            score += 2 if "$$" in target else 0
+            score += 2 if "| " in target else 0
+            slice_tags = tuple(row.get("slice_tags", []))
+            score += 1 if any(tag in slice_tags for tag in ("formula", "table", "multilingual")) else 0
+            score += 1 if row.get("target_type") == "page_markdown_projection" else 0
+            rank_key = (score, -_stable_hash(str(row["sample_id"])))
+            item = (rank_key, str(row["sample_id"]))
+            if len(ranked) < target_count:
+                heapq.heappush(ranked, item)
+            else:
+                if item > ranked[0]:
+                    heapq.heapreplace(ranked, item)
+        selected_ids = {sample_id for _, sample_id in ranked}
+        for sample in _iter_bundle_samples(upstream_root):
+            if sample.sample_id not in selected_ids:
+                continue
+            metadata = dict(sample.metadata)
+            metadata["approved_exact"] = True
+            metadata["approved_from_bundle"] = "p2_exact_core_v1"
+            yield CanonicalSample(
+                sample_id=f"approved-exact::{sample.sample_id}",
+                source_id=self.source_id,
+                bundle_id=context.bundle_id,
+                data_class="gold_exact",
+                task_family=sample.task_family,
+                target_type=sample.target_type,
+                canonical_target=sample.canonical_target,
+                doc_id=sample.doc_id,
+                page_id=sample.page_id,
+                split_assignment=sample.split_assignment,
+                difficulty_tier="hard" if "formula" in sample.slice_tags or "table" in sample.slice_tags else "medium",
+                slice_tags=tuple(dict.fromkeys((*sample.slice_tags, "approved_exact"))),
+                transform_recipe=sample.transform_recipe,
+                metadata=metadata,
+                assets=sample.assets,
+                source_license=sample.source_license,
+            )
+
+
+class SyntheticFromExactWorker(SourceWorker):
+    source_id = "synthetic_from_exact"
+
+    _TRANSFORM_RECIPES = (
+        "rotate_90",
+        "rotate_270",
+        "low_contrast",
+        "jpeg_artifact",
+        "mild_blur",
+        "screen_photo",
+    )
+
+    def _transform(self, image, recipe: str):
+        from PIL import Image, ImageEnhance, ImageFilter
+
+        if recipe == "rotate_90":
+            return image.rotate(90, expand=True)
+        if recipe == "rotate_270":
+            return image.rotate(270, expand=True)
+        if recipe == "low_contrast":
+            return ImageEnhance.Contrast(image).enhance(0.68)
+        if recipe == "jpeg_artifact":
+            buffer = io.BytesIO()
+            image.save(buffer, format="JPEG", quality=35)
+            buffer.seek(0)
+            return Image.open(buffer).convert("RGB")
+        if recipe == "mild_blur":
+            return image.filter(ImageFilter.GaussianBlur(radius=1.2))
+        if recipe == "screen_photo":
+            canvas = Image.new("RGB", (image.width + 24, image.height + 24), color=(246, 244, 240))
+            canvas.paste(image, (12, 12))
+            return ImageEnhance.Sharpness(canvas).enhance(0.82)
+        return image
+
+    def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
+        default_target = 4_500_000 if context.bundle_id == "p3_hardcases_v1" else 175_000
+        target_count = _derived_target_count(context, source_id=self.source_id, default=default_target)
+        upstream_root = _bundle_root_for(context, "p2_exact_core_v1")
+        emitted = 0
+        base_count = sum(1 for _ in _iter_bundle_manifest_rows(upstream_root))
+        if base_count == 0:
+            return
+        pass_index = 0
+        while emitted < target_count:
+            recipe = self._TRANSFORM_RECIPES[pass_index % len(self._TRANSFORM_RECIPES)]
+            for sample in _iter_bundle_samples(upstream_root):
+                image_asset = _pick_primary_image(sample)
+                if image_asset is None:
+                    continue
+                transformed = self._transform(_pil_from_asset(image_asset), recipe)
+                metadata = dict(sample.metadata)
+                metadata["synthetic_exact"] = True
+                metadata["source_exact_sample_id"] = sample.sample_id
+                metadata["source_exact_bundle"] = "p2_exact_core_v1"
+                metadata["transform_recipe"] = recipe
+                yield CanonicalSample(
+                    sample_id=f"synthetic-exact::{recipe}::{sample.sample_id}::{emitted:07d}",
+                    source_id=self.source_id,
+                    bundle_id=context.bundle_id,
+                    doc_id=sample.doc_id,
+                    page_id=sample.page_id,
+                    data_class="synthetic_exact",
+                    task_family=sample.task_family,
+                    target_type=sample.target_type,
+                    canonical_target=sample.canonical_target,
+                    split_assignment=sample.split_assignment,
+                    difficulty_tier="hard",
+                    slice_tags=tuple(dict.fromkeys((*sample.slice_tags, "synthetic_exact", recipe))),
+                    transform_recipe=recipe,
+                    metadata=metadata,
+                    assets=(_png_asset_from_image(sample_id=sample.sample_id, image=transformed),),
+                    source_license=sample.source_license,
+                )
+                emitted += 1
+                if emitted >= target_count:
+                    return
+            pass_index += 1
+
+
+class ModelFailuresPlusExactTruthWorker(SourceWorker):
+    source_id = "model_failures_plus_exact_truth"
+
+    def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
+        target_count = _derived_target_count(context, source_id=self.source_id, default=180_000)
+        emitted = 0
+        for bundle_id in ("sft_core_v1", "f1_specialist_sft_v1"):
+            try:
+                upstream_root = _bundle_root_for(context, bundle_id)
+            except RuntimeError:
+                continue
+            for sample in _iter_bundle_samples(upstream_root):
+                corrupted, target_block, recipe = _corrupt_markdown_block(sample.canonical_target)
+                metadata = dict(sample.metadata)
+                metadata["repair_recipe"] = recipe
+                metadata["corrupted_prediction"] = corrupted
+                metadata["source_sample_id"] = sample.sample_id
+                metadata["source_bundle_id"] = sample.bundle_id
+                yield CanonicalSample(
+                    sample_id=f"repair::{recipe}::{sample.sample_id}",
+                    source_id=self.source_id,
+                    bundle_id=context.bundle_id,
+                    doc_id=sample.doc_id,
+                    page_id=sample.page_id,
+                    data_class="synthetic_exact",
+                    task_family="repair",
+                    target_type="repair_block_markdown",
+                    canonical_target=target_block,
+                    split_assignment=sample.split_assignment,
+                    difficulty_tier="pathological" if recipe in {"table_delimiter_drop", "display_math_break"} else "hard",
+                    slice_tags=("repair", recipe, *sample.slice_tags),
+                    transform_recipe=recipe,
+                    metadata=metadata,
+                    assets=sample.assets,
+                    source_license=sample.source_license,
+                )
+                emitted += 1
+                if emitted >= target_count:
+                    return
+        if emitted == 0:
+            raise RuntimeError("No upstream finetune bundles available to derive repair samples")
+
+
+class SFTAndRepairPromptPackWorker(SourceWorker):
+    source_id = "sft_and_repair_prompt_packs"
+
+    def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
+        target_count = _derived_target_count(context, source_id=self.source_id, default=120_000)
+        quotas = (
+            ("f0_general_sft_v1", 50_000, "general"),
+            ("f1_specialist_sft_v1", 45_000, "specialist"),
+            ("f2_repair_sft_v1", 25_000, "repair"),
+        )
+        emitted = 0
+        for bundle_id, quota, pack_type in quotas:
+            bundle_quota = min(quota, max(0, target_count - emitted))
+            if bundle_quota <= 0:
+                break
+            upstream_root = _bundle_root_for(context, bundle_id)
+            emitted_from_bundle = 0
+            for sample in _iter_bundle_samples(upstream_root):
+                metadata = dict(sample.metadata)
+                if pack_type == "repair":
+                    metadata["prompt"] = (
+                        "Repair the corrupted Markdown block using the page image and preserve exact Markdown plus math LaTeX."
+                    )
+                else:
+                    metadata["prompt"] = (
+                        "Parse the page image into canonical Markdown with embedded math LaTeX, preserving tables and reading order."
+                    )
+                metadata["prompt_pack_type"] = pack_type
+                metadata["reference_bundle_id"] = bundle_id
+                yield CanonicalSample(
+                    sample_id=f"rlvr::{pack_type}::{sample.sample_id}",
+                    source_id=self.source_id,
+                    bundle_id=context.bundle_id,
+                    doc_id=sample.doc_id,
+                    page_id=sample.page_id,
+                    data_class="gold_exact" if pack_type == "general" else sample.data_class,
+                    task_family="rlvr",
+                    target_type="rlvr_prompt_pack",
+                    canonical_target=sample.canonical_target,
+                    split_assignment=sample.split_assignment,
+                    difficulty_tier=sample.difficulty_tier,
+                    slice_tags=tuple(dict.fromkeys((*sample.slice_tags, "rlvr", pack_type))),
+                    metadata=metadata,
+                    assets=sample.assets,
+                    source_license=sample.source_license,
+                )
+                emitted += 1
+                emitted_from_bundle += 1
+                if emitted_from_bundle >= bundle_quota:
+                    break
+                if emitted >= target_count:
+                    return
 
 
 def _ssl_context() -> ssl.SSLContext:
@@ -1831,10 +2222,10 @@ def build_worker_registry() -> dict[str, SourceWorker]:
         "iam": HFSplitAwareParquetWorker("iam", "Teklia/IAM-line"),
         "unimer_1m": UniMERArchiveWorker(),
         "synthdog_european": SynthDoGEuropeanWorker(),
-        "approved_exact_full_page_targets": ManualManifestWorker("approved_exact_full_page_targets"),
-        "synthetic_from_exact": ManualManifestWorker("synthetic_from_exact"),
-        "model_failures_plus_exact_truth": ManualManifestWorker("model_failures_plus_exact_truth"),
-        "sft_and_repair_prompt_packs": ManualManifestWorker("sft_and_repair_prompt_packs"),
+        "approved_exact_full_page_targets": ApprovedExactFullPageTargetsWorker(),
+        "synthetic_from_exact": SyntheticFromExactWorker(),
+        "model_failures_plus_exact_truth": ModelFailuresPlusExactTruthWorker(),
+        "sft_and_repair_prompt_packs": SFTAndRepairPromptPackWorker(),
         "curated_non_overlap_holdouts": ManualManifestWorker("curated_non_overlap_holdouts"),
     }
     return registry

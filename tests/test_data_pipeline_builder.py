@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import base64
+from dataclasses import replace
 import io
 import json
 from pathlib import Path
 import tarfile
 
+import pyarrow as pa
 import pyarrow.parquet as pq
 from PIL import Image
 import datasets
@@ -18,14 +20,18 @@ from leopardi.data_pipeline.canonicalize import (
 from leopardi.data_pipeline.config import DataBuildStageConfig
 from leopardi.data_pipeline.executor import build_data_pipeline_stage
 from leopardi.data_pipeline.publish import parse_hf_uri
-from leopardi.data_pipeline.schemas import CanonicalSample
+from leopardi.data_pipeline.schemas import CanonicalAsset, CanonicalSample
 from leopardi.data_pipeline.storage import TarShardWriter
 from leopardi.data_pipeline.workers import (
+    ApprovedExactFullPageTargetsWorker,
     ArchivePairWorker,
     HFParquetWorker,
     HFSplitAwareParquetWorker,
+    ModelFailuresPlusExactTruthWorker,
+    SFTAndRepairPromptPackWorker,
     SynthDoGEuropeanWorker,
     SourceBuildContext,
+    SyntheticFromExactWorker,
     UniMERArchiveWorker,
     _is_valid_cached_download,
     _infer_hf_split_from_filename,
@@ -49,7 +55,7 @@ def _manual_stage() -> DataBuildStageConfig:
                 "stage": "manual_handwriting_build",
                 "profile_id": "full_frontier",
                 "bundle_ids": ["sft_core_v1"],
-                "source_ids": ["approved_exact_full_page_targets"],
+                "source_ids": ["curated_non_overlap_holdouts"],
                 "target_model_family": "leopardi_s0",
                 "target_param_budget_m": 100,
                 "strict_disk_guard": True,
@@ -286,7 +292,7 @@ def test_extract_image_asset_supports_pil_images() -> None:
 
 def test_data_pipeline_build_manual_source(tmp_path: Path) -> None:
     manual_root = tmp_path / "manual"
-    source_root = manual_root / "approved_exact_full_page_targets"
+    source_root = manual_root / "curated_non_overlap_holdouts"
     source_root.mkdir(parents=True)
     image_path = source_root / "line.png"
     image_path.write_bytes(_PNG_1X1)
@@ -387,6 +393,10 @@ def test_worker_registry_promotions_for_verified_sources() -> None:
     assert isinstance(registry["iam"], HFSplitAwareParquetWorker)
     assert isinstance(registry["unimer_1m"], UniMERArchiveWorker)
     assert isinstance(registry["synthdog_european"], SynthDoGEuropeanWorker)
+    assert isinstance(registry["approved_exact_full_page_targets"], ApprovedExactFullPageTargetsWorker)
+    assert isinstance(registry["synthetic_from_exact"], SyntheticFromExactWorker)
+    assert isinstance(registry["model_failures_plus_exact_truth"], ModelFailuresPlusExactTruthWorker)
+    assert isinstance(registry["sft_and_repair_prompt_packs"], SFTAndRepairPromptPackWorker)
 
 
 def test_manifest_record_infers_canonical_features() -> None:
@@ -406,6 +416,97 @@ def test_manifest_record_infers_canonical_features() -> None:
     assert record["has_gfm_table"] is True
     assert record["has_table_block"] is True
     assert record["has_inline_math"] is True
+
+
+def _write_upstream_bundle(tmp_path: Path, bundle_id: str, sample: CanonicalSample) -> Path:
+    bundle_root = tmp_path / bundle_id
+    writer = TarShardWriter(bundle_root / "shards", shard_target_size_mb=1)
+    writer.write_sample(sample)
+    writer.close()
+    write_manifest = bundle_root / "manifests"
+    write_manifest.mkdir(parents=True, exist_ok=True)
+    pq.write_table(pa.Table.from_pylist([sample.manifest_record()]), write_manifest / "samples.parquet")
+    return bundle_root
+
+
+def test_derived_internal_workers_materialize_from_upstream_bundles(tmp_path: Path) -> None:
+    base_sample = CanonicalSample(
+        sample_id="sample.base.1",
+        source_id="arxiv_source_pdf",
+        bundle_id="p2_exact_core_v1",
+        data_class="gold_exact",
+        task_family="document_parsing",
+        target_type="page_markdown_projection",
+        canonical_target="# Title\n\nParagraph.\n\n$$a=b$$\n\n| A | B |\n| --- | --- |\n| 1 | 2 |",
+        doc_id="doc-1",
+        page_id="doc-1:1",
+        slice_tags=("formula", "table"),
+        assets=(CanonicalAsset(name="image.png", media_type="image/png", payload_bytes=_PNG_1X1),),
+    )
+    p2_root = _write_upstream_bundle(tmp_path, "p2_exact_core_v1", base_sample)
+    sft_core_root = _write_upstream_bundle(
+        tmp_path,
+        "sft_core_v1",
+        replace(base_sample, bundle_id="sft_core_v1", source_id="approved_exact_full_page_targets"),
+    )
+    f1_root = _write_upstream_bundle(
+        tmp_path,
+        "f1_specialist_sft_v1",
+        replace(base_sample, bundle_id="f1_specialist_sft_v1", source_id="synthetic_from_exact"),
+    )
+    f0_root = _write_upstream_bundle(
+        tmp_path,
+        "f0_general_sft_v1",
+        replace(base_sample, bundle_id="f0_general_sft_v1", source_id="arxiv_source_pdf"),
+    )
+    f2_root = _write_upstream_bundle(
+        tmp_path,
+        "f2_repair_sft_v1",
+        replace(
+            base_sample,
+            bundle_id="f2_repair_sft_v1",
+            source_id="model_failures_plus_exact_truth",
+            task_family="repair",
+            target_type="repair_block_markdown",
+        ),
+    )
+    context = SourceBuildContext(
+        stage=_manual_stage(),
+        experiment_id="derived-test",
+        bundle_id="sft_core_v1",
+        bundle_class="high_precision_exact",
+        raw_cache_dir=tmp_path / "raw",
+        work_cache_dir=tmp_path / "work",
+        bundle_roots={
+            "p2_exact_core_v1": str(p2_root),
+            "sft_core_v1": str(sft_core_root),
+            "f1_specialist_sft_v1": str(f1_root),
+            "f0_general_sft_v1": str(f0_root),
+            "f2_repair_sft_v1": str(f2_root),
+        },
+    )
+
+    approved = next(ApprovedExactFullPageTargetsWorker().iter_samples(context))
+    assert approved.source_id == "approved_exact_full_page_targets"
+    assert "approved_exact" in approved.slice_tags
+
+    synthetic_ctx = replace(context, bundle_id="p3_hardcases_v1")
+    synthetic = next(SyntheticFromExactWorker().iter_samples(synthetic_ctx))
+    assert synthetic.source_id == "synthetic_from_exact"
+    assert synthetic.transform_recipe is not None
+    assert synthetic.assets[0].media_type == "image/png"
+
+    repair_ctx = replace(context, bundle_id="f2_repair_sft_v1")
+    repair = next(ModelFailuresPlusExactTruthWorker().iter_samples(repair_ctx))
+    assert repair.source_id == "model_failures_plus_exact_truth"
+    assert repair.target_type == "repair_block_markdown"
+    assert "corrupted_prediction" in repair.metadata
+
+    prompt_ctx = replace(context, bundle_id="f3_rlvr_v1")
+    prompt = next(SFTAndRepairPromptPackWorker().iter_samples(prompt_ctx))
+    assert prompt.source_id == "sft_and_repair_prompt_packs"
+    assert prompt.target_type == "rlvr_prompt_pack"
+    assert prompt.metadata["prompt_pack_type"] in {"general", "specialist", "repair"}
 
 
 def test_hf_row_to_sample_sanitizes_bytes_and_emits_structured_targets() -> None:
