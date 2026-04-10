@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
+import csv
 from pathlib import Path
 import shutil
 
@@ -8,15 +9,17 @@ from leopardi.data_pipeline.config import DataBuildStageConfig
 from leopardi.data_pipeline.planner import build_data_build_execution_plan, plan_dict
 from leopardi.data_pipeline.publish import publish_folder_to_hf
 from leopardi.data_pipeline.schemas import BundleBuildStats, CanonicalSample
-from leopardi.data_pipeline.storage import TarShardWriter, write_bundle_card, write_json, write_manifest_parquet
+from leopardi.data_pipeline.storage import ParquetManifestWriter, TarShardWriter, write_bundle_card, write_json
 from leopardi.data_pipeline.workers import SourceBuildContext, build_worker_registry
 from leopardi.ops import (
     ArtifactPointer,
     RunHeartbeat,
     RunManifest,
     RunSummary,
+    append_console_log,
     append_event,
     ensure_run_layout,
+    stop_requested,
     write_heartbeat,
     write_manifest,
     write_summary,
@@ -47,7 +50,7 @@ DEFAULT_SOURCE_LIMITS_S0 = {
     "sroie": 2000,
     "chartqa": 15000,
     "plotqa": 15000,
-    "synthdog_european": 500000,
+    "european_multilingual_synthetic": 500000,
 }
 
 DEFAULT_SOURCE_LIMITS_S1 = {
@@ -71,13 +74,23 @@ DEFAULT_SOURCE_LIMITS_S1 = {
     "sroie": 2000,
     "chartqa": 32719,
     "plotqa": 100000,
-    "synthdog_european": 1500000,
+    "european_multilingual_synthetic": 1500000,
 }
 
 
 DEFAULT_MAX_PAGES_S0 = {
     "arxiv_source_pdf": 12,
     "pmc_oa_pdf_xml": 12,
+}
+
+DEFAULT_TARGET_SAMPLE_COUNTS_S0 = {
+    "arxiv_source_pdf": 2_000_000,
+    "pmc_oa_pdf_xml": 1_200_000,
+}
+
+DEFAULT_TARGET_SAMPLE_COUNTS_S1 = {
+    "arxiv_source_pdf": 6_000_000,
+    "pmc_oa_pdf_xml": 4_000_000,
 }
 
 DERIVED_BUNDLE_RETENTION = {
@@ -109,11 +122,12 @@ class _BundleRuntimeState:
     manifests_dir: Path
     cards_dir: Path
     shard_writer: TarShardWriter
-    manifest_rows: list[dict[str, object]]
+    manifest_writer: ParquetManifestWriter
     unique_docs: set[str]
     page_count: int = 0
     asset_bytes: int = 0
     remaining_sources: int = 0
+    sample_count: int = 0
 
 
 def _write_publish_ledger(ledger_path: Path, bundle_stats: list[BundleBuildStats]) -> None:
@@ -129,6 +143,21 @@ def _purge_source_cache(*, source_id: str, raw_cache_dir: Path, work_cache_dir: 
     for base_dir in (raw_cache_dir / source_id, work_cache_dir / source_id):
         if base_dir.exists():
             shutil.rmtree(base_dir)
+
+
+def _load_bundle_source_quotas() -> dict[tuple[str, str], int]:
+    path = Path("data_pipeline/registry/finetune-source-allocation-s0.csv")
+    if not path.exists():
+        return {}
+    quotas: dict[tuple[str, str], int] = {}
+    with path.open("r", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            bundle_id = row.get("bundle_id", "").strip()
+            source_id = row.get("source_id", "").strip()
+            if not bundle_id or not source_id:
+                continue
+            quotas[(bundle_id, source_id)] = int(row.get("target_samples", "0"))
+    return quotas
 
 
 def build_data_pipeline_stage(
@@ -173,13 +202,33 @@ def build_data_pipeline_stage(
     worker_registry = build_worker_registry()
     default_source_limits = DEFAULT_SOURCE_LIMITS_BY_FAMILY.get(stage.target_model_family, {})
     effective_limits = {**default_source_limits, **(source_limits or {})}
+    effective_target_sample_counts = DEFAULT_TARGET_SAMPLE_COUNTS_BY_FAMILY.get(
+        stage.target_model_family, {}
+    ).copy()
     effective_max_pages = DEFAULT_MAX_PAGES_BY_FAMILY.get(stage.target_model_family, {})
+    bundle_source_quotas = _load_bundle_source_quotas()
+    active_bundle_source_quotas = {
+        key: value
+        for key, value in bundle_source_quotas.items()
+        if key[0] in set(plan.bundle_ids) and key[1] in set(plan.source_ids)
+    }
+    if source_limits is None:
+        for source_id in plan.source_ids:
+            quotas = [
+                quota
+                for (bundle_id, quota_source_id), quota in active_bundle_source_quotas.items()
+                if quota_source_id == source_id and bundle_id in set(plan.bundle_ids)
+            ]
+            if quotas:
+                effective_limits[source_id] = max(quotas)
+                effective_target_sample_counts[source_id] = max(quotas)
     bundle_stats: list[BundleBuildStats] = []
     raw_cache_dir = Path(plan.local_paths.raw_cache_dir)
     work_cache_dir = Path(plan.local_paths.work_cache_dir)
 
     bundle_states: dict[str, _BundleRuntimeState] = {}
     source_to_bundle_ids: dict[str, list[str]] = {}
+    written_by_bundle_source: dict[tuple[str, str], int] = {}
     for bundle_spec in plan.bundle_specs:
         bundle_dir = Path(bundle_spec.local_staging_dir)
         bundle_dir.mkdir(parents=True, exist_ok=True)
@@ -202,7 +251,7 @@ def build_data_pipeline_stage(
             manifests_dir=manifests_dir,
             cards_dir=cards_dir,
             shard_writer=TarShardWriter(shards_dir, stage.shard_target_size_mb),
-            manifest_rows=[],
+            manifest_writer=ParquetManifestWriter(manifests_dir / "samples.parquet"),
             unique_docs=set(),
             remaining_sources=len(bundle_spec.source_ids),
         )
@@ -220,19 +269,20 @@ def build_data_pipeline_stage(
         ),
         layout=layout,
     )
+    append_console_log(
+        layout=layout,
+        message=f"data_pipeline stage={stage.stage} profile={stage.profile_id} started",
+    )
 
     def finalize_bundle(bundle_id: str, *, completion_index: int) -> None:
         bundle_spec = next(item for item in plan.bundle_specs if item.bundle_id == bundle_id)
         state = bundle_states[bundle_id]
         state.shard_writer.close()
-        manifest_path = write_manifest_parquet(
-            state.manifest_rows,
-            state.manifests_dir / "samples.parquet",
-        )
+        manifest_path = state.manifest_writer.close()
         shutil.copy2(manifest_path, state.repo_manifests_dir / "samples.parquet")
         stats = BundleBuildStats(
             bundle_id=bundle_id,
-            sample_count=len(state.manifest_rows),
+            sample_count=state.sample_count,
             document_count=len(state.unique_docs),
             page_count=state.page_count,
             asset_bytes=state.asset_bytes,
@@ -275,6 +325,13 @@ def build_data_pipeline_stage(
             stage=stage.stage,
             payload={"bundle_id": bundle_id, "sample_count": stats.sample_count},
         )
+        append_console_log(
+            layout=layout,
+            message=(
+                f"bundle_completed bundle_id={bundle_id} "
+                f"samples={stats.sample_count} shards={stats.shard_count} published={stats.published}"
+            ),
+        )
         write_heartbeat(
             RunHeartbeat(
                 experiment_id=experiment_id,
@@ -303,15 +360,47 @@ def build_data_pipeline_stage(
             retained_bundle_ids.update(DERIVED_BUNDLE_RETENTION.get(source_id, ()))
 
     for source_index, source_id in enumerate(plan.source_ids, start=1):
+        if stop_requested(layout):
+            append_event(
+                layout=layout,
+                event_type="stop_requested",
+                phase="data_pipeline",
+                stage=stage.stage,
+                payload={"source_id": source_id, "source_index": source_index},
+            )
+            append_console_log(
+                layout=layout,
+                message=f"stop_requested before source_id={source_id} source_index={source_index}",
+            )
+            write_heartbeat(
+                RunHeartbeat(
+                    experiment_id=experiment_id,
+                    phase="data_pipeline",
+                    stage=stage.stage,
+                    state="stopped",
+                    current_step=source_index,
+                    latest_metrics={"completed_bundle_count": float(len(bundle_stats))},
+                ),
+                layout=layout,
+            )
+            raise RuntimeError(
+                "Data build stopped before starting the next source. "
+                "Remove control/STOP and rerun the stage to resume from published bundles."
+            )
         bundle_ids = tuple(source_to_bundle_ids.get(source_id, ()))
         if not bundle_ids:
             continue
+        source_sample_count = 0
         append_event(
             layout=layout,
             event_type="data_source_started",
             phase="data_pipeline",
             stage=stage.stage,
             payload={"source_id": source_id, "bundle_ids": list(bundle_ids)},
+        )
+        append_console_log(
+            layout=layout,
+            message=f"source_started source_id={source_id} bundles={','.join(bundle_ids)}",
         )
         worker = worker_registry.get(source_id)
         if worker is None:
@@ -330,28 +419,80 @@ def build_data_pipeline_stage(
             publish_enabled=publish,
             keep_raw=keep_raw,
             source_limits=effective_limits,
+            target_sample_counts=effective_target_sample_counts,
             max_pages_per_document=effective_max_pages,
+            target_bundle_ids=bundle_ids,
             bundle_roots={bundle_id: str(state.bundle_repo_root) for bundle_id, state in bundle_states.items()},
             failure_manifest_uri=stage.failure_manifest_uri,
         )
         for sample in worker.iter_samples(source_context):
             assert isinstance(sample, CanonicalSample)
+            source_sample_count += 1
+            target_scope = sample.metadata.get("_target_bundle_ids")
+            target_scope_set = set(target_scope) if isinstance(target_scope, list) else None
             for target_bundle_id in bundle_ids:
+                if target_scope_set is not None and target_bundle_id not in target_scope_set:
+                    continue
+                quota_key = (target_bundle_id, source_id)
+                quota = active_bundle_source_quotas.get(quota_key)
+                if quota is not None and written_by_bundle_source.get(quota_key, 0) >= quota:
+                    continue
                 state = bundle_states[target_bundle_id]
-                bundle_sample = replace(sample, bundle_id=target_bundle_id)
+                metadata = dict(sample.metadata)
+                metadata.pop("_target_bundle_ids", None)
+                bundle_sample = replace(sample, bundle_id=target_bundle_id, metadata=metadata)
                 state.shard_writer.write_sample(bundle_sample)
-                state.manifest_rows.append(bundle_sample.manifest_record())
+                state.manifest_writer.write_record(bundle_sample.manifest_record())
                 state.unique_docs.add(bundle_sample.doc_id)
+                state.sample_count += 1
                 if bundle_sample.page_id is not None:
                     state.page_count += 1
                 state.asset_bytes += sum(asset.size_bytes() for asset in bundle_sample.assets)
+                written_by_bundle_source[quota_key] = written_by_bundle_source.get(quota_key, 0) + 1
+            active_quota_keys = [
+                (bundle_id, source_id)
+                for bundle_id in bundle_ids
+                if (bundle_id, source_id) in active_bundle_source_quotas
+            ]
+            if active_quota_keys and all(
+                written_by_bundle_source.get(key, 0) >= active_bundle_source_quotas[key]
+                for key in active_quota_keys
+            ):
+                break
+            if source_sample_count % 5000 == 0:
+                write_heartbeat(
+                    RunHeartbeat(
+                        experiment_id=experiment_id,
+                        phase="data_pipeline",
+                        stage=stage.stage,
+                        state="running",
+                        current_step=source_index,
+                        latest_metrics={
+                            "source_index": float(source_index),
+                            "source_sample_count": float(source_sample_count),
+                            "completed_bundle_count": float(len(bundle_stats)),
+                        },
+                    ),
+                    layout=layout,
+                )
 
         append_event(
             layout=layout,
             event_type="data_source_completed",
             phase="data_pipeline",
             stage=stage.stage,
-            payload={"source_id": source_id, "bundle_ids": list(bundle_ids)},
+            payload={
+                "source_id": source_id,
+                "bundle_ids": list(bundle_ids),
+                "source_sample_count": source_sample_count,
+            },
+        )
+        append_console_log(
+            layout=layout,
+            message=(
+                f"source_completed source_id={source_id} "
+                f"samples={source_sample_count} bundles={','.join(bundle_ids)}"
+            ),
         )
         if stage.raw_retention_mode == "publish_canonical_then_purge_raw" and not keep_raw:
             _purge_source_cache(
@@ -402,6 +543,13 @@ def build_data_pipeline_stage(
         ],
     )
     write_summary(summary, layout=layout)
+    append_console_log(
+        layout=layout,
+        message=(
+            f"data_pipeline stage={stage.stage} completed "
+            f"bundles={len(bundle_stats)} samples={sum(item.sample_count for item in bundle_stats)}"
+        ),
+    )
     write_heartbeat(
         RunHeartbeat(
             experiment_id=experiment_id,
@@ -424,6 +572,11 @@ def build_data_pipeline_stage(
 DEFAULT_SOURCE_LIMITS_BY_FAMILY = {
     "leopardi_s0": DEFAULT_SOURCE_LIMITS_S0,
     "leopardi_s1": DEFAULT_SOURCE_LIMITS_S1,
+}
+
+DEFAULT_TARGET_SAMPLE_COUNTS_BY_FAMILY = {
+    "leopardi_s0": DEFAULT_TARGET_SAMPLE_COUNTS_S0,
+    "leopardi_s1": DEFAULT_TARGET_SAMPLE_COUNTS_S1,
 }
 
 DEFAULT_MAX_PAGES_BY_FAMILY = {

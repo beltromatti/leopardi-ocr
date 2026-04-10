@@ -27,7 +27,9 @@ from leopardi.data_pipeline.canonicalize import (
 from leopardi.data_pipeline.config import DataBuildStageConfig
 from leopardi.data_pipeline.publish import fetch_file_from_hf, fetch_folder_from_hf
 from leopardi.data_pipeline.schemas import CanonicalAsset, CanonicalSample
-from leopardi.data_pipeline.synthdog import iter_synthdog_european_samples
+from leopardi.data_pipeline.european_multilingual_generator import (
+    iter_european_multilingual_synthetic_samples,
+)
 
 
 USER_AGENT = "leopardi-ocr-data-pipeline/0.1"
@@ -60,7 +62,9 @@ class SourceBuildContext:
     publish_enabled: bool = False
     keep_raw: bool = False
     source_limits: dict[str, int] | None = None
+    target_sample_counts: dict[str, int] | None = None
     max_pages_per_document: dict[str, int] | None = None
+    target_bundle_ids: tuple[str, ...] = ()
     bundle_roots: dict[str, str] | None = None
     failure_manifest_uri: str | None = None
 
@@ -72,6 +76,11 @@ class SourceBuildContext:
     def page_limit(self, source_id: str, default: int) -> int:
         if self.max_pages_per_document and source_id in self.max_pages_per_document:
             return self.max_pages_per_document[source_id]
+        return default
+
+    def target_sample_count(self, source_id: str, default: int) -> int:
+        if self.target_sample_counts and source_id in self.target_sample_counts:
+            return self.target_sample_counts[source_id]
         return default
 
 
@@ -635,7 +644,10 @@ def _choose_main_tex_file(root: Path) -> Path | None:
 def _safe_extract_tar(archive_path: Path, target_dir: Path) -> Path:
     target_dir.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive_path, "r:*") as archive:
-        archive.extractall(path=target_dir)
+        try:
+            archive.extractall(path=target_dir, filter="data")
+        except TypeError:
+            archive.extractall(path=target_dir)
     return target_dir
 
 
@@ -685,10 +697,19 @@ class ArxivSourceWorker(SourceWorker):
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         limit = context.source_limit(self.source_id, 50000)
         max_pages = context.page_limit(self.source_id, 12)
+        target_pages = context.target_sample_count(self.source_id, 2_000_000)
+        emitted_pages = 0
+        document_bundle_ids = ("tokenizer_v1", "p1_text_warmup_v1")
+        page_bundle_ids = ("p2_exact_core_v1", "f0_general_sft_v1")
+        target_bundle_ids = context.target_bundle_ids or (context.bundle_id,)
+        needs_documents = any(bundle_id in target_bundle_ids for bundle_id in document_bundle_ids)
+        needs_pages = any(bundle_id in target_bundle_ids for bundle_id in page_bundle_ids)
         from_date = "2012-01-01" if context.stage.target_param_budget_m <= 200 else "2008-01-01"
         source_root = context.raw_cache_dir / self.source_id
         source_root.mkdir(parents=True, exist_ok=True)
         for record in _iter_arxiv_oai_records(limit=limit, from_date=from_date):
+            if emitted_pages >= target_pages and not needs_documents:
+                break
             doc_id = record["id"].replace("/", "_")
             doc_root = source_root / doc_id
             try:
@@ -717,7 +738,7 @@ class ArxivSourceWorker(SourceWorker):
                 )
                 if not canonical_markdown:
                     continue
-                if context.bundle_id in {"tokenizer_v1", "p1_text_warmup_v1"}:
+                if needs_documents:
                     yield CanonicalSample(
                         sample_id=f"{self.source_id}-{doc_id}-document",
                         source_id=self.source_id,
@@ -728,17 +749,25 @@ class ArxivSourceWorker(SourceWorker):
                         target_type="document_markdown",
                         canonical_target=canonical_markdown,
                         slice_tags=("exact", "scientific", "latex"),
-                        metadata={"arxiv_id": record["id"], "title": record["title"]},
+                        metadata={
+                            "arxiv_id": record["id"],
+                            "title": record["title"],
+                            "_target_bundle_ids": list(document_bundle_ids),
+                        },
                         source_license=record["license"] or None,
                     )
+                if not needs_pages or emitted_pages >= target_pages:
                     continue
                 page_texts = _extract_pdf_page_texts(pdf_path, max_pages=max_pages)
                 page_targets = project_markdown_to_pages(canonical_markdown, page_texts)
                 page_assets = _render_pdf_pages(pdf_path, max_pages=max_pages) if context.render_pdf_pages else ()
                 for page_index, asset in enumerate(page_assets):
+                    if emitted_pages >= target_pages:
+                        break
                     target = page_targets[page_index] if page_index < len(page_targets) else ""
                     if not target:
                         continue
+                    emitted_pages += 1
                     yield CanonicalSample(
                         sample_id=f"{self.source_id}-{doc_id}-page-{page_index + 1:04d}",
                         source_id=self.source_id,
@@ -754,6 +783,7 @@ class ArxivSourceWorker(SourceWorker):
                             "arxiv_id": record["id"],
                             "title": record["title"],
                             "page_index": page_index,
+                            "_target_bundle_ids": list(page_bundle_ids),
                         },
                         assets=(asset,),
                         source_license=record["license"] or None,
@@ -804,10 +834,19 @@ class PMCSourceWorker(SourceWorker):
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         limit = context.source_limit(self.source_id, 2000)
         max_pages = context.page_limit(self.source_id, 8)
+        target_pages = context.target_sample_count(self.source_id, 1_200_000)
+        emitted_pages = 0
+        document_bundle_ids = ("tokenizer_v1", "p1_text_warmup_v1")
+        page_bundle_ids = ("p2_exact_core_v1", "f0_general_sft_v1")
+        target_bundle_ids = context.target_bundle_ids or (context.bundle_id,)
+        needs_documents = any(bundle_id in target_bundle_ids for bundle_id in document_bundle_ids)
+        needs_pages = any(bundle_id in target_bundle_ids for bundle_id in page_bundle_ids)
         source_root = context.raw_cache_dir / self.source_id
         source_root.mkdir(parents=True, exist_ok=True)
         opener = _build_opener()
         for record in _iter_pmc_records(limit):
+            if emitted_pages >= target_pages and not needs_documents:
+                break
             pmcid = record["pmcid"]
             doc_root = source_root / pmcid
             try:
@@ -835,7 +874,7 @@ class PMCSourceWorker(SourceWorker):
                 canonical_markdown = jats_to_markdown(xml_text)
                 if not canonical_markdown:
                     continue
-                if context.bundle_id in {"tokenizer_v1", "p1_text_warmup_v1"}:
+                if needs_documents:
                     yield CanonicalSample(
                         sample_id=f"{self.source_id}-{pmcid}-document",
                         source_id=self.source_id,
@@ -846,18 +885,26 @@ class PMCSourceWorker(SourceWorker):
                         target_type="document_markdown",
                         canonical_target=canonical_markdown,
                         slice_tags=("exact", "jats", "biomedical"),
-                        metadata={"pmcid": pmcid, "citation": record["citation"]},
+                        metadata={
+                            "pmcid": pmcid,
+                            "citation": record["citation"],
+                            "_target_bundle_ids": list(document_bundle_ids),
+                        },
                         source_license=record["license"] or None,
                     )
+                if not needs_pages or emitted_pages >= target_pages:
                     continue
                 pdf_path = pdf_files[0]
                 page_texts = _extract_pdf_page_texts(pdf_path, max_pages=max_pages)
                 page_targets = project_markdown_to_pages(canonical_markdown, page_texts)
                 page_assets = _render_pdf_pages(pdf_path, max_pages=max_pages) if context.render_pdf_pages else ()
                 for page_index, asset in enumerate(page_assets):
+                    if emitted_pages >= target_pages:
+                        break
                     target = page_targets[page_index] if page_index < len(page_targets) else ""
                     if not target:
                         continue
+                    emitted_pages += 1
                     yield CanonicalSample(
                         sample_id=f"{self.source_id}-{pmcid}-page-{page_index + 1:04d}",
                         source_id=self.source_id,
@@ -873,6 +920,7 @@ class PMCSourceWorker(SourceWorker):
                             "pmcid": pmcid,
                             "citation": record["citation"],
                             "page_index": page_index,
+                            "_target_bundle_ids": list(page_bundle_ids),
                         },
                         assets=(asset,),
                         source_license=record["license"] or None,
@@ -1682,12 +1730,12 @@ class UniMERArchiveWorker(SourceWorker):
                 )
 
 
-class SynthDoGEuropeanWorker(SourceWorker):
-    source_id = "synthdog_european"
+class EuropeanMultilingualSyntheticWorker(SourceWorker):
+    source_id = "european_multilingual_synthetic"
 
     def iter_samples(self, context: SourceBuildContext) -> Iterator[CanonicalSample]:
         limit = context.source_limit(self.source_id, 100000)
-        for sample in iter_synthdog_european_samples(total_limit=limit):
+        for sample in iter_european_multilingual_synthetic_samples(total_limit=limit):
             yield CanonicalSample(
                 sample_id=sample.sample_id,
                 source_id=self.source_id,
@@ -2248,7 +2296,7 @@ def build_worker_registry() -> dict[str, SourceWorker]:
         ),
         "iam": HFSplitAwareParquetWorker("iam", "Teklia/IAM-line"),
         "unimer_1m": UniMERArchiveWorker(),
-        "synthdog_european": SynthDoGEuropeanWorker(),
+        "european_multilingual_synthetic": EuropeanMultilingualSyntheticWorker(),
         "approved_exact_full_page_targets": ApprovedExactFullPageTargetsWorker(),
         "synthetic_from_exact": SyntheticFromExactWorker(),
         "model_failures_plus_exact_truth": ModelFailuresPlusExactTruthWorker(),

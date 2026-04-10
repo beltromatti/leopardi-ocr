@@ -3,7 +3,7 @@ tokenizer_v1,70,0,30,0,0,learn_markdown_and_latex_tokenization,table_and_formula
 p1_text_warmup_v1,100,0,0,0,0,learn_target_language_prior,pure target-side warmup on exact Markdown+LaTeX targets
 p2_exact_core_v1,65,10,25,0,0,build_core_page_to_markdown_transduction,text corruption applied to 10% synthetic; English exact-pair dominant
 p2_structural_aux_v1,0,0,100,0,0,inject_specialist_structure_pressure,tables formulas and layout only
-p3_hardcases_v1,28,40,17,10,5,build_robustness_on_top_of_exact_core,text corruption at 20-40% rate; European multilingual 500K from SynthDoG-European and ~4.5M derived hard cases from exact pools
+p3_hardcases_v1,28,40,17,10,5,build_robustness_on_top_of_exact_core,text corruption at 20-40% rate; European multilingual 500K from the Leopardi generator and ~4.5M derived hard cases from exact pools
 sft_core_v1,90,0,10,0,0,maximize_exact_output_fidelity,prefer gold exact
 sft_repair_v1,45,40,10,5,0,repair_brittle_long_tail_failures,exact and synthetic both matter
 o_calibration_docmix_v1,30,5,50,10,5,build_representative_quantization_calibration_pool,medium and hard pages with multilingual coverage and no evaluation overlap

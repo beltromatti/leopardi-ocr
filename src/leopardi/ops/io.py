@@ -91,6 +91,17 @@ def append_event(
     return layout.events_path
 
 
+def append_console_log(
+    *,
+    layout: RunLayout,
+    message: str,
+) -> Path:
+    ensure_run_layout(layout=layout)
+    with layout.console_log_path.open("a", encoding="utf-8") as handle:
+        handle.write(f"{_utc_now()} {message.rstrip()}\n")
+    return layout.console_log_path
+
+
 def stop_requested(layout: RunLayout) -> bool:
     return layout.stop_flag_path.exists()
 

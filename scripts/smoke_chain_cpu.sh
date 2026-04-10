@@ -10,9 +10,18 @@ fi
 ROOT="tmp/chain-smoke"
 rm -rf "$ROOT"
 
-"$PYTHON_BIN" -m leopardi.cli data-pipeline-materialize \
-  leo-s0-data-chain-smoke \
-  configs/data/s0_full_frontier_build.yaml \
+"$PYTHON_BIN" -m leopardi.cli data-pipeline-pretrain-materialize \
+  leo-s0-data-pretrain-chain-smoke \
+  configs/runtime/data_build_rtx5090.yaml \
+  --root "$ROOT" >/dev/null
+
+"$PYTHON_BIN" -m leopardi.cli data-pipeline-finetune-foundation-materialize \
+  leo-s0-data-finetune-foundation-chain-smoke \
+  configs/runtime/data_build_rtx5090.yaml \
+  --root "$ROOT" >/dev/null
+
+"$PYTHON_BIN" -m leopardi.cli data-pipeline-finetune-followup-materialize \
+  leo-s0-data-finetune-followup-chain-smoke \
   configs/runtime/data_build_rtx5090.yaml \
   --root "$ROOT" >/dev/null
 
@@ -58,14 +67,16 @@ root = Path("tmp/chain-smoke")
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
-data_plan = read_json(root / "leo-s0-data-chain-smoke" / "artifacts" / "data_pipeline" / "s0_full_frontier_build" / "data-build-plan.json")
+pretrain_data_plan = read_json(root / "leo-s0-data-pretrain-chain-smoke" / "artifacts" / "data_pipeline" / "s0_pretrain_family_build" / "data-build-plan.json")
+finetune_foundation_plan = read_json(root / "leo-s0-data-finetune-foundation-chain-smoke" / "artifacts" / "data_pipeline" / "s0_finetune_foundation_build" / "data-build-plan.json")
+finetune_followup_plan = read_json(root / "leo-s0-data-finetune-followup-chain-smoke" / "artifacts" / "data_pipeline" / "s0_finetune_followup_build" / "data-build-plan.json")
 pretrain_manifest = read_json(root / "leo-s0-p2-chain-smoke" / "manifest.json")
 finetune_manifest = read_json(root / "leo-s0-f3-chain-smoke" / "manifest.json")
 optimization_manifest = read_json(root / "leo-s0-o2-chain-smoke" / "manifest.json")
 inference_card = read_json(root / "leo-s0-i1-chain-smoke" / "artifacts" / "inference" / "artifact-card.json")
 evaluation_manifest = read_json(root / "leo-s0-eval-chain-smoke" / "manifest.json")
 
-built_bundles = set(data_plan["bundle_ids"])
+built_bundles = set(pretrain_data_plan["bundle_ids"]) | set(finetune_foundation_plan["bundle_ids"]) | set(finetune_followup_plan["bundle_ids"])
 assert set(pretrain_manifest["data_bundle_ids"]).issubset(built_bundles)
 assert set(finetune_manifest["data_bundle_ids"]).issubset(built_bundles)
 assert optimization_manifest["data_bundle_ids"] == ["o_calibration_docmix_v1"]

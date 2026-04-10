@@ -71,7 +71,7 @@ For `S0`, the locked target is:
 - `F2`: `180K` pool, `180K` stage draws
 - `F3`: `120K` RLVR prompt packs
 
-That keeps finetuning in the `~1.48M` stage-draw regime instead of turning it
+That keeps finetuning in the `1.50M` stage-draw regime instead of turning it
 into another pretraining pass.
 
 `S1 ~500M` should keep the same stage shape but scale the pools by about `3x`,

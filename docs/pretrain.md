@@ -202,12 +202,12 @@ Supervise:
 Recommended S0 published pool (target ~10.3M total samples):
 
 - `~5.31M` real-source samples
-- `~500K` build-time multilingual synthetic pages from SynthDoG-European
+- `~500K` build-time multilingual synthetic pages from the Leopardi European generator
 - `~4.5M` derived hard cases from `synthetic_from_exact`
 
 Locked `S0` finetune follow-up:
 
-- `F0-F3` together should stay around `~1.48M` stage draws
+- `F0-F3` together should stay at `1.50M` stage draws
 - this is intentional hardening, not a second large-scale pretraining pass
 
 Recommended pretraining exposure over the full S0 curriculum:
@@ -217,7 +217,7 @@ Recommended pretraining exposure over the full S0 curriculum:
 - `10%` formula-focused from UniMER-1M, CROHME, MathWriting, Im2LaTeX-100K
 - `8%` table-focused from PubTables-1M, SciTSR, FinTabNet family
 - `7%` layout-focused supervision from PubLayNet and DocLayNet
-- `5%` multilingual from SynthDoG-European DE/FR/ES/IT/PT
+- `5%` multilingual from the Leopardi European generator DE/FR/ES/IT/PT
 - `3%` handwriting from IAM, Bentham, READ 2016
 - `2%` forms, receipts, charts from FUNSD, CORD, SROIE, ChartQA, PlotQA
 

@@ -10,13 +10,13 @@ Current control-plane entry points:
   - shared product-scope data contract
 - `s0_exact_core_build.yaml`
   - exact-pair-first build for the `~150M` research vehicle
-- `s0_full_frontier_build.yaml`
-  - rare full-stack build for the `~150M` frontier-scale data family (`~10.3M` target samples)
 - `s0_pretrain_family_build.yaml`
-  - pretraining-only data family build, publish-first, meant for the first remote machine
+  - default first-machine build for the full pretraining data family
 - `s0_finetune_foundation_build.yaml`
-  - finetune `F0-F1` data build on a later machine, reusing published upstream bundles from HF
+  - default later-machine build for `F0-F1`, reusing published pretraining bundles from HF
 - `s0_finetune_followup_build.yaml`
-  - finetune `F2-F3` repair/RLVR follow-up build, requires a published failure manifest from pretrain/eval runs
+  - default later-machine build for `F2-F3`, consuming a published failure manifest from a real run
+- `s0_full_frontier_build.yaml`
+  - rare monolithic rebuild for debugging or disaster recovery, not the default operator path
 - `s1_full_frontier_build.yaml`
   - scaled full-stack build for the final `~500M` family

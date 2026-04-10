@@ -30,6 +30,7 @@ Use when:
 
 - preparing the full pretraining data family on the first rented machine
 - publishing all pretraining bundles to HF for later remote reuse
+- this is the default operator path for data preparation, not `full_frontier`
 
 ## Profile: `finetune_foundation`
 
@@ -38,11 +39,13 @@ Build:
 - `sft_core_v1`
 - `f0_general_sft_v1`
 - `f1_specialist_sft_v1`
+- `o_calibration_docmix_v1`
 
 Use when:
 
 - preparing `F0` and `F1` finetune data on a later machine
 - reusing published pretraining bundles from HF rather than rebuilding the pretraining family
+- producing the calibration bundle needed by `optimization/`
 
 ## Profile: `finetune_followup`
 
@@ -136,3 +139,5 @@ Build:
 Use when:
 
 - creating the first persistent gold build or a rare full rebuild
+- debugging cross-stage lineage in one machine-local pass
+- not as the normal operator path for rented ephemeral machines

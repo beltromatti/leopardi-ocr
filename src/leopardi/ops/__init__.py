@@ -1,6 +1,7 @@
 from leopardi.ops.layout import RunLayout, build_run_layout
 from leopardi.ops.io import (
     append_event,
+    append_console_log,
     ensure_run_layout,
     read_note,
     reload_requested,
@@ -18,6 +19,7 @@ __all__ = [
     "RunManifest",
     "RunSummary",
     "append_event",
+    "append_console_log",
     "build_run_layout",
     "ensure_run_layout",
     "read_note",

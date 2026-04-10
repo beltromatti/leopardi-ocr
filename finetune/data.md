@@ -58,7 +58,7 @@ Locked `S0` composition:
 - `180K` arXiv exact pages
 - `140K` PMC exact pages
 - `40K` promoted exact full-page targets
-- `40K` SynthDoG-European multilingual pages
+- `40K` European multilingual synthetic pages from the Leopardi generator
 
 ### `f1_specialist_sft_v1`
 
@@ -170,6 +170,7 @@ The intended sequence is:
 
 1. machine A builds and publishes pretraining bundles
 2. machine B downloads published upstream bundles from HF and builds `F0-F1`
+   plus `o_calibration_docmix_v1` for later optimization
 3. the first real model run publishes a failure manifest to HF
 4. machine C downloads published upstream bundles plus that failure manifest and builds `F2-F3`
 

@@ -50,7 +50,7 @@ _BOLD_FONT_CANDIDATES = [
 
 
 @dataclass(slots=True)
-class SynthDoGSample:
+class EuropeanMultilingualSyntheticSample:
     sample_id: str
     doc_id: str
     language: str
@@ -207,12 +207,14 @@ def render_markdown_page(markdown: str, *, rng: random.Random, scale: int = REND
     return buf.getvalue(), normalize_target_text("\n\n".join(rendered_blocks))
 
 
-def iter_synthdog_european_samples(*, total_limit: int, seed: int = 1337) -> list[SynthDoGSample]:
+def iter_european_multilingual_synthetic_samples(
+    *, total_limit: int, seed: int = 1337
+) -> list[EuropeanMultilingualSyntheticSample]:
     from datasets import load_dataset
 
     rng = random.Random(seed)
     per_language = max(1, (total_limit + len(EUROPEAN_WIKIPEDIA_CONFIGS) - 1) // len(EUROPEAN_WIKIPEDIA_CONFIGS))
-    samples: list[SynthDoGSample] = []
+    samples: list[EuropeanMultilingualSyntheticSample] = []
 
     for lang, hf_config in EUROPEAN_WIKIPEDIA_CONFIGS.items():
         if len(samples) >= total_limit:
@@ -232,9 +234,9 @@ def iter_synthdog_european_samples(*, total_limit: int, seed: int = 1337) -> lis
             png_bytes, canonical = render_markdown_page(markdown, rng=rng)
             if not canonical or len(canonical) < 100:
                 continue
-            sample_id = f"synthdog_european-{lang}-{generated:06d}"
+            sample_id = f"european_multilingual_synthetic-{lang}-{generated:06d}"
             samples.append(
-                SynthDoGSample(
+                EuropeanMultilingualSyntheticSample(
                     sample_id=sample_id,
                     doc_id=f"{lang}-wiki-{generated:06d}",
                     language=lang,

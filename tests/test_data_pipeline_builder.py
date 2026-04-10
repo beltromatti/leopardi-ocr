@@ -29,7 +29,7 @@ from leopardi.data_pipeline.workers import (
     HFSplitAwareParquetWorker,
     ModelFailuresPlusExactTruthWorker,
     SFTAndRepairPromptPackWorker,
-    SynthDoGEuropeanWorker,
+    EuropeanMultilingualSyntheticWorker,
     SourceBuildContext,
     SyntheticFromExactWorker,
     UniMERArchiveWorker,
@@ -392,7 +392,7 @@ def test_worker_registry_promotions_for_verified_sources() -> None:
     assert isinstance(registry["read_2016"], ArchivePairWorker)
     assert isinstance(registry["iam"], HFSplitAwareParquetWorker)
     assert isinstance(registry["unimer_1m"], UniMERArchiveWorker)
-    assert isinstance(registry["synthdog_european"], SynthDoGEuropeanWorker)
+    assert isinstance(registry["european_multilingual_synthetic"], EuropeanMultilingualSyntheticWorker)
     assert isinstance(registry["approved_exact_full_page_targets"], ApprovedExactFullPageTargetsWorker)
     assert isinstance(registry["synthetic_from_exact"], SyntheticFromExactWorker)
     assert isinstance(registry["model_failures_plus_exact_truth"], ModelFailuresPlusExactTruthWorker)
@@ -699,16 +699,18 @@ def test_unimer_archive_worker_pairs_zip_samples(tmp_path: Path) -> None:
     assert sample.assets[0].materialize_bytes() == _PNG_1X1
 
 
-def test_synthdog_worker_emits_page_markdown(monkeypatch) -> None:
+def test_european_multilingual_worker_emits_page_markdown(monkeypatch) -> None:
     from leopardi.data_pipeline import workers as worker_module
-    from leopardi.data_pipeline.synthdog import SynthDoGSample
+    from leopardi.data_pipeline.european_multilingual_generator import (
+        EuropeanMultilingualSyntheticSample,
+    )
 
     monkeypatch.setattr(
         worker_module,
-        "iter_synthdog_european_samples",
+        "iter_european_multilingual_synthetic_samples",
         lambda total_limit: [
-            SynthDoGSample(
-                sample_id="synthdog-eu-000001",
+            EuropeanMultilingualSyntheticSample(
+                sample_id="european-multilingual-000001",
                 doc_id="de-wiki-000001",
                 language="de",
                 title="Titel",
@@ -717,7 +719,7 @@ def test_synthdog_worker_emits_page_markdown(monkeypatch) -> None:
             )
         ],
     )
-    worker = SynthDoGEuropeanWorker()
+    worker = EuropeanMultilingualSyntheticWorker()
     context = SourceBuildContext(
         stage=_manual_stage(),
         experiment_id="unit",
@@ -732,8 +734,8 @@ def test_synthdog_worker_emits_page_markdown(monkeypatch) -> None:
     assert "multilingual" in sample.slice_tags
 
 
-def test_iter_synthdog_european_stops_after_required_languages(monkeypatch) -> None:
-    from leopardi.data_pipeline import synthdog as synth_module
+def test_iter_european_multilingual_samples_stop_after_required_languages(monkeypatch) -> None:
+    from leopardi.data_pipeline import european_multilingual_generator as synth_module
 
     calls: list[str] = []
 
@@ -747,7 +749,7 @@ def test_iter_synthdog_european_stops_after_required_languages(monkeypatch) -> N
         ]
 
     monkeypatch.setattr(datasets, "load_dataset", fake_load_dataset)
-    samples = synth_module.iter_synthdog_european_samples(total_limit=1, seed=1)
+    samples = synth_module.iter_european_multilingual_synthetic_samples(total_limit=1, seed=1)
     assert len(samples) == 1
     assert len(calls) == 1
 

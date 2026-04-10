@@ -8,9 +8,9 @@ This file is the single operator entry point for moving Leopardi onto a rented e
 
 For the current split data-pipeline implementation:
 
-- minimum realistic free disk: about `2.0 TB`
-- recommended free disk: about `2.5 TB`
-- comfortable headroom: `3.0 TB`
+- minimum realistic free disk: about `3.0 TB`
+- recommended free disk: about `3.5 TB`
+- comfortable headroom: `4.0 TB`
 
 This budget assumes the current optimized builder:
 

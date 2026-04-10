@@ -25,8 +25,16 @@ def _read_json(path: Path) -> dict[str, object]:
 def test_pipeline_chain_is_coherent(tmp_path: Path) -> None:
     root = tmp_path / "runs"
 
-    data_stage = DataBuildStageConfig.from_yaml(
-        "configs/data/s0_full_frontier_build.yaml",
+    pretrain_data_stage = DataBuildStageConfig.from_yaml(
+        "configs/data/s0_pretrain_family_build.yaml",
+        "configs/runtime/data_build_rtx5090.yaml",
+    )
+    finetune_foundation_stage = DataBuildStageConfig.from_yaml(
+        "configs/data/s0_finetune_foundation_build.yaml",
+        "configs/runtime/data_build_rtx5090.yaml",
+    )
+    finetune_followup_stage = DataBuildStageConfig.from_yaml(
+        "configs/data/s0_finetune_followup_build.yaml",
         "configs/runtime/data_build_rtx5090.yaml",
     )
     pretrain_stage = PretrainStageConfig.from_yaml(
@@ -50,14 +58,32 @@ def test_pipeline_chain_is_coherent(tmp_path: Path) -> None:
         "configs/runtime/eval_rtx5090.yaml",
     )
 
-    data_plan = build_data_build_execution_plan(
-        experiment_id="data-plan-preview",
-        stage=data_stage,
-        stage_config_path="configs/data/s0_full_frontier_build.yaml",
+    pretrain_data_plan = build_data_build_execution_plan(
+        experiment_id="data-plan-preview-pretrain",
+        stage=pretrain_data_stage,
+        stage_config_path="configs/data/s0_pretrain_family_build.yaml",
         runtime_config_path="configs/runtime/data_build_rtx5090.yaml",
         root=root,
     )
-    built_bundles = set(data_plan.bundle_ids)
+    finetune_foundation_plan = build_data_build_execution_plan(
+        experiment_id="data-plan-preview-finetune-foundation",
+        stage=finetune_foundation_stage,
+        stage_config_path="configs/data/s0_finetune_foundation_build.yaml",
+        runtime_config_path="configs/runtime/data_build_rtx5090.yaml",
+        root=root,
+    )
+    finetune_followup_plan = build_data_build_execution_plan(
+        experiment_id="data-plan-preview-finetune-followup",
+        stage=finetune_followup_stage,
+        stage_config_path="configs/data/s0_finetune_followup_build.yaml",
+        runtime_config_path="configs/runtime/data_build_rtx5090.yaml",
+        root=root,
+    )
+    built_bundles = (
+        set(pretrain_data_plan.bundle_ids)
+        | set(finetune_foundation_plan.bundle_ids)
+        | set(finetune_followup_plan.bundle_ids)
+    )
 
     assert set(pretrain_stage.data_bundle_ids).issubset(built_bundles)
     assert set(finetune_stage.data_bundle_ids).issubset(built_bundles)

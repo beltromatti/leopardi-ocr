@@ -114,8 +114,20 @@ The data pipeline now includes executable workers for:
 - PubTables-1M structure archives
 - SciTSR archive ingestion from the pinned public release
 
-For the current `Leopardi-S0` full external data build on a rented machine, plan for about `400 GB` free disk (peak ~262 GB during the largest bundle build, then published and purged).
-The optimized builder now streams parquet-backed HF sources, processes each source once, and drops local raw plus verified bundle copies as soon as they are no longer needed.
+The default data-build path is now split across machines:
+
+1. build and publish the `pretrain` data family
+2. run the real pretraining job
+3. later build and publish the `finetune foundation` data family
+4. after the first real run publishes a failure manifest, build the `finetune followup` data family
+
+For the current `Leopardi-S0` pretraining-family build on a rented machine, plan for:
+
+- minimum realistic free disk: about `3.0 TB`
+- recommended free disk: about `3.5 TB`
+- comfortable headroom: `4.0 TB`
+
+The optimized builder streams parquet-backed HF sources, processes each source once, and drops local raw plus verified bundle copies as soon as they are no longer needed.
 
 Generated bundles and failure manifests should be persisted to HF and reused across rented machines; they should not be committed into Git.
 

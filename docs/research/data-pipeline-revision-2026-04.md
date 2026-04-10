@@ -81,17 +81,17 @@ Integration:
 - Target: `$latex_label$` for inline, `$$\nlatex_label\n$$` for display
 - Cap at 200K for S0, full 1M for S1
 
-### Rejected: SynthDoG-EN
+### Rejected: English-only synthetic Wikipedia pages
 
-SynthDoG-EN produces plain Wikipedia text rendered as document images.
+An English-only synthetic Wikipedia page generator produces plain Wikipedia text rendered as document images.
 Leopardi already has 560K exact-pair pages from arXiv+PMC with structured
-Markdown+LaTeX targets — qualitatively far superior. Adding SynthDoG-EN
+Markdown+LaTeX targets — qualitatively far superior. Adding an English-only synthetic Wikipedia generator
 would dilute the mixture with lower-quality unstructured text targets.
 
-### Multilingual: SynthDoG-European (generated at build time)
+### Multilingual: European multilingual synthetic pages (generated at build time)
 
-Source: generated using the open-source SynthDoG tool from
-`github.com/clovaai/donut/synthdog/` with Wikipedia dumps in DE, FR, ES, IT, PT.
+Source: generated using Leopardi's internal multilingual document generator
+with Wikipedia text in DE, FR, ES, IT, PT.
 
 Why European and not CJK:
 - Leopardi targets PDF→Markdown+LaTeX: a primarily academic/business use case
@@ -103,13 +103,13 @@ Why European and not CJK:
 
 Integration:
 - Generated as part of the S0 build on the rented machine via
-  the production `SynthDoGEuropeanWorker`
+  the production multilingual synthetic page worker
 - Uses `wikimedia/wikipedia` HF streaming (verified accessible for all 5 languages)
 - Renders Wikipedia text as document pages using Pillow + Noto fonts
 - Ground truth = the Wikipedia text itself (exact by construction)
 - 100K per language × 5 languages = 500K for S0
-- 100K per language × 5 = 500K for S1
-- `scripts/generate_synthdog_european.py` remains available only as a preview/export utility
+- 300K per language × 5 = 1.5M for S1
+- `scripts/generate_european_multilingual_samples.py` remains available only as a preview/export utility for the multilingual generator
 - Output in the main build is emitted directly as canonical `page_markdown_projection` samples
 - Tag: `synthetic`, `multilingual`, `european`, `{language_code}`
 - Estimated disk: ~18 GB for S0 (100K × ~180KB avg per image)
@@ -221,7 +221,7 @@ For S1 (500M), scale all sources proportionally:
 | arXiv | 50,000 docs | 200,000 docs |
 | PMC OA | 20,000 docs | 80,000 docs |
 | UniMER-1M | 200,000 | 1,000,000 |
-| SynthDoG-European (DE/FR/ES/IT/PT) | 100K (20K each) | 500K (100K each) |
+| European multilingual synthetic pages (DE/FR/ES/IT/PT) | 100K (20K each) | 500K (100K each) |
 | CMER-3M | 0 (watchlist) | 500K (if verified) |
 | Synthetic hard cases | 2M | 4.5-15M |
 | **Total S0** | **~3.7M** | |
@@ -235,12 +235,12 @@ shard output before publishing to HuggingFace.
 
 | Phase | Disk Need | Notes |
 |-------|----------|-------|
-| p2_exact_core shards (peak) | ~247 GB | arXiv 160GB + PMC 64GB + SynthDoG 23GB |
+| p2_exact_core shards (peak) | ~247 GB | arXiv 160GB + PMC 64GB + multilingual synthetic pages 23GB |
 | p2_structural_aux shards | ~20 GB | After p2_core is published and purged |
 | p3_hardcases shards | ~28 GB | After p2_aux is published and purged |
 | Working cache + OS | ~15 GB | Constant overhead |
-| **Peak total** | **~262 GB** | During p2_exact_core only |
-| **Recommended free disk** | **2.5 TB** | With safety margin for the scaled S0 build |
+| **Peak total** | **~2.6-3.2 TB** | Current split S0 pretraining-family build with retained exact-core upstream during hard-case generation |
+| **Recommended free disk** | **3.5 TB** | With safety margin for the split S0 pretraining-family build |
 
 Published dataset total on HuggingFace: **~376 GB** across all bundles
 (includes overlap — same arXiv/PMC pages appear in pretrain and finetune
@@ -252,7 +252,7 @@ bundles).
 - UniMERNet paper: https://arxiv.org/abs/2404.15254
 - CMER-3M/MER-17M paper: https://arxiv.org/abs/2512.13731
 - CMER GitHub: https://github.com/Baitlo/CMER
-- SynthDoG tool (Donut): https://github.com/clovaai/donut
+- Leopardi internal multilingual page generator (repo-local implementation)
 - OCR-MLT-50M: REJECTED — probed 2026-04-09, images are NULL, text is placeholder
 - MiniCPM-V 4.5 text corruption: https://huggingface.co/openbmb/MiniCPM-V-4_5
 - SAIL-VL scaling laws: https://arxiv.org/abs/2501.05952

@@ -2,7 +2,7 @@ bundle_id,source_id,target_samples,role,notes
 f0_general_sft_v1,arxiv_source_pdf,180000,exact_anchor,high-confidence projected pages with table-plus-caption and formula-plus-prose oversampling
 f0_general_sft_v1,pmc_oa_pdf_xml,140000,exact_anchor,biomedical exact pages with strong native structure
 f0_general_sft_v1,approved_exact_full_page_targets,40000,exact_projection,promoted exact full-page targets from hardest exact slices
-f0_general_sft_v1,synthdog_european,40000,multilingual_tail,kept intentionally small so F0 stays exact-first
+f0_general_sft_v1,european_multilingual_synthetic,40000,multilingual_tail,kept intentionally small so F0 stays exact-first
 sft_core_v1,approved_exact_full_page_targets,240000,exact_anchor,gold exact plus selected silver only
 f1_specialist_sft_v1,unimer_1m,180000,formula_specialist,main printed-formula specialist
 f1_specialist_sft_v1,pubtables_1m,90000,table_specialist,table structure and spanning behavior
@@ -20,6 +20,15 @@ f1_specialist_sft_v1,sroie,2000,receipt_specialist,noisy receipt parsing
 f1_specialist_sft_v1,chartqa,10000,chart_specialist,chart-grounded text extraction
 f1_specialist_sft_v1,plotqa,10000,chart_specialist,plot-grounded text extraction
 f1_specialist_sft_v1,synthetic_from_exact,175000,hardcase_synthetic,rotation corruption scan degradation and multilingual stressors
+o_calibration_docmix_v1,approved_exact_full_page_targets,300,calibration_exact,compact exact-page calibration anchor
+o_calibration_docmix_v1,pubtables_1m,100,calibration_tables,table-heavy calibration
+o_calibration_docmix_v1,scitsr,50,calibration_tables,scientific table calibration
+o_calibration_docmix_v1,crohme,50,calibration_formulas,handwritten formula calibration
+o_calibration_docmix_v1,mathwriting,100,calibration_formulas,handwritten math calibration
+o_calibration_docmix_v1,unimer_1m,50,calibration_formulas,printed formula calibration
+o_calibration_docmix_v1,iam,50,calibration_handwriting,line handwriting calibration
+o_calibration_docmix_v1,chartqa,34,calibration_charts,chart calibration
+o_calibration_docmix_v1,plotqa,34,calibration_charts,plot calibration
 sft_repair_v1,synthetic_from_exact,60000,repair_anchor,exact-derived malformed-output and brittle-structure anchors
 sft_repair_v1,model_failures_plus_exact_truth,60000,repair_anchor,checkpoint-mined failure slices with exact corrections
 f2_repair_sft_v1,model_failures_plus_exact_truth,180000,repair_primary,local block repair pool from model failures and exact truth

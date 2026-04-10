@@ -23,7 +23,7 @@ model_failures_plus_exact_truth,repair_and_replay,approved,derive_from_failures,
 sft_and_repair_prompt_packs,rlvr_pack,approved,derive_from_promoted_sft,assemble after SFT and repair bundles are promoted
 curated_non_overlap_holdouts,holdout_curation,approved,derive_from_curated_split,assemble after final leakage and duplication review
 unimer_1m,formula_specialist,approved,prioritize_build,1M+ formula pairs from OpenDataLab for robust formula recognition
-synthdog_european,multilingual_pretrain,approved,generate_at_build_time,generated using SynthDoG tool with DE FR ES IT PT Wikipedia dumps on rented machine
+european_multilingual_synthetic,multilingual_pretrain,approved,generate_at_build_time,generated using Leopardi's internal multilingual document generator with DE FR ES IT PT Wikipedia text on rented machine
 cmer_3m,research_watchlist,research_only,verify_download_access,3.1M complex formula pairs from AAAI 2026 pending GitHub release verification
 monkeydoc,research_watchlist,research_only,verify_release_terms,promising recent competitor data source
 churro_ds,research_watchlist,research_only,verify_release_terms,promising handwriting extension

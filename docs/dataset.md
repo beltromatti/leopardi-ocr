@@ -463,13 +463,13 @@ to avoid being completely excluded from multilingual benchmarks like MDPBench.
 
 ### S0 Multilingual Sources
 
-#### SynthDoG-European (DE, FR, ES, IT, PT — generated at build time)
+#### European multilingual synthetic pages (DE, FR, ES, IT, PT — generated at build time)
 
-Source: generated on the rented machine using the open-source SynthDoG tool
+Source: generated on the rented machine using Leopardi's internal multilingual document generator
 from the Donut project with Wikipedia dumps in each language and Noto fonts
 License: generated data, Apache 2.0 (tool license)
 S0 target: 20,000 pages per language = 100,000 total
-Generated using: `github.com/clovaai/donut/synthdog/`
+Generated using: Leopardi's internal build-time generator over curated European Wikipedia text and document-style rendering assets
 
 Why European languages:
 
@@ -484,7 +484,7 @@ Why European languages:
 Generation pipeline:
 
 1. Download Wikipedia dumps for DE, FR, ES, IT, PT
-2. Run SynthDoG with Noto fonts and document backgrounds
+2. Run the multilingual page generator with Noto fonts and document backgrounds
 3. Canonicalize output into Leopardi sample format (image + ground_truth text)
 4. Publish as a Leopardi bundle on HuggingFace
 
@@ -492,7 +492,7 @@ Generation pipeline:
 
 For S1, expand multilingual coverage with:
 
-- full SynthDoG-European: 100K per language = 500K
+- full European multilingual synthetic set: 100K per language = 500K
 - EUR-Lex legal documents rendered as synthetic PDFs in 23 EU languages
 - arXiv non-English papers: filtered subset with language tagging
 - Optional CJK expansion once European coverage is proven
@@ -577,7 +577,7 @@ The `150M` S0 loop uses all high-value sources at scaled quantity:
 14. READ 2016 (`5K` page samples)
 15. FUNSD, CORD, SROIE (`5K` forms and receipts total)
 16. ChartQA, PlotQA (`30K` charts and plots total)
-17. SynthDoG-European DE/FR/ES/IT/PT (`500K` generated at build time, `100K` per language)
+17. European multilingual synthetic pages DE/FR/ES/IT/PT (`500K` generated at build time, `100K` per language)
 18. Synthetic perturbations with text corruption (`~4.5M` hard cases derived from exact sources)
 
 Target total for the published `S0` data family: `~10.31M` samples.
@@ -629,7 +629,7 @@ while still keeping the exact-pair core dominant and auditably cleaner than most
 | ChartQA | 15,000 |
 | PlotQA | 15,000 |
 | Real-source subtotal | ~5,311,236 |
-| SynthDoG-European | 500,000 |
+| European multilingual synthetic pages | 500,000 |
 | synthetic_from_exact | ~4,500,000 |
 | Synthetic subtotal | ~5,000,000 |
 | Total S0 family | ~10,311,236 |

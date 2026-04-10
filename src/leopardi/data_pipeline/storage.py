@@ -79,6 +79,45 @@ class TarShardWriter:
             self._tar = None
 
 
+class ParquetManifestWriter:
+    def __init__(self, path: str | Path, *, batch_size: int = 10_000) -> None:
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.batch_size = max(batch_size, 1)
+        self._rows: list[dict[str, object]] = []
+        self._writer = None
+        self._schema = None
+        self.row_count = 0
+
+    def write_record(self, record: dict[str, object]) -> None:
+        self._rows.append(record)
+        self.row_count += 1
+        if len(self._rows) >= self.batch_size:
+            self._flush()
+
+    def _flush(self) -> None:
+        if not self._rows:
+            return
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        table = pa.Table.from_pylist(self._rows, schema=self._schema)
+        if self._writer is None:
+            self._schema = table.schema
+            self._writer = pq.ParquetWriter(self.path, self._schema)
+        self._writer.write_table(table)
+        self._rows.clear()
+
+    def close(self) -> Path:
+        self._flush()
+        if self._writer is not None:
+            self._writer.close()
+            self._writer = None
+        if self.row_count == 0 and not self.path.exists():
+            write_manifest_parquet([], self.path)
+        return self.path
+
+
 def write_manifest_parquet(records: Iterable[dict[str, object]], path: str | Path) -> Path:
     import pyarrow as pa
     import pyarrow.parquet as pq

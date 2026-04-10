@@ -17,6 +17,10 @@ Use for:
 - evaluation milestones
 - warnings requiring intervention
 
+The data pipeline writes one line for stage start, source start, source
+completion, bundle completion, stop requests, and final stage completion. It
+does not write per-sample logs.
+
 ### 2. `events.ndjson`
 
 Structured append-only event stream.

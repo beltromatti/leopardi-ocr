@@ -16,7 +16,7 @@ The current implementation surface for this plan now lives in:
 For Leopardi, finetuning is where exactness is won.
 
 Locked `S0` rule: finetuning stays compact.
-The current target is `~1.48M` total stage draws across `F0-F3`, not another
+The current target is `1.50M` total stage draws across `F0-F3`, not another
 multi-million-scale replay of the `~10.31M` pretraining family.
 
 Scaling rule for `S1 ~500M`:
@@ -54,7 +54,7 @@ Published data pool consumed:
   - arXiv projected pages
   - PMC projected pages
   - approved exact full-page targets
-  - SynthDoG-European
+  - Leopardi European multilingual generator
 - `sft_core_v1`
   - promoted exact-only subset derived from approved full-page targets
 
@@ -63,7 +63,7 @@ Locked `S0` source allocation inside `f0_general_sft_v1`:
 - `180K` arXiv
 - `140K` PMC
 - `40K` approved exact full-page targets
-- `40K` SynthDoG-European
+- `40K` Leopardi European multilingual synthetic pages
 
 Goal:
 

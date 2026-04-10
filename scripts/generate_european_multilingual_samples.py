@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preview/export SynthDoG-European samples using the production generator."""
+"""Preview/export European multilingual synthetic samples using the production generator."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ import argparse
 import json
 from pathlib import Path
 
-from leopardi.data_pipeline.synthdog import (
+from leopardi.data_pipeline.european_multilingual_generator import (
     EUROPEAN_WIKIPEDIA_CONFIGS,
-    iter_synthdog_european_samples,
+    iter_european_multilingual_synthetic_samples,
 )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate SynthDoG-European data")
+    parser = argparse.ArgumentParser(description="Generate European multilingual synthetic data")
     parser.add_argument("--output", required=True, help="Output directory")
     parser.add_argument("--per-language", type=int, default=2000, help="Samples per language")
     args = parser.parse_args()
@@ -26,7 +26,7 @@ def main() -> None:
     manifest_path = output_dir / "samples.jsonl"
 
     total_limit = args.per_language * len(EUROPEAN_WIKIPEDIA_CONFIGS)
-    samples = iter_synthdog_european_samples(total_limit=total_limit)
+    samples = iter_european_multilingual_synthetic_samples(total_limit=total_limit)
 
     with manifest_path.open("w", encoding="utf-8") as manifest:
         for sample in samples:
@@ -36,7 +36,7 @@ def main() -> None:
                 json.dumps(
                     {
                         "sample_id": sample.sample_id,
-                        "source_id": "synthdog_european",
+                        "source_id": "european_multilingual_synthetic",
                         "doc_id": sample.doc_id,
                         "page_id": f"{sample.doc_id}:1",
                         "data_class": "synthetic_exact",
