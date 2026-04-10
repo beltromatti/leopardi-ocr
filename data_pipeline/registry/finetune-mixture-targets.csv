@@ -1,5 +1,5 @@
 stage_id,exact_pair_pct,synthetic_exact_pct,trusted_aux_pct,multilingual_pct,weak_aux_pct,primary_goal,notes
-f0_general_sft_v1,85,0,10,5,0,maximize_canonical_output_fidelity,prefer gold exact with light European multilingual exposure
-f1_specialist_sft_v1,28,28,29,10,5,move_product_visible_long_tail,keep exact anchors while pushing hard slices including UniMER formulas and European text
-f2_repair_sft_v1,50,40,10,0,0,train_local_repair_behavior,repair packs must still anchor to exact truth
-f3_rlvr_v1,55,20,15,5,5,optimize_objective_rewards_under_latency_pressure,rl prompt packs should stay high-signal and compact
+f0_general_sft_v1,90,0,5,5,0,maximize_canonical_output_fidelity,400K pool with exact-first hardening and only light multilingual tail
+f1_specialist_sft_v1,25,25,40,5,5,move_product_visible_long_tail,700K pool with exact anchors at runtime and strong formula-table-handwriting pressure
+f2_repair_sft_v1,50,40,10,0,0,train_local_repair_behavior,180K repair pool plus 120K repair anchor keeps local fixes grounded in exact truth
+f3_rlvr_v1,55,20,15,5,5,optimize_objective_rewards_under_latency_pressure,120K prompt packs only; RL stays compact and verifier-heavy

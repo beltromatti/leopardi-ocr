@@ -4,6 +4,10 @@ visual_mode: hard
 text_only: false
 data_bundle_ids:
   - f3_rlvr_v1
+target_pool_samples: 120000
+target_stage_draws: 120000
+bundle_sampling_weights:
+  f3_rlvr_v1: 1.0
 adapter:
   mode: lora
   rank: 32

@@ -75,8 +75,21 @@ def test_finetune_stage_recipes_keep_exact_anchors() -> None:
     f0 = finetune_stage_recipe("f0_general_sft")
     f1 = finetune_stage_recipe("f1_specialist_sft")
     f2 = finetune_stage_recipe("f2_repair_sft")
+    f3 = finetune_stage_recipe("f3_rlvr")
 
     assert f0.data_bundle_ids == ("sft_core_v1", "f0_general_sft_v1")
     assert f1.data_bundle_ids == ("sft_core_v1", "f1_specialist_sft_v1")
     assert f2.data_bundle_ids == ("sft_repair_v1", "f2_repair_sft_v1")
+    assert f0.target_pool_samples == 400_000
+    assert f1.target_pool_samples == 700_000
+    assert f2.target_pool_samples == 180_000
+    assert f3.target_pool_samples == 120_000
+    assert f0.target_stage_draws == 480_000
+    assert f1.target_stage_draws == 720_000
+    assert f2.target_stage_draws == 180_000
+    assert f3.target_stage_draws == 120_000
+    assert f0.bundle_sampling_weights == {"sft_core_v1": 0.40, "f0_general_sft_v1": 0.60}
+    assert f1.bundle_sampling_weights == {"sft_core_v1": 0.35, "f1_specialist_sft_v1": 0.65}
+    assert f2.bundle_sampling_weights == {"sft_repair_v1": 0.40, "f2_repair_sft_v1": 0.60}
+    assert f3.bundle_sampling_weights == {"f3_rlvr_v1": 1.0}
     assert f1.sampling.keep_clean_anchor_fraction >= 0.18

@@ -15,6 +15,16 @@ The current implementation surface for this plan now lives in:
 
 For Leopardi, finetuning is where exactness is won.
 
+Locked `S0` rule: finetuning stays compact.
+The current target is `~1.48M` total stage draws across `F0-F3`, not another
+multi-million-scale replay of the `~10.31M` pretraining family.
+
+Scaling rule for `S1 ~500M`:
+
+- keep the same four-stage shape
+- scale stage draws by roughly `3x`
+- target `~1.2M` for `F0`, `~2.2M` for `F1`, `~500K` for `F2`, and `~300K` RLVR prompt packs
+
 ## Finetuning Stages
 
 ### F0. High-Quality General SFT
@@ -32,6 +42,12 @@ Primary bundle:
 - `f0_general_sft_v1`
 - exact anchor `sft_core_v1`
 
+Locked `S0` size:
+
+- `f0_general_sft_v1`: `400K`
+- `sft_core_v1`: `240K`
+- stage draws: `480K`
+
 Published data pool consumed:
 
 - `f0_general_sft_v1`
@@ -41,6 +57,13 @@ Published data pool consumed:
   - SynthDoG-European
 - `sft_core_v1`
   - promoted exact-only subset derived from approved full-page targets
+
+Locked `S0` source allocation inside `f0_general_sft_v1`:
+
+- `180K` arXiv
+- `140K` PMC
+- `40K` approved exact full-page targets
+- `40K` SynthDoG-European
 
 Goal:
 
@@ -68,6 +91,12 @@ Primary bundle:
 - `f1_specialist_sft_v1`
 - exact anchor `sft_core_v1`
 
+Locked `S0` size:
+
+- `f1_specialist_sft_v1`: `700K`
+- `sft_core_v1`: `240K` exact anchor
+- stage draws: `720K`
+
 Published data pool consumed:
 
 - PubTables-1M
@@ -86,6 +115,25 @@ Published data pool consumed:
 - ChartQA
 - PlotQA
 - `synthetic_from_exact`
+
+Locked `S0` source allocation inside `f1_specialist_sft_v1`:
+
+- `180K` UniMER-1M
+- `90K` PubTables-1M
+- `50K` FinTabNet family
+- `10K` SciTSR
+- `10K` CROHME
+- `80K` MathWriting
+- `60K` Im2LaTeX-100K
+- `10K` IAM-line
+- `5K` Bentham
+- `5K` READ 2016
+- `1K` FUNSD
+- `2K` CORD
+- `2K` SROIE
+- `10K` ChartQA
+- `10K` PlotQA
+- `175K` synthetic hard cases
 
 ### F2. Local Repair SFT
 
@@ -111,6 +159,12 @@ Primary bundle:
 - `f2_repair_sft_v1`
 - repair anchor `sft_repair_v1`
 
+Locked `S0` size:
+
+- `f2_repair_sft_v1`: `180K`
+- `sft_repair_v1`: `120K`
+- stage draws: `180K`
+
 ### F3. RLVR
 
 Use reinforcement learning with verifiable rewards after SFT is stable.
@@ -127,6 +181,11 @@ Rollout backends:
 Primary bundle:
 
 - `f3_rlvr_v1`
+
+Locked `S0` size:
+
+- `f3_rlvr_v1`: `120K` prompt packs
+- stage draws: `120K`
 
 Published data pool consumed:
 

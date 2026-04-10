@@ -1,0 +1,5 @@
+stage_id,target_pool_samples,target_stage_draws,anchor_bundle,anchor_draw_pct,primary_bundle,primary_draw_pct,notes
+f0_general_sft,400000,480000,sft_core_v1,40,f0_general_sft_v1,60,compact exact-output hardening with multilingual tail kept light
+f1_specialist_sft,700000,720000,sft_core_v1,35,f1_specialist_sft_v1,65,specialist long-tail push with exact anchor preserved every step
+f2_repair_sft,180000,180000,sft_repair_v1,40,f2_repair_sft_v1,60,repair remains bounded and failure-driven instead of becoming another broad SFT pass
+f3_rlvr,120000,120000,,,f3_rlvr_v1,100,compact RLVR prompt pack with verifier-heavy rewards and latency pressure

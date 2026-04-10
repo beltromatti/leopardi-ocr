@@ -126,6 +126,9 @@ class FinetuneStageConfig:
     visual_mode: str = "standard"
     text_only: bool = False
     data_bundle_ids: tuple[str, ...] = ("f0_general_sft_v1",)
+    target_pool_samples: int = 0
+    target_stage_draws: int = 0
+    bundle_sampling_weights: dict[str, float] = field(default_factory=dict)
     adapter: AdapterConfig = field(default_factory=AdapterConfig)
     optimizer: FinetuneOptimizerConfig = field(default_factory=FinetuneOptimizerConfig)
     runtime: FinetuneRuntimeConfig = field(default_factory=FinetuneRuntimeConfig)
@@ -150,6 +153,12 @@ class FinetuneStageConfig:
             visual_mode=payload.get("visual_mode", "standard"),
             text_only=payload.get("text_only", False),
             data_bundle_ids=tuple(payload.get("data_bundle_ids", ("f0_general_sft_v1",))),
+            target_pool_samples=payload.get("target_pool_samples", 0),
+            target_stage_draws=payload.get("target_stage_draws", 0),
+            bundle_sampling_weights={
+                str(key): float(value)
+                for key, value in payload.get("bundle_sampling_weights", {}).items()
+            },
             adapter=AdapterConfig(
                 mode=adapter_payload.get("mode", "full"),
                 rank=adapter_payload.get("rank", 16),

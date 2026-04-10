@@ -45,7 +45,7 @@ Oversample:
 
 Small-model rule:
 
-- for `Leopardi-S0 ~100M`, this bundle remains the dominant anchor through `P2`
+- for `Leopardi-S0 ~150M`, this bundle remains the dominant anchor through `P2`
 - hard-case and specialist pressure must not dilute exact-pair supervision too early
 
 ## Bundle: `p2_structural_aux_v1`
@@ -95,6 +95,10 @@ Composition:
 - highest-confidence `gold_exact`
 - selected `silver_exact`
 
+Locked `S0` size:
+
+- `240K`
+
 Why:
 
 - maximize precision of final Markdown plus LaTeX behavior
@@ -110,6 +114,10 @@ Why:
 
 - create a clean exact-output tuning pool for `F0`
 - keep the model anchored to high-confidence canonical page targets before specialist overfitting pressure
+
+Locked `S0` size:
+
+- `400K`
 
 ## Bundle: `f1_specialist_sft_v1`
 
@@ -127,7 +135,11 @@ Composition:
 Why:
 
 - move the product-visible long tail that public parsers still mishandle
-- but keep `sft_core_v1` as an exact anchor during sampling so a `100M` model does not drift from canonical Markdown behavior
+- but keep `sft_core_v1` as an exact anchor during sampling so a `~150M` model does not drift from canonical Markdown behavior
+
+Locked `S0` size:
+
+- `700K`
 
 ## Bundle: `sft_repair_v1`
 
@@ -139,6 +151,10 @@ Composition:
 Why:
 
 - tighten the final behavior on the slices users notice most
+
+Locked `S0` size:
+
+- `120K`
 
 ## Bundle: `f2_repair_sft_v1`
 
@@ -152,6 +168,10 @@ Why:
 
 - make repair mode cheaper than full page regeneration
 
+Locked `S0` size:
+
+- `180K`
+
 ## Bundle: `f3_rlvr_v1`
 
 Composition:
@@ -163,3 +183,7 @@ Composition:
 Why:
 
 - support objective-reward RL without rebuilding the entire supervised corpus
+
+Locked `S0` size:
+
+- `120K` prompt packs

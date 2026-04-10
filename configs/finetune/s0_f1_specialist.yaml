@@ -5,6 +5,11 @@ text_only: false
 data_bundle_ids:
   - sft_core_v1
   - f1_specialist_sft_v1
+target_pool_samples: 700000
+target_stage_draws: 720000
+bundle_sampling_weights:
+  sft_core_v1: 0.35
+  f1_specialist_sft_v1: 0.65
 adapter:
   mode: full
   rank: 0

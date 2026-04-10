@@ -1,0 +1,26 @@
+bundle_id,source_id,target_samples,role,notes
+f0_general_sft_v1,arxiv_source_pdf,180000,exact_anchor,high-confidence projected pages with table-plus-caption and formula-plus-prose oversampling
+f0_general_sft_v1,pmc_oa_pdf_xml,140000,exact_anchor,biomedical exact pages with strong native structure
+f0_general_sft_v1,approved_exact_full_page_targets,40000,exact_projection,promoted exact full-page targets from hardest exact slices
+f0_general_sft_v1,synthdog_european,40000,multilingual_tail,kept intentionally small so F0 stays exact-first
+sft_core_v1,approved_exact_full_page_targets,240000,exact_anchor,gold exact plus selected silver only
+f1_specialist_sft_v1,unimer_1m,180000,formula_specialist,main printed-formula specialist
+f1_specialist_sft_v1,pubtables_1m,90000,table_specialist,table structure and spanning behavior
+f1_specialist_sft_v1,fintabnet_family,50000,table_specialist,financial tables with grouped headers
+f1_specialist_sft_v1,scitsr,10000,table_specialist,scientific table structure supervision
+f1_specialist_sft_v1,crohme,10000,formula_specialist,handwritten formula exactness
+f1_specialist_sft_v1,mathwriting,80000,formula_specialist,handwritten math with diverse writers
+f1_specialist_sft_v1,im2latex_100k,60000,formula_specialist,printed equation rendering
+f1_specialist_sft_v1,iam,10000,handwriting_specialist,line handwriting anchor
+f1_specialist_sft_v1,bentham,5000,handwriting_specialist,historical handwriting pages
+f1_specialist_sft_v1,read_2016,5000,handwriting_layout,handwriting plus page layout
+f1_specialist_sft_v1,funsd,1000,forms_specialist,form field structure
+f1_specialist_sft_v1,cord,2000,receipt_specialist,receipt structure and OCR ordering
+f1_specialist_sft_v1,sroie,2000,receipt_specialist,noisy receipt parsing
+f1_specialist_sft_v1,chartqa,10000,chart_specialist,chart-grounded text extraction
+f1_specialist_sft_v1,plotqa,10000,chart_specialist,plot-grounded text extraction
+f1_specialist_sft_v1,synthetic_from_exact,175000,hardcase_synthetic,rotation corruption scan degradation and multilingual stressors
+sft_repair_v1,synthetic_from_exact,60000,repair_anchor,exact-derived malformed-output and brittle-structure anchors
+sft_repair_v1,model_failures_plus_exact_truth,60000,repair_anchor,checkpoint-mined failure slices with exact corrections
+f2_repair_sft_v1,model_failures_plus_exact_truth,180000,repair_primary,local block repair pool from model failures and exact truth
+f3_rlvr_v1,sft_and_repair_prompt_packs,120000,rlvr_prompt_pack,50000 general plus 45000 specialist plus 25000 repair prompts

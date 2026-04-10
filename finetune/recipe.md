@@ -11,6 +11,16 @@ This is the first serious finetuning recipe for `Leopardi-S0`.
 3. `F2` local repair SFT
 4. `F3` RLVR with objective rewards
 
+## Locked `S0` Stage Sizes
+
+- `F0`: `400K` pool, `480K` stage draws
+- `F1`: `700K` pool, `720K` stage draws
+- `F2`: `180K` pool, `180K` stage draws
+- `F3`: `120K` prompt packs
+
+This is deliberate. `S0` pretraining is the large data phase; finetuning is the
+hardening phase.
+
 ## Why This Order
 
 `F0` creates stable canonical behavior.

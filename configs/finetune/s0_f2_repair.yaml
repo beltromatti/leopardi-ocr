@@ -5,6 +5,11 @@ text_only: false
 data_bundle_ids:
   - sft_repair_v1
   - f2_repair_sft_v1
+target_pool_samples: 180000
+target_stage_draws: 180000
+bundle_sampling_weights:
+  sft_repair_v1: 0.40
+  f2_repair_sft_v1: 0.60
 adapter:
   mode: full
   rank: 0

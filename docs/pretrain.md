@@ -205,6 +205,11 @@ Recommended S0 published pool (target ~10.3M total samples):
 - `~500K` build-time multilingual synthetic pages from SynthDoG-European
 - `~4.5M` derived hard cases from `synthetic_from_exact`
 
+Locked `S0` finetune follow-up:
+
+- `F0-F3` together should stay around `~1.48M` stage draws
+- this is intentional hardening, not a second large-scale pretraining pass
+
 Recommended pretraining exposure over the full S0 curriculum:
 
 - `35%` exact paired pages from arXiv and PMC

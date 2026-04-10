@@ -586,6 +586,22 @@ Target total for the published `S0` data family: `~10.31M` samples.
 - `~500K` build-time synthetic multilingual samples
 - `~4.5M` derived synthetic hard cases
 
+Locked `S0` finetune family on top of that pretraining corpus:
+
+- `sft_core_v1`: `240K`
+- `f0_general_sft_v1`: `400K`
+- `f1_specialist_sft_v1`: `700K`
+- `sft_repair_v1`: `120K`
+- `f2_repair_sft_v1`: `180K`
+- `f3_rlvr_v1`: `120K` prompt packs
+
+Locked `S0` finetune stage draws:
+
+- `F0`: `480K`
+- `F1`: `720K`
+- `F2`: `180K`
+- `F3`: `120K`
+
 This puts `Leopardi-S0` into a genuinely frontier-scale data regime for a compact parser,
 while still keeping the exact-pair core dominant and auditably cleaner than most competitor stacks.
 
