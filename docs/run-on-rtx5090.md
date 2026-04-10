@@ -8,9 +8,9 @@ This file is the single operator entry point for moving Leopardi onto a rented e
 
 For the current `s0_full_frontier_build` implementation:
 
-- minimum realistic free disk: about `300 GB`
-- recommended free disk: about `400 GB`
-- comfortable headroom: `450-500 GB`
+- minimum realistic free disk: about `2.0 TB`
+- recommended free disk: about `2.5 TB`
+- comfortable headroom: `3.0 TB`
 
 This budget assumes the current optimized builder:
 
@@ -18,6 +18,7 @@ This budget assumes the current optimized builder:
 - processes each source once and dispatches samples into every dependent bundle
 - purges source raw/work cache immediately after canonicalization
 - publishes completed bundles and drops their local shard copies after verification
+- keeps the `~4.5M` derived hard cases out of the first external raw-acquisition wave
 
 ## GPU Runtime Packages
 
